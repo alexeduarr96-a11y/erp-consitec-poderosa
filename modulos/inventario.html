@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inventario · ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+  .filters-row { display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin-bottom:14px; }
+  .filters-row > div { flex:1; min-width:140px; }
+  .filters-row label { font-size:11px; color:#6b7280; text-transform:uppercase; }
+  .filters-row input, .filters-row select { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:13px; }
+  .badge-estado { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; display:inline-block; }
+  .badge-estado.bueno    { background:#dcfce7; color:#065f46; }
+  .badge-estado.regular  { background:#fef3c7; color:#92400e; }
+  .badge-estado.malo     { background:#fee2e2; color:#991b1b; }
+  .badge-estado.baja     { background:#e5e7eb; color:#4b5563; }
+  .codigo-cell { font-family: 'Courier New', monospace; font-weight:600; color:#1d3557; font-size:12px; }
+  .foto-thumb { width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; }
+  .foto-placeholder { width:40px; height:40px; background:#f3f4f6; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; color:#9ca3af; font-size:18px; }
+  #foto-preview { max-width:200px; max-height:200px; border:1px solid #d1d5db; border-radius:6px; margin-top:8px; }
+  .codigo-preview { display:flex; gap:24px; align-items:center; flex-wrap:wrap; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; margin-top:10px; }
+  .codigo-preview svg { background:white; padding:6px; border-radius:4px; }
+  .codigo-preview canvas { background:white; padding:6px; border-radius:4px; }
+  table.inv-table th { font-size:11px; padding:8px 6px; }
+  table.inv-table td { font-size:12px; padding:8px 6px; vertical-align:middle; }
+  .acciones-cell { white-space:nowrap; }
+  .acciones-cell button { padding:3px 8px; font-size:11px; margin-right:2px; }
+  @media print {
+    .topbar, .filters-row, .acciones-cell, #sp-statusbar, .actions, .modal-overlay { display:none !important; }
+    body { background:white; }
+    .container { max-width:none; padding:0; }
+    table.inv-table { font-size:10px; }
+    table.inv-table th, table.inv-table td { padding:4px 3px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Módulo Inventario · Herramientas y equipos por unidad minera</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="historial.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+    <a href="inventario.html" class="active">Inventario</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>Inventario de Unidades Mineras</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="imprimirInventario()">🖨 Imprimir</button>
+      <button class="ghost sm" onclick="exportarCSV()">⬇ CSV</button>
+      <button class="ghost sm" onclick="importarVijus()">📥 Importar Vijus (Excel)</button>
+      <button class="primary" onclick="abrirNuevo()">+ Nuevo ítem</button>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <div>
+      <label>Buscar</label>
+      <input type="text" id="q" placeholder="código, descripción, marca…" oninput="render()">
+    </div>
+    <div>
+      <label>Unidad Minera</label>
+      <select id="f-unidad" onchange="render()"><option value="">Todas</option></select>
+    </div>
+    <div>
+      <label>Herramienta / Tipo</label>
+      <select id="f-herramienta" onchange="render()"><option value="">Todas</option></select>
+    </div>
+    <div>
+      <label>Estado</label>
+      <select id="f-estado" onchange="render()">
+        <option value="">Todos</option>
+        <option value="Bueno">Bueno</option>
+        <option value="Regular">Regular</option>
+        <option value="Malo">Malo</option>
+        <option value="Baja">Baja</option>
+      </select>
+    </div>
+    <div>
+      <label>Ubicación</label>
+      <select id="f-ubicacion" onchange="render()"><option value="">Todas</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Foto</th>
+          <th>Herramienta</th>
+          <th>Descripción</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Color</th>
+          <th>Aplicación</th>
+          <th>Ubicación</th>
+          <th>Unidad</th>
+          <th style="text-align:center">Cant.</th>
+          <th>UM</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty-msg" style="display:none; text-align:center; padding:40px; color:#6b7280">
+      No hay items que coincidan con los filtros.
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal CRUD -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="max-width:900px;">
+    <div class="modal-header">
+      <h3 id="modal-title">Nuevo ítem de inventario</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <div class="row">
+        <div>
+          <label>Código *</label>
+          <input id="f-codigo" placeholder="ej. MNIVE1" oninput="actualizarCodigosVisuales()">
+        </div>
+        <div>
+          <label>Unidad Minera *</label>
+          <input id="f-unidadMinera" list="dl-unidades" placeholder="ej. VIJUS">
+          <datalist id="dl-unidades">
+            <option value="VIJUS"><option value="CHAPARROSA"><option value="MARAYCHICO"><option value="PATAZ">
+          </datalist>
+        </div>
+        <div>
+          <label>Herramienta / Tipo *</label>
+          <input id="f-herramienta" list="dl-herramientas" placeholder="ej. NIVEL, DISCO DE CORTE…">
+          <datalist id="dl-herramientas"></datalist>
+        </div>
+      </div>
+
+      <label>Descripción</label>
+      <textarea id="f-descripcion" rows="2" placeholder="ej. Nivel de aluminio con imán 12&quot;"></textarea>
+
+      <div class="row">
+        <div>
+          <label>Marca</label>
+          <input id="f-marca" list="dl-marcas">
+          <datalist id="dl-marcas"></datalist>
+        </div>
+        <div>
+          <label>Modelo</label>
+          <input id="f-modelo">
+        </div>
+        <div>
+          <label>Serie</label>
+          <input id="f-serie">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Color</label>
+          <input id="f-color">
+        </div>
+        <div>
+          <label>Aplicación</label>
+          <input id="f-aplicacion" list="dl-aplicaciones" placeholder="ej. MECÁNICA, ELÉCTRICA">
+          <datalist id="dl-aplicaciones">
+            <option value="MECÁNICA"><option value="ELÉCTRICA"><option value="INSTRUMENTACIÓN"><option value="SOLDADURA"><option value="GENERAL">
+          </datalist>
+        </div>
+        <div>
+          <label>Ubicación</label>
+          <input id="f-ubicacion-modal" list="dl-ubicaciones" placeholder="ej. Baul azul, Caja, Almacén central">
+          <datalist id="dl-ubicaciones"></datalist>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Cantidad</label>
+          <input id="f-cantidad" type="number" min="0" step="1" value="1">
+        </div>
+        <div>
+          <label>Unidad</label>
+          <select id="f-unidad-modal">
+            <option value="UND">UND</option>
+            <option value="PQT">PQT</option>
+            <option value="KG">KG</option>
+            <option value="M">M</option>
+            <option value="GAL">GAL</option>
+            <option value="LT">LT</option>
+          </select>
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="f-estado-modal">
+            <option value="Bueno">Bueno</option>
+            <option value="Regular">Regular</option>
+            <option value="Malo">Malo</option>
+            <option value="Baja">De baja</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Foto del ítem</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="file" id="f-foto-file" accept="image/*" capture="environment" onchange="onFotoSeleccionada(event)" style="font-size:12px">
+        <button type="button" class="ghost sm" onclick="quitarFoto()" id="btn-quitar-foto" style="display:none">Quitar</button>
+      </div>
+      <img id="foto-preview" style="display:none">
+
+      <label style="margin-top:14px">Notas</label>
+      <textarea id="f-notas" rows="2"></textarea>
+
+      <!-- Vista previa de código de barras y QR -->
+      <h4 style="margin-top:18px; margin-bottom:6px; font-size:13px; color:#374151;">Código de barras y QR (auto)</h4>
+      <div class="codigo-preview">
+        <div>
+          <div style="font-size:10px; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Barras</div>
+          <svg id="barcode-preview"></svg>
+        </div>
+        <div>
+          <div style="font-size:10px; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">QR</div>
+          <canvas id="qr-preview"></canvas>
+        </div>
+        <div>
+          <button type="button" class="ghost sm" onclick="imprimirEtiqueta()">🖨 Imprimir etiqueta</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="eliminar()" id="btn-eliminar" style="display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Librerías para barcode / QR ====== -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+<!-- ====== Scripts SharePoint ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+
+<script>
+let editingId = null;
+let fotoBase64 = '';
+
+// =========== Render ===========
+function poblarFiltros(){
+  const items = DB.inventario.list();
+  const unidades = [...new Set(items.map(i => i.unidadMinera).filter(Boolean))].sort();
+  const herramientas = [...new Set(items.map(i => i.herramienta).filter(Boolean))].sort();
+  const ubicaciones = [...new Set(items.map(i => i.ubicacion).filter(Boolean))].sort();
+  const marcas = [...new Set(items.map(i => i.marca).filter(Boolean))].sort();
+
+  rellenarSelect('f-unidad', unidades);
+  rellenarSelect('f-herramienta', herramientas);
+  rellenarSelect('f-ubicacion', ubicaciones);
+  rellenarDatalist('dl-herramientas', herramientas);
+  rellenarDatalist('dl-ubicaciones', ubicaciones);
+  rellenarDatalist('dl-marcas', marcas);
+}
+function rellenarSelect(id, opciones){
+  const el = document.getElementById(id);
+  const valActual = el.value;
+  el.innerHTML = '<option value="">Todas</option>' + opciones.map(o => `<option value="${esc(o)}" ${o===valActual?'selected':''}>${esc(o)}</option>`).join('');
+}
+function rellenarDatalist(id, opciones){
+  document.getElementById(id).innerHTML = opciones.map(o => `<option value="${esc(o)}">`).join('');
+}
+
+function pintarKPIs(){
+  const items = DB.inventario.list();
+  const total = items.reduce((s,i) => s + (i.cantidad||0), 0);
+  const buenos = items.filter(i => i.estado === 'Bueno').length;
+  const malos = items.filter(i => i.estado === 'Malo' || i.estado === 'Baja').length;
+  const unidades = new Set(items.map(i => i.unidadMinera).filter(Boolean)).size;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi">
+      <div class="label">Ítems registrados</div>
+      <div class="value">${items.length}</div>
+      <div class="sub">${total.toLocaleString('es-PE')} unidades totales</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">En buen estado</div>
+      <div class="value">${buenos}</div>
+    </div>
+    <div class="kpi" style="border-left-color:#dc3545">
+      <div class="label">⚠ Malos / De baja</div>
+      <div class="value" style="color:#dc3545">${malos}</div>
+    </div>
+    <div class="kpi accent">
+      <div class="label">Unidades mineras</div>
+      <div class="value">${unidades}</div>
+    </div>
+  `;
+}
+
+function render(){
+  pintarKPIs();
+  poblarFiltros();
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const fUnidad = document.getElementById('f-unidad').value;
+  const fHerr = document.getElementById('f-herramienta').value;
+  const fEst = document.getElementById('f-estado').value;
+  const fUbic = document.getElementById('f-ubicacion').value;
+
+  let items = DB.inventario.list();
+  items = items.filter(i => {
+    if (fUnidad && i.unidadMinera !== fUnidad) return false;
+    if (fHerr && i.herramienta !== fHerr) return false;
+    if (fEst && i.estado !== fEst) return false;
+    if (fUbic && i.ubicacion !== fUbic) return false;
+    if (q){
+      const hay = [i.codigo, i.descripcion, i.marca, i.modelo, i.herramienta, i.serie]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  items.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+
+  const tbody = document.getElementById('tbody');
+  if (items.length === 0){
+    tbody.innerHTML = '';
+    document.getElementById('empty-msg').style.display = 'block';
+    return;
+  }
+  document.getElementById('empty-msg').style.display = 'none';
+  tbody.innerHTML = items.map(i => {
+    const estado = i.estado || 'Bueno';
+    const cls = estado.toLowerCase() === 'bueno' ? 'bueno'
+              : estado.toLowerCase() === 'regular' ? 'regular'
+              : estado.toLowerCase() === 'baja' ? 'baja' : 'malo';
+    const fotoCell = i.foto
+      ? `<img src="${i.foto}" class="foto-thumb" onclick="verFotoGrande('${esc(i.foto)}')" alt="">`
+      : '<span class="foto-placeholder">📷</span>';
+    return `<tr>
+      <td><span class="codigo-cell">${esc(i.codigo||'-')}</span></td>
+      <td>${fotoCell}</td>
+      <td>${esc(i.herramienta||'')}</td>
+      <td title="${esc(i.descripcion||'')}">${esc((i.descripcion||'').slice(0,50))}${(i.descripcion||'').length>50?'…':''}</td>
+      <td>${esc(i.marca||'')}</td>
+      <td>${esc(i.modelo||'')}</td>
+      <td>${esc(i.color||'')}</td>
+      <td>${esc(i.aplicacion||'')}</td>
+      <td>${esc(i.ubicacion||'')}</td>
+      <td><b>${esc(i.unidadMinera||'')}</b></td>
+      <td style="text-align:center">${i.cantidad||0}</td>
+      <td>${esc(i.unidad||'UND')}</td>
+      <td><span class="badge-estado ${cls}">${esc(estado)}</span></td>
+      <td class="acciones-cell">
+        <button class="ghost" onclick="editar('${i.id}')">Editar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+// =========== CRUD ===========
+function abrirNuevo(){
+  editingId = null;
+  fotoBase64 = '';
+  document.getElementById('modal-title').textContent = 'Nuevo ítem de inventario';
+  document.getElementById('f-id').value = '';
+  ['f-codigo','f-herramienta','f-descripcion','f-marca','f-modelo','f-serie','f-color','f-aplicacion','f-ubicacion-modal','f-notas','f-serie'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('f-unidadMinera').value = 'VIJUS';
+  document.getElementById('f-cantidad').value = 1;
+  document.getElementById('f-unidad-modal').value = 'UND';
+  document.getElementById('f-estado-modal').value = 'Bueno';
+  document.getElementById('foto-preview').style.display = 'none';
+  document.getElementById('btn-quitar-foto').style.display = 'none';
+  document.getElementById('btn-eliminar').style.display = 'none';
+  document.getElementById('f-foto-file').value = '';
+  actualizarCodigosVisuales();
+  document.getElementById('modal').classList.add('show');
+}
+
+function editar(id){
+  const item = DB.inventario.get(id);
+  if (!item) return;
+  editingId = id;
+  fotoBase64 = item.foto || '';
+  document.getElementById('modal-title').textContent = 'Editar ítem: ' + (item.codigo || '');
+  document.getElementById('f-id').value = id;
+  document.getElementById('f-codigo').value = item.codigo || '';
+  document.getElementById('f-unidadMinera').value = item.unidadMinera || 'VIJUS';
+  document.getElementById('f-herramienta').value = item.herramienta || '';
+  document.getElementById('f-descripcion').value = item.descripcion || '';
+  document.getElementById('f-marca').value = item.marca || '';
+  document.getElementById('f-modelo').value = item.modelo || '';
+  document.getElementById('f-serie').value = item.serie || '';
+  document.getElementById('f-color').value = item.color || '';
+  document.getElementById('f-aplicacion').value = item.aplicacion || '';
+  document.getElementById('f-ubicacion-modal').value = item.ubicacion || '';
+  document.getElementById('f-cantidad').value = item.cantidad ?? 1;
+  document.getElementById('f-unidad-modal').value = item.unidad || 'UND';
+  document.getElementById('f-estado-modal').value = item.estado || 'Bueno';
+  document.getElementById('f-notas').value = item.notas || '';
+  if (item.foto){
+    document.getElementById('foto-preview').src = item.foto;
+    document.getElementById('foto-preview').style.display = 'block';
+    document.getElementById('btn-quitar-foto').style.display = 'inline-block';
+  } else {
+    document.getElementById('foto-preview').style.display = 'none';
+    document.getElementById('btn-quitar-foto').style.display = 'none';
+  }
+  document.getElementById('btn-eliminar').style.display = 'inline-block';
+  actualizarCodigosVisuales();
+  document.getElementById('modal').classList.add('show');
+}
+
+function guardar(){
+  const codigo = document.getElementById('f-codigo').value.trim();
+  const herramienta = document.getElementById('f-herramienta').value.trim();
+  const unidadMinera = document.getElementById('f-unidadMinera').value.trim();
+  if (!codigo){ toast('El código es obligatorio', 'err'); return; }
+  if (!herramienta){ toast('La herramienta/tipo es obligatorio', 'err'); return; }
+  if (!unidadMinera){ toast('La unidad minera es obligatoria', 'err'); return; }
+
+  const item = {
+    id: editingId || undefined,
+    codigo,
+    unidadMinera: unidadMinera.toUpperCase(),
+    herramienta,
+    descripcion: document.getElementById('f-descripcion').value.trim(),
+    marca: document.getElementById('f-marca').value.trim(),
+    modelo: document.getElementById('f-modelo').value.trim(),
+    serie: document.getElementById('f-serie').value.trim(),
+    color: document.getElementById('f-color').value.trim(),
+    aplicacion: document.getElementById('f-aplicacion').value.trim(),
+    ubicacion: document.getElementById('f-ubicacion-modal').value.trim(),
+    cantidad: parseFloat(document.getElementById('f-cantidad').value) || 0,
+    unidad: document.getElementById('f-unidad-modal').value,
+    estado: document.getElementById('f-estado-modal').value,
+    notas: document.getElementById('f-notas').value.trim(),
+    foto: fotoBase64,
+    // Códigos de barras = el código mismo; QR = código (la app los genera al pintar)
+    codigoBarras1: '*' + codigo + '*',
+    codigoBarras2: codigo,
+    codigoQR: codigo,
+  };
+  DB.inventario.save(item);
+  toast('Ítem guardado', 'success');
+  cerrar();
+  render();
+}
+
+function eliminar(){
+  if (!editingId) return;
+  if (!confirm('¿Eliminar este ítem del inventario?')) return;
+  DB.inventario.remove(editingId);
+  toast('Ítem eliminado', 'success');
+  cerrar();
+  render();
+}
+
+function cerrar(){
+  document.getElementById('modal').classList.remove('show');
+  editingId = null; fotoBase64 = '';
+}
+
+// =========== Foto ===========
+function onFotoSeleccionada(ev){
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024){
+    if (!confirm('La foto pesa ' + Math.round(file.size/1024) + 'KB (>2MB). Esto puede ralentizar la app. ¿Continuar?')) return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    fotoBase64 = e.target.result;
+    const img = document.getElementById('foto-preview');
+    img.src = fotoBase64;
+    img.style.display = 'block';
+    document.getElementById('btn-quitar-foto').style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+function quitarFoto(){
+  fotoBase64 = '';
+  document.getElementById('foto-preview').style.display = 'none';
+  document.getElementById('foto-preview').src = '';
+  document.getElementById('btn-quitar-foto').style.display = 'none';
+  document.getElementById('f-foto-file').value = '';
+}
+function verFotoGrande(src){
+  const w = window.open('', '_blank');
+  w.document.write(`<title>Foto</title><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${src}" style="max-width:100%;max-height:100vh"></body>`);
+}
+
+// =========== Códigos visuales ===========
+function actualizarCodigosVisuales(){
+  const codigo = document.getElementById('f-codigo').value.trim() || ' ';
+  try {
+    JsBarcode('#barcode-preview', codigo, { format:'CODE128', width:1.5, height:40, fontSize:12, margin:2 });
+  } catch(e){
+    document.getElementById('barcode-preview').innerHTML = '';
+  }
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(codigo);
+    qr.make();
+    const canvas = document.getElementById('qr-preview');
+    canvas.width = 80; canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white'; ctx.fillRect(0,0,80,80);
+    const moduleCount = qr.getModuleCount();
+    const tileSize = 80 / moduleCount;
+    ctx.fillStyle = 'black';
+    for (let r=0; r<moduleCount; r++){
+      for (let c=0; c<moduleCount; c++){
+        if (qr.isDark(r,c)) ctx.fillRect(c*tileSize, r*tileSize, tileSize, tileSize);
+      }
+    }
+  } catch(e){ console.warn(e); }
+}
+
+function imprimirEtiqueta(){
+  const codigo = document.getElementById('f-codigo').value.trim();
+  const desc = document.getElementById('f-descripcion').value.trim();
+  if (!codigo){ toast('Necesitas un código primero','err'); return; }
+  const barcodeSvg = document.getElementById('barcode-preview').outerHTML;
+  const qrDataUrl = document.getElementById('qr-preview').toDataURL();
+  const w = window.open('', '_blank');
+  w.document.write(`<!doctype html><html><head><title>Etiqueta ${codigo}</title>
+    <style>
+      body { font-family: Arial; padding:20px; }
+      .etiqueta { border:1px dashed #999; padding:12px; width:280px; margin:0 auto; text-align:center; }
+      .etiqueta h2 { margin:4px 0; font-size:18px; }
+      .etiqueta p { margin:4px 0; font-size:12px; color:#444; }
+      .etiqueta img { margin-top:8px; }
+      @media print { .no-print{display:none} }
+    </style></head><body>
+    <div class="etiqueta">
+      <h2>${esc(codigo)}</h2>
+      ${desc ? '<p>'+esc(desc)+'</p>' : ''}
+      ${barcodeSvg}
+      <br><img src="${qrDataUrl}" style="margin-top:6px">
+      <p style="font-size:10px;color:#888;margin-top:8px">CONSITEC / Poderosa</p>
+    </div>
+    <p class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()">🖨 Imprimir</button></p>
+    </body></html>`);
+}
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+// =========== Importar Vijus ===========
+async function importarVijus(){
+  if (!confirm('Esto descargará y agregará el inventario inicial de VIJUS (146 ítems) al sistema.\n\n¿Continuar?')) return;
+  toast('Descargando inventario...', '');
+  try {
+    const r = await fetch('../sharepoint/inventario-vijus.json');
+    if (!r.ok) throw new Error('Archivo no encontrado');
+    const data = await r.json();
+    let nuevos = 0, omitidos = 0;
+    const existentes = DB.inventario.list();
+    for (const item of data){
+      const dup = existentes.find(e => e.codigo === item.codigo && e.unidadMinera === item.unidadMinera);
+      if (dup){ omitidos++; continue; }
+      DB.inventario.save(item);
+      nuevos++;
+    }
+    toast(`Importados: ${nuevos} · Omitidos (duplicados): ${omitidos}`, 'success');
+    render();
+  } catch(e){
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+// =========== Imprimir/Exportar ===========
+function imprimirInventario(){
+  window.print();
+}
+function exportarCSV(){
+  const items = DB.inventario.list();
+  if (!items.length){ toast('No hay ítems para exportar','err'); return; }
+  const headers = ['codigo','unidadMinera','herramienta','descripcion','marca','modelo','serie','color','aplicacion','ubicacion','cantidad','unidad','estado','notas'];
+  const csv = [headers.join(',')];
+  items.forEach(it => {
+    const fila = headers.map(h => {
+      const v = (it[h] ?? '').toString().replace(/"/g, '""');
+      return `"${v}"`;
+    });
+    csv.push(fila.join(','));
+  });
+  const blob = new Blob(['﻿' + csv.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =========== Init ===========
+window.refrescarUI = render;
+window.addEventListener('db-ready', render);
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', render);
+} else {
+  render();
+}
+</script>
+
+</body>
+</html>

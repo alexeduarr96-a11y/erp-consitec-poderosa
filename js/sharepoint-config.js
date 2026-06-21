@@ -39,6 +39,8 @@ const SP_CONFIG = {
     // Reportes diario/semanal en una sola lista con campo 'tipo'
     reportesDiarios:   'Reportes',
     reportesSemanales: 'Reportes',
+    // Inventario de unidades mineras (Vijus, Chaparrosa, etc.) — 1 lista, filtro por UnidadMinera
+    inventario:        'Inventario',
   },
 
   // ============== SCOPES PARA AUTENTICACIÓN ==============

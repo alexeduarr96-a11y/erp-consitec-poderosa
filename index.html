@@ -33,6 +33,7 @@
     <a href="modulos/cargos.html">Cargos</a>
     <a href="modulos/personal.html">Personal</a>
     <a href="modulos/materiales.html">Materiales</a>
+    <a href="modulos/inventario.html">Inventario</a>
   </nav>
 </header>
 
@@ -150,6 +151,13 @@
       <span class="badge muted" id="cnt-mat">0</span>
     </a>
 
+    <a class="module-card" href="modulos/inventario.html">
+      <div class="icon">📦</div>
+      <div class="title">Inventario Minero</div>
+      <div class="desc">Inventario de herramientas y equipos por unidad minera (Vijus, etc.). Con código de barras, QR y foto.</div>
+      <span class="badge muted" id="cnt-inv">0</span>
+    </a>
+
   </div>
 
 </main>
@@ -265,6 +273,7 @@ function pintarKPIs(){
   document.getElementById('cnt-pry').textContent = DB.proyectos.list().length;
   document.getElementById('cnt-per').textContent = DB.personal.list().length;
   document.getElementById('cnt-mat').textContent = DB.materiales.list().length;
+  const cntInv = document.getElementById('cnt-inv'); if(cntInv) cntInv.textContent = DB.inventario.list().length;
 }
 
 function abrirConfig(){
