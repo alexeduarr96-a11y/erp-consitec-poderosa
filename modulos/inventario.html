@@ -24,8 +24,11 @@
   .codigo-preview canvas { background:white; padding:6px; border-radius:4px; }
   table.inv-table th { font-size:11px; padding:8px 6px; }
   table.inv-table td { font-size:12px; padding:8px 6px; vertical-align:middle; }
-  .acciones-cell { white-space:nowrap; }
-  .acciones-cell button { padding:3px 8px; font-size:11px; margin-right:2px; }
+  .acciones-cell, .codigos-cell { white-space:nowrap; }
+  .acciones-cell button, .codigos-cell button { padding:3px 8px; font-size:11px; margin-right:2px; }
+  button.xs { padding:2px 6px !important; font-size:10px !important; line-height:1.4; }
+  button.danger-btn { color:#dc3545; border-color:#dc3545; }
+  button.danger-btn:hover { background:#dc3545; color:white; }
   @media print {
     .topbar, .filters-row, .acciones-cell, #sp-statusbar, .actions, .modal-overlay { display:none !important; }
     body { background:white; }
@@ -119,6 +122,7 @@
           <th>Descripción</th>
           <th>Marca</th>
           <th>Modelo</th>
+          <th>Serie</th>
           <th>Color</th>
           <th>Aplicación</th>
           <th>Ubicación</th>
@@ -126,6 +130,9 @@
           <th style="text-align:center">Cant.</th>
           <th>UM</th>
           <th>Estado</th>
+          <th>CB 1</th>
+          <th>CB 2</th>
+          <th>QR / Códigos</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -373,6 +380,8 @@ function render(){
     const fotoCell = i.foto
       ? `<img src="${i.foto}" class="foto-thumb" onclick="verFotoGrande('${esc(i.foto)}')" alt="">`
       : '<span class="foto-placeholder">📷</span>';
+    const cb1 = i.codigoBarras1 || ('*' + (i.codigo||'') + '*');
+    const cb2 = i.codigoBarras2 || i.codigo || '';
     return `<tr>
       <td><span class="codigo-cell">${esc(i.codigo||'-')}</span></td>
       <td>${fotoCell}</td>
@@ -380,6 +389,7 @@ function render(){
       <td title="${esc(i.descripcion||'')}">${esc((i.descripcion||'').slice(0,50))}${(i.descripcion||'').length>50?'…':''}</td>
       <td>${esc(i.marca||'')}</td>
       <td>${esc(i.modelo||'')}</td>
+      <td><span class="codigo-cell">${esc(i.serie||'')}</span></td>
       <td>${esc(i.color||'')}</td>
       <td>${esc(i.aplicacion||'')}</td>
       <td>${esc(i.ubicacion||'')}</td>
@@ -387,8 +397,15 @@ function render(){
       <td style="text-align:center">${i.cantidad||0}</td>
       <td>${esc(i.unidad||'UND')}</td>
       <td><span class="badge-estado ${cls}">${esc(estado)}</span></td>
+      <td><span class="codigo-cell" title="${esc(cb1)}">${esc(cb1)}</span></td>
+      <td><span class="codigo-cell" title="${esc(cb2)}">${esc(cb2)}</span></td>
+      <td class="codigos-cell">
+        <button class="ghost xs" onclick="mostrarCodigos('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Ver barras y QR">📊</button>
+        <button class="ghost xs" onclick="imprimirEtiquetaItem('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Imprimir etiqueta">🏷</button>
+      </td>
       <td class="acciones-cell">
-        <button class="ghost" onclick="editar('${i.id}')">Editar</button>
+        <button class="ghost xs" onclick="editar('${i.id}')">✏ Editar</button>
+        <button class="ghost xs danger-btn" onclick="eliminarItem('${i.id}')" title="Eliminar">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -555,6 +572,97 @@ function actualizarCodigosVisuales(){
       }
     }
   } catch(e){ console.warn(e); }
+}
+
+// =========== Acciones inline en filas ===========
+function eliminarItem(id){
+  const item = DB.inventario.get(id);
+  if (!item) return;
+  if (!confirm(`¿Eliminar el ítem "${item.codigo}" (${item.descripcion||item.herramienta||'-'})?\n\nEsta acción no se puede deshacer.`)) return;
+  DB.inventario.remove(id);
+  toast('Ítem eliminado', 'success');
+  render();
+}
+
+function mostrarCodigos(codigo, descripcion){
+  if (!codigo){ toast('Sin código', 'err'); return; }
+  const w = window.open('', '_blank', 'width=520,height=480');
+  w.document.write(`<!doctype html><html><head><title>${codigo}</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>
+    <style>
+      body { font-family: Arial, sans-serif; padding:24px; text-align:center; background:#f9fafb; }
+      h2 { margin:6px 0; color:#1d3557; }
+      .codigo { font-family:'Courier New', monospace; font-size:24px; font-weight:700; color:#0353a4; margin:8px 0; }
+      .desc { color:#374151; font-size:14px; margin-bottom:18px; }
+      .visual { background:white; border:1px solid #e5e7eb; border-radius:8px; padding:18px; margin:14px auto; max-width:380px; }
+      .label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+      svg, canvas { display:block; margin:0 auto; }
+      button { margin-top:14px; padding:8px 16px; background:#0353a4; color:white; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+      button:hover { background:#0466c8; }
+      .info { font-size:11px; color:#6b7280; margin-top:14px; }
+    </style></head><body>
+    <h2>📦 Inventario CONSITEC</h2>
+    <div class="codigo">${codigo}</div>
+    <div class="desc">${descripcion||''}</div>
+    <div class="visual">
+      <div class="label">Código de barras (CB1: *${codigo}*)</div>
+      <svg id="bc"></svg>
+    </div>
+    <div class="visual">
+      <div class="label">Código QR</div>
+      <canvas id="qr"></canvas>
+    </div>
+    <button onclick="window.print()">🖨 Imprimir</button>
+    <button onclick="window.close()" style="background:#6b7280">Cerrar</button>
+    <div class="info">Escanea el QR con cualquier celular para abrir la ficha del ítem.</div>
+    <script>
+      JsBarcode('#bc', '${codigo}', { format:'CODE128', width:2, height:60, fontSize:14, margin:8 });
+      const qr = qrcode(0, 'M'); qr.addData('${codigo}'); qr.make();
+      const cv = document.getElementById('qr'); cv.width=160; cv.height=160;
+      const ctx = cv.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,160,160);
+      const mc = qr.getModuleCount(), ts = 160/mc;
+      ctx.fillStyle='black';
+      for(let r=0;r<mc;r++) for(let c=0;c<mc;c++) if(qr.isDark(r,c)) ctx.fillRect(c*ts, r*ts, ts, ts);
+    <\/script>
+    </body></html>`);
+}
+
+function imprimirEtiquetaItem(codigo, descripcion){
+  if (!codigo){ toast('Sin código', 'err'); return; }
+  const w = window.open('', '_blank', 'width=400,height=300');
+  w.document.write(`<!doctype html><html><head><title>Etiqueta ${codigo}</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>
+    <style>
+      @page { size: 80mm 50mm; margin: 0; }
+      body { font-family: Arial; margin:0; padding:6px; }
+      .etiqueta { border:1px dashed #999; padding:8px; text-align:center; width:72mm; }
+      .etiqueta h2 { margin:2px 0; font-size:14px; }
+      .etiqueta p { margin:2px 0; font-size:9px; color:#444; }
+      .codigos { display:flex; justify-content:space-around; align-items:center; gap:8px; margin-top:4px; }
+      @media print { .no-print{display:none} }
+    </style></head><body>
+    <div class="etiqueta">
+      <h2>${codigo}</h2>
+      ${descripcion ? '<p>'+descripcion.slice(0,60)+'</p>' : ''}
+      <svg id="bc"></svg>
+      <div class="codigos">
+        <canvas id="qr"></canvas>
+      </div>
+      <p style="font-size:7px;color:#888;margin-top:4px">CONSITEC / Poderosa</p>
+    </div>
+    <p class="no-print" style="text-align:center;margin-top:8px"><button onclick="window.print()">🖨 Imprimir</button></p>
+    <script>
+      JsBarcode('#bc', '${codigo}', { format:'CODE128', width:1.2, height:28, fontSize:9, margin:2 });
+      const qr = qrcode(0, 'M'); qr.addData('${codigo}'); qr.make();
+      const cv = document.getElementById('qr'); cv.width=60; cv.height=60;
+      const ctx = cv.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,60,60);
+      const mc = qr.getModuleCount(), ts = 60/mc;
+      ctx.fillStyle='black';
+      for(let r=0;r<mc;r++) for(let c=0;c<mc;c++) if(qr.isDark(r,c)) ctx.fillRect(c*ts, r*ts, ts, ts);
+    <\/script>
+    </body></html>`);
 }
 
 function imprimirEtiqueta(){
