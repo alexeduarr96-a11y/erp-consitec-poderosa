@@ -17,6 +17,7 @@ const SPAdapter = (function(){
   let initialized = false;
 
   // Campos del item SP que NO debemos enviar al hacer update/insert
+  // Incluye tanto los nombres PascalCase originales de SP como los camelCase post-deserialize.
   const SP_INTERNAL_FIELDS = new Set([
     'spId','id','createdAt','updatedAt','@odata.etag',
     'Title','LinkTitle','LinkTitleNoMenu',
@@ -33,6 +34,11 @@ const SPAdapter = (function(){
     'AccessPolicy','AppAuthor','AppEditor','SMTotalSize',
     'SMLastModifiedDate','SMTotalFileStreamSize','SMTotalFileCount',
     'ParentVersionString','ParentLeafName',
+    // camelCase tras deserialize — read-only en SP
+    'attachments','contentType','contentTypeId',
+    'authorLookupId','editorLookupId','appAuthorLookupId','appEditorLookupId',
+    'attachmentsLookupId','linkTitle','linkTitleNoMenu',
+    'fileLeafRef','fileRef','fileDirRef',
   ]);
 
   // Campos cuyo valor es array/objeto y se almacena como JSON-string
@@ -254,6 +260,9 @@ const SPAdapter = (function(){
 
     Object.entries(obj || {}).forEach(([key, value]) => {
       if(SP_INTERNAL_FIELDS.has(key)) return;
+      // Filtro genérico para cualquier campo de lookup que llegue tras deserializar
+      // (Author, Editor, ContentType, etc.) — son read-only en SP.
+      if(key.endsWith('LookupId')) return;
       if(value === undefined) return;
       // El UUID local 'id' viaja a SP como 'LocalId' para preservar referencias entre usuarios
       if(key === 'id'){
