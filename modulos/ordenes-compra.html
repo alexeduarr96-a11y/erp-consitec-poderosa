@@ -103,6 +103,9 @@
 .item-row label{margin:0;font-size:9.5px;color:var(--muted)}
 .item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
 
+/* Clone del header — invisible en pantalla, solo se muestra al imprimir */
+#print-header-clone { display: none; }
+
 /* ============================================================
    ===== IMPRESIÓN — Hoja A4 limpia, basado en patrón PROAUTOTEC =====
    ============================================================ */
@@ -217,22 +220,47 @@
     margin-top: 14px;
   }
 
-  /* === ENCABEZADO FIJO EN CADA PÁGINA ===
-     position: fixed con top:0 lo coloca al inicio del papel (dentro del margen reservado por @page).
-     Chrome/Edge repiten elementos position:fixed en cada página al imprimir. */
+  /* === ENCABEZADO FIJO EN CADA PÁGINA (vía clone en body) ===
+     imprimirOC() clona el .head a un #print-header-clone hijo de <body>.
+     position: fixed sobre un elemento top-level lo replica en cada página de print. */
   .sheet .head {
+    display: none !important;     /* ocultar el original dentro de .sheet */
+  }
+  #print-header-clone {
+    display: block !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     margin: 0 !important;
-    padding: 6mm 14mm 3mm !important;
+    padding: 5mm 14mm 3mm !important;
     background: #fff !important;
     border-bottom: 0.75pt solid #333 !important;
-    z-index: 1000;
+    z-index: 9999;
     height: 24mm;
     box-sizing: border-box;
+    display: grid !important;
+    grid-template-columns: 130px 1fr;
+    gap: 14px;
+    align-items: flex-start;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    color: #000;
   }
+  #print-header-clone .logo img {
+    max-width: 120px;
+    max-height: 60px;
+  }
+  #print-header-clone .empresa-info {
+    font-size: 9pt;
+    line-height: 1.5;
+  }
+  #print-header-clone .empresa-info .row-info {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 4px;
+  }
+  #print-header-clone .empresa-info b { font-weight: 700; }
 
   /* === COMPACTAR OBSERVACIONES LEGALES === */
   .sheet .obs-legales {
@@ -1073,17 +1101,30 @@ function eliminarOC(id){
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-// Imprimir/PDF — fija el nombre del archivo al código de OC
+// Imprimir/PDF — fija el nombre del archivo + clona el header fuera del .sheet
+// para que se repita en cada página sin solapar contenido.
 function imprimirOC(){
   const codigo = (state.codigo || 'SIN-CODIGO').replace(/[^\w.-]/g, '_');
   const tituloOriginal = document.title;
   document.title = 'OC_' + codigo;
-  // pequeño delay para que el navegador tome el title nuevo en el diálogo Guardar como
+
+  // Clonar el .head del .sheet y ponerlo como elemento independiente en body
+  // (Chrome/Edge replican elementos position:fixed top-level en CADA página de print)
+  const headOriginal = document.querySelector('.sheet .head');
+  let clone = null;
+  if (headOriginal){
+    clone = headOriginal.cloneNode(true);
+    clone.id = 'print-header-clone';
+    document.body.appendChild(clone);
+  }
+
   setTimeout(() => {
     window.print();
-    // restaurar título tras un breve momento
-    setTimeout(() => { document.title = tituloOriginal; }, 1500);
-  }, 50);
+    setTimeout(() => {
+      document.title = tituloOriginal;
+      document.getElementById('print-header-clone')?.remove();
+    }, 1500);
+  }, 80);
 }
 
 init();
