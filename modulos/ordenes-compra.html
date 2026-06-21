@@ -854,23 +854,34 @@ function cargarLista(){
     tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay OCs guardadas.</td></tr>`;
   } else {
     tbody.innerHTML = items.map(o => {
-      const total = o.totales?.total || 0;
-      const pagado = (o.pagos||[]).reduce((s,p)=>s+(p.monto||0),0);
-      const saldo = total - pagado;
+      // total: el OC puede venir con .totales.total (formato viejo) o .total flat (formato migrado)
+      const total = o.totales?.total ?? o.total ?? 0;
+      const pagado = (o.pagos||[]).reduce((s,p)=>s+(p.monto||0),0) || o.pagado || 0;
+      const saldo = o.saldo ?? Math.max(0, total - pagado);
+      // parsear fecha que puede venir como YYYY-MM-DD o como ISO YYYY-MM-DDT...Z
+      function parseFecha(f){
+        if (!f) return null;
+        const s = String(f);
+        if (/T/.test(s)) return new Date(s); // ya es ISO
+        return new Date(s + 'T00:00:00');
+      }
       const hoy = new Date(); hoy.setHours(0,0,0,0);
-      const vence = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00') : null;
-      let est = 'pendiente';
-      if(saldo <= 0.01) est = 'pagada';
-      else if(pagado > 0) est = 'pagada_parcial';
-      if(est !== 'pagada' && vence && vence < hoy) est = 'vencida';
+      const vence = parseFecha(o.fechaVencimiento);
+      // Estado: respetar lo guardado si existe; si no, calcular
+      let est = o.estado || 'pendiente';
+      if (est === 'emitida' && saldo <= 0.01 && total > 0) est = 'pagada';
+      else if (est === 'emitida' && pagado > 0) est = 'pagada_parcial';
+      if (est !== 'pagada' && vence && !isNaN(vence) && vence < hoy && saldo > 0.01) est = 'vencida';
       const monSym = (o.moneda||'PEN')==='USD'?'US$':'S/';
-      const venceFmt = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const venceFmt = (vence && !isNaN(vence)) ? vence.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const emit = parseFecha(o.fecha);
+      const emitFmt = (emit && !isNaN(emit)) ? emit.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : fmtDate(o.updatedAt);
       return `
         <tr>
           <td><b>${escapeHtml(o.codigo)}</b></td>
           <td><small>${escapeHtml(o.proveedorRazon||'')}</small></td>
           <td><small>${escapeHtml((o.proyectoTexto||o.proyectoNombre||'—').slice(0,30))}</small></td>
-          <td><small>${fmtDate(o.updatedAt)}</small></td>
+          <td><small>${emitFmt}</small></td>
           <td><small>${venceFmt}</small></td>
           <td class="num">${monSym} ${fmtNum(total,2)}</td>
           <td class="num text-success">${monSym} ${fmtNum(pagado,2)}</td>
