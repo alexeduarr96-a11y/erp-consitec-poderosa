@@ -284,6 +284,13 @@ const SPAdapter = (function(){
       if(skipSet && skipSet.has(key)) return;
       // Renombre explícito (por lista o global) o regla camel→Pascal
       const spKey = renameToSP(listaNombre, key) || (key.charAt(0).toUpperCase() + key.slice(1));
+      // SP rechaza string vacío "" en columnas DateTime. Si la key es una fecha y value es '', enviar null.
+      // Si tiene formato YYYY-MM-DD sin hora, convertir a ISO completo.
+      const isDateKey = /fecha/i.test(key) || key === 'createdAt' || key === 'updatedAt';
+      if(isDateKey && typeof value === 'string'){
+        if(value === '') value = null;
+        else if(/^\d{4}-\d{2}-\d{2}$/.test(value)) value = value + 'T00:00:00Z';
+      }
       if(value !== null && typeof value === 'object' && !(value instanceof Date)){
         fields[spKey] = JSON.stringify(value);
       } else if(typeof value === 'boolean'){
