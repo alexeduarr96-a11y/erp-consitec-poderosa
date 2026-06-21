@@ -102,6 +102,95 @@
 .item-row .grid-it{display:grid;grid-template-columns:90px 65px 55px 75px 75px;gap:3px;margin-top:3px}
 .item-row label{margin:0;font-size:9.5px;color:var(--muted)}
 .item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
+
+/* ============================================================
+   ===== IMPRESIÓN — Hoja A4 limpia, solo la OC visible =====
+   ============================================================ */
+@media print {
+  /* Forzar colores reales (algunos navegadores no imprimen colores de fondo por defecto) */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* Ocultar TODA la UI del editor y navegación */
+  header.topbar,
+  #sp-statusbar,
+  .page-title,
+  .oc-layout > .editor,
+  .actions,
+  .toolbar,
+  .modal-overlay,
+  nav,
+  button {
+    display: none !important;
+  }
+  /* La columna preview ocupa toda la página */
+  main.container,
+  .container {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .oc-layout {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+  }
+  #preview-wrap {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+  /* La hoja ya está dimensionada en mm para A4 - quitar sombras y centrarla */
+  .sheet {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    width: 210mm !important;
+    min-height: auto !important;
+    padding: 10mm 12mm !important;
+    page-break-after: always;
+  }
+  .sheet:last-child {
+    page-break-after: auto;
+  }
+  /* Tabla de items: repetir thead en cada página y evitar cortar filas */
+  .sheet table.items thead {
+    display: table-header-group;
+  }
+  .sheet table.items tfoot {
+    display: table-footer-group;
+  }
+  .sheet table.items tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  /* Bloques que no deben partirse en mitad de página */
+  .sheet .totales,
+  .sheet .son,
+  .sheet .observacion-block,
+  .sheet .firma,
+  .sheet .facturar-block {
+    page-break-inside: avoid;
+  }
+  .sheet .firma {
+    page-break-before: avoid;
+  }
+}
 .item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
 
 .add-btn{background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:5px;margin-top:5px;font-size:11.5px;font-weight:500}
