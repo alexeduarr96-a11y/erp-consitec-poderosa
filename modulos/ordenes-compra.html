@@ -114,10 +114,10 @@
     color-adjust: exact !important;
   }
 
-  /* Página A4 con pequeño margen superior */
+  /* Página A4: reservar 28mm arriba para el header fijo (logo + datos empresa) */
   @page {
     size: A4;
-    margin: 10mm 0 0 0;
+    margin: 28mm 0 8mm 0;
   }
 
   html, body {
@@ -163,14 +163,15 @@
     box-shadow: none !important;
   }
 
-  /* La HOJA: altura auto para que fluya en multi-página */
+  /* La HOJA: altura auto para que fluya en multi-página.
+     Padding interno horizontal solo — el vertical lo da @page margin */
   .sheet {
     box-shadow: none !important;
     margin: 0 !important;
     width: 210mm !important;
     height: auto !important;
-    min-height: calc(297mm - 10mm) !important;
-    padding: 6mm 14mm 22mm !important;
+    min-height: auto !important;
+    padding: 0 14mm !important;
     overflow: visible !important;
     page-break-inside: auto !important;
     break-inside: auto !important;
@@ -217,12 +218,11 @@
   }
 
   /* === ENCABEZADO FIJO EN CADA PÁGINA ===
-     Sacar el .head del flujo y fijarlo en la parte superior.
-     Se aplica solo a la PRIMERA hoja (.sheet > .head) que es la que tiene logo+empresa.
-     Para hojas siguientes, position: fixed lo replica visualmente. */
+     Va dentro del margen superior reservado por @page (28mm).
+     position: fixed lo replica visualmente en cada hoja. */
   .sheet .head {
     position: fixed !important;
-    top: 0 !important;
+    top: -23mm !important;       /* compensar el margin-top de 28mm de @page para que se vea arriba */
     left: 0 !important;
     right: 0 !important;
     margin: 0 !important;
@@ -230,13 +230,10 @@
     background: #fff !important;
     border-bottom: 0.75pt solid #333 !important;
     z-index: 1000;
-  }
-  /* Dejar espacio arriba en la hoja para que el header fijo no tape el contenido */
-  .sheet {
-    padding-top: 28mm !important;
+    min-height: 22mm;
   }
 
-  /* === COMPACTAR OBSERVACIONES LEGALES para que entren en 1 hoja extra === */
+  /* === COMPACTAR OBSERVACIONES LEGALES === */
   .sheet .obs-legales {
     font-size: 7.5pt !important;
     line-height: 1.3 !important;
@@ -245,8 +242,15 @@
     font-size: 8pt !important;
     margin-bottom: 3px !important;
   }
+  /* Permitir que los items se corten entre puntos (no avoid) — pero cada punto entero se mantiene */
+  .sheet .obs-legales ol {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
   .sheet .obs-legales ol li {
     margin-bottom: 2px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 .item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
