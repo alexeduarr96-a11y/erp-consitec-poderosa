@@ -11,10 +11,19 @@
   .filters-row label { font-size:11px; color:#6b7280; text-transform:uppercase; }
   .filters-row input, .filters-row select { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:13px; }
   .badge-estado { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; display:inline-block; }
-  .badge-estado.bueno    { background:#dcfce7; color:#065f46; }
-  .badge-estado.regular  { background:#fef3c7; color:#92400e; }
-  .badge-estado.malo     { background:#fee2e2; color:#991b1b; }
-  .badge-estado.baja     { background:#e5e7eb; color:#4b5563; }
+  .badge-estado.bueno       { background:#dcfce7; color:#065f46; }
+  .badge-estado.nuevo       { background:#dbeafe; color:#1e40af; }
+  .badge-estado.regular     { background:#fef3c7; color:#92400e; }
+  .badge-estado.inoperativo { background:#fee2e2; color:#991b1b; }
+  .badge-estado.dañado     { background:#fee2e2; color:#991b1b; }
+  .badge-estado.malo        { background:#fee2e2; color:#991b1b; }
+  .badge-estado.baja        { background:#e5e7eb; color:#4b5563; }
+  .badge-cat                { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; display:inline-block; }
+  .badge-cat.equipos        { background:#fce7f3; color:#9d174d; }
+  .badge-cat.herramientas   { background:#dbeafe; color:#1e40af; }
+  .badge-cat.consumibles    { background:#ede9fe; color:#5b21b6; }
+  .badge-cat.materiales     { background:#dcfce7; color:#065f46; }
+  .badge-cat.epp            { background:#fef3c7; color:#92400e; }
   .codigo-cell { font-family: 'Courier New', monospace; font-weight:600; color:#1d3557; font-size:12px; }
   .foto-thumb { width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #d1d5db; cursor:pointer; }
   .foto-placeholder { width:40px; height:40px; background:#f3f4f6; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; color:#9ca3af; font-size:18px; }
@@ -78,7 +87,6 @@
     <div class="actions">
       <button class="ghost sm" onclick="imprimirInventario()">🖨 Imprimir</button>
       <button class="ghost sm" onclick="exportarCSV()">⬇ CSV</button>
-      <button class="ghost sm" onclick="importarVijus()">📥 Importar Vijus (Excel)</button>
       <button class="primary" onclick="abrirNuevo()">+ Nuevo ítem</button>
     </div>
   </div>
@@ -93,16 +101,25 @@
       <select id="f-unidad" onchange="render()"><option value="">Todas</option></select>
     </div>
     <div>
-      <label>Herramienta / Tipo</label>
-      <select id="f-herramienta" onchange="render()"><option value="">Todas</option></select>
+      <label>Categoría</label>
+      <select id="f-categoria" onchange="render()">
+        <option value="">Todas</option>
+        <option value="Equipos">Equipos</option>
+        <option value="Herramientas">Herramientas</option>
+        <option value="Consumibles">Consumibles</option>
+        <option value="Materiales">Materiales</option>
+        <option value="EPP">EPP</option>
+      </select>
     </div>
     <div>
       <label>Estado</label>
       <select id="f-estado" onchange="render()">
         <option value="">Todos</option>
+        <option value="Nuevo">Nuevo</option>
         <option value="Bueno">Bueno</option>
         <option value="Regular">Regular</option>
-        <option value="Malo">Malo</option>
+        <option value="Inoperativo">Inoperativo</option>
+        <option value="Dañado">Dañado</option>
         <option value="Baja">Baja</option>
       </select>
     </div>
@@ -116,22 +133,18 @@
     <table class="inv-table">
       <thead>
         <tr>
-          <th>Código</th>
+          <th>Código Patrimonial</th>
           <th>Foto</th>
-          <th>Herramienta</th>
+          <th>Categoría</th>
           <th>Descripción</th>
           <th>Marca</th>
           <th>Modelo</th>
-          <th>Serie</th>
-          <th>Color</th>
-          <th>Aplicación</th>
           <th>Ubicación</th>
-          <th>Unidad</th>
+          <th>Unidad Minera</th>
           <th style="text-align:center">Cant.</th>
           <th>UM</th>
           <th>Estado</th>
-          <th>CB 1</th>
-          <th>CB 2</th>
+          <th>Observaciones</th>
           <th>QR / Códigos</th>
           <th>Acciones</th>
         </tr>
@@ -168,14 +181,20 @@
           </datalist>
         </div>
         <div>
-          <label>Herramienta / Tipo *</label>
-          <input id="f-herramienta" list="dl-herramientas" placeholder="ej. NIVEL, DISCO DE CORTE…">
-          <datalist id="dl-herramientas"></datalist>
+          <label>Categoría *</label>
+          <select id="f-categoria-modal">
+            <option value="">— Selecciona —</option>
+            <option value="Equipos">Equipos</option>
+            <option value="Herramientas">Herramientas</option>
+            <option value="Consumibles">Consumibles</option>
+            <option value="Materiales">Materiales</option>
+            <option value="EPP">EPP</option>
+          </select>
         </div>
       </div>
 
-      <label>Descripción</label>
-      <textarea id="f-descripcion" rows="2" placeholder="ej. Nivel de aluminio con imán 12&quot;"></textarea>
+      <label>Descripción (Título) *</label>
+      <textarea id="f-descripcion" rows="2" placeholder="ej. Pistola de pintar inalámbrico"></textarea>
 
       <div class="row">
         <div>
@@ -188,26 +207,8 @@
           <input id="f-modelo">
         </div>
         <div>
-          <label>Serie</label>
-          <input id="f-serie">
-        </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label>Color</label>
-          <input id="f-color">
-        </div>
-        <div>
-          <label>Aplicación</label>
-          <input id="f-aplicacion" list="dl-aplicaciones" placeholder="ej. MECÁNICA, ELÉCTRICA">
-          <datalist id="dl-aplicaciones">
-            <option value="MECÁNICA"><option value="ELÉCTRICA"><option value="INSTRUMENTACIÓN"><option value="SOLDADURA"><option value="GENERAL">
-          </datalist>
-        </div>
-        <div>
           <label>Ubicación</label>
-          <input id="f-ubicacion-modal" list="dl-ubicaciones" placeholder="ej. Baul azul, Caja, Almacén central">
+          <input id="f-ubicacion-modal" list="dl-ubicaciones" placeholder="ej. UM Vijus, Almacén central">
           <datalist id="dl-ubicaciones"></datalist>
         </div>
       </div>
@@ -220,20 +221,23 @@
         <div>
           <label>Unidad</label>
           <select id="f-unidad-modal">
-            <option value="UND">UND</option>
-            <option value="PQT">PQT</option>
-            <option value="KG">KG</option>
-            <option value="M">M</option>
-            <option value="GAL">GAL</option>
-            <option value="LT">LT</option>
+            <option value="Und">Und</option>
+            <option value="Pqt">Pqt</option>
+            <option value="Kg">Kg</option>
+            <option value="Mts">Mts</option>
+            <option value="Rollo">Rollo</option>
+            <option value="Gal">Gal</option>
+            <option value="Lt">Lt</option>
           </select>
         </div>
         <div>
           <label>Estado</label>
           <select id="f-estado-modal">
+            <option value="Nuevo">Nuevo</option>
             <option value="Bueno">Bueno</option>
             <option value="Regular">Regular</option>
-            <option value="Malo">Malo</option>
+            <option value="Inoperativo">Inoperativo</option>
+            <option value="Dañado">Dañado</option>
             <option value="Baja">De baja</option>
           </select>
         </div>
@@ -246,8 +250,8 @@
       </div>
       <img id="foto-preview" style="display:none">
 
-      <label style="margin-top:14px">Notas</label>
-      <textarea id="f-notas" rows="2"></textarea>
+      <label style="margin-top:14px">Observaciones</label>
+      <textarea id="f-notas" rows="2" placeholder="ej. Sin guardas, Falta cargador, etc."></textarea>
 
       <!-- Vista previa de código de barras y QR -->
       <h4 style="margin-top:18px; margin-bottom:6px; font-size:13px; color:#374151;">Código de barras y QR (auto)</h4>
@@ -294,14 +298,11 @@ let fotoBase64 = '';
 function poblarFiltros(){
   const items = DB.inventario.list();
   const unidades = [...new Set(items.map(i => i.unidadMinera).filter(Boolean))].sort();
-  const herramientas = [...new Set(items.map(i => i.herramienta).filter(Boolean))].sort();
   const ubicaciones = [...new Set(items.map(i => i.ubicacion).filter(Boolean))].sort();
   const marcas = [...new Set(items.map(i => i.marca).filter(Boolean))].sort();
 
   rellenarSelect('f-unidad', unidades);
-  rellenarSelect('f-herramienta', herramientas);
   rellenarSelect('f-ubicacion', ubicaciones);
-  rellenarDatalist('dl-herramientas', herramientas);
   rellenarDatalist('dl-ubicaciones', ubicaciones);
   rellenarDatalist('dl-marcas', marcas);
 }
@@ -346,18 +347,18 @@ function render(){
   poblarFiltros();
   const q = (document.getElementById('q').value || '').toLowerCase();
   const fUnidad = document.getElementById('f-unidad').value;
-  const fHerr = document.getElementById('f-herramienta').value;
+  const fCat = document.getElementById('f-categoria')?.value || '';
   const fEst = document.getElementById('f-estado').value;
   const fUbic = document.getElementById('f-ubicacion').value;
 
   let items = DB.inventario.list();
   items = items.filter(i => {
     if (fUnidad && i.unidadMinera !== fUnidad) return false;
-    if (fHerr && i.herramienta !== fHerr) return false;
+    if (fCat && (i.categoria || i.herramienta) !== fCat) return false;
     if (fEst && i.estado !== fEst) return false;
     if (fUbic && i.ubicacion !== fUbic) return false;
     if (q){
-      const hay = [i.codigo, i.descripcion, i.marca, i.modelo, i.herramienta, i.serie]
+      const hay = [i.codigo, i.descripcion, i.marca, i.modelo, i.categoria, i.herramienta, i.notas]
         .filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
@@ -374,37 +375,37 @@ function render(){
   document.getElementById('empty-msg').style.display = 'none';
   tbody.innerHTML = items.map(i => {
     const estado = i.estado || 'Bueno';
-    const cls = estado.toLowerCase() === 'bueno' ? 'bueno'
-              : estado.toLowerCase() === 'regular' ? 'regular'
-              : estado.toLowerCase() === 'baja' ? 'baja' : 'malo';
+    const est = estado.toLowerCase();
+    const cls = est === 'bueno' ? 'bueno'
+              : est === 'nuevo' ? 'nuevo'
+              : est === 'regular' ? 'regular'
+              : est === 'inoperativo' ? 'inoperativo'
+              : est === 'dañado' || est === 'danado' ? 'dañado'
+              : est === 'baja' ? 'baja' : 'malo';
     const fotoCell = i.foto
       ? `<img src="${i.foto}" class="foto-thumb" onclick="verFotoGrande('${esc(i.foto)}')" alt="">`
       : '<span class="foto-placeholder">📷</span>';
-    const cb1 = i.codigoBarras1 || ('*' + (i.codigo||'') + '*');
-    const cb2 = i.codigoBarras2 || i.codigo || '';
+    const cat = i.categoria || i.herramienta || '';
+    const catCls = (cat||'').toLowerCase().replace(/[áéíóúñ]/g, c => ({'á':'a','é':'e','í':'i','ó':'o','ú':'u','ñ':'n'})[c]);
     return `<tr>
       <td><span class="codigo-cell">${esc(i.codigo||'-')}</span></td>
       <td>${fotoCell}</td>
-      <td>${esc(i.herramienta||'')}</td>
-      <td title="${esc(i.descripcion||'')}">${esc((i.descripcion||'').slice(0,50))}${(i.descripcion||'').length>50?'…':''}</td>
+      <td>${cat ? `<span class="badge-cat ${catCls}">${esc(cat)}</span>` : ''}</td>
+      <td title="${esc(i.descripcion||'')}">${esc((i.descripcion||'').slice(0,60))}${(i.descripcion||'').length>60?'…':''}</td>
       <td>${esc(i.marca||'')}</td>
       <td>${esc(i.modelo||'')}</td>
-      <td><span class="codigo-cell">${esc(i.serie||'')}</span></td>
-      <td>${esc(i.color||'')}</td>
-      <td>${esc(i.aplicacion||'')}</td>
       <td>${esc(i.ubicacion||'')}</td>
       <td><b>${esc(i.unidadMinera||'')}</b></td>
       <td style="text-align:center">${i.cantidad||0}</td>
-      <td>${esc(i.unidad||'UND')}</td>
+      <td>${esc(i.unidad||'Und')}</td>
       <td><span class="badge-estado ${cls}">${esc(estado)}</span></td>
-      <td><span class="codigo-cell" title="${esc(cb1)}">${esc(cb1)}</span></td>
-      <td><span class="codigo-cell" title="${esc(cb2)}">${esc(cb2)}</span></td>
+      <td title="${esc(i.notas||'')}" style="max-width:160px;font-size:11px;color:#6b7280">${esc((i.notas||'').slice(0,40))}${(i.notas||'').length>40?'…':''}</td>
       <td class="codigos-cell">
-        <button class="ghost xs" onclick="mostrarCodigos('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Ver barras y QR">📊</button>
+        <button class="ghost xs" onclick="mostrarCodigos('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Ver barras y QR">📊 QR</button>
         <button class="ghost xs" onclick="imprimirEtiquetaItem('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Imprimir etiqueta">🏷</button>
       </td>
       <td class="acciones-cell">
-        <button class="ghost xs" onclick="editar('${i.id}')">✏ Editar</button>
+        <button class="ghost xs" onclick="editar('${i.id}')">✏</button>
         <button class="ghost xs danger-btn" onclick="eliminarItem('${i.id}')" title="Eliminar">🗑</button>
       </td>
     </tr>`;
@@ -419,12 +420,13 @@ function abrirNuevo(){
   fotoBase64 = '';
   document.getElementById('modal-title').textContent = 'Nuevo ítem de inventario';
   document.getElementById('f-id').value = '';
-  ['f-codigo','f-herramienta','f-descripcion','f-marca','f-modelo','f-serie','f-color','f-aplicacion','f-ubicacion-modal','f-notas','f-serie'].forEach(id => {
+  ['f-codigo','f-descripcion','f-marca','f-modelo','f-ubicacion-modal','f-notas'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value = '';
   });
   document.getElementById('f-unidadMinera').value = 'VIJUS';
+  document.getElementById('f-categoria-modal').value = '';
   document.getElementById('f-cantidad').value = 1;
-  document.getElementById('f-unidad-modal').value = 'UND';
+  document.getElementById('f-unidad-modal').value = 'Und';
   document.getElementById('f-estado-modal').value = 'Bueno';
   document.getElementById('foto-preview').style.display = 'none';
   document.getElementById('btn-quitar-foto').style.display = 'none';
@@ -443,16 +445,13 @@ function editar(id){
   document.getElementById('f-id').value = id;
   document.getElementById('f-codigo').value = item.codigo || '';
   document.getElementById('f-unidadMinera').value = item.unidadMinera || 'VIJUS';
-  document.getElementById('f-herramienta').value = item.herramienta || '';
+  document.getElementById('f-categoria-modal').value = item.categoria || item.herramienta || '';
   document.getElementById('f-descripcion').value = item.descripcion || '';
   document.getElementById('f-marca').value = item.marca || '';
   document.getElementById('f-modelo').value = item.modelo || '';
-  document.getElementById('f-serie').value = item.serie || '';
-  document.getElementById('f-color').value = item.color || '';
-  document.getElementById('f-aplicacion').value = item.aplicacion || '';
   document.getElementById('f-ubicacion-modal').value = item.ubicacion || '';
   document.getElementById('f-cantidad').value = item.cantidad ?? 1;
-  document.getElementById('f-unidad-modal').value = item.unidad || 'UND';
+  document.getElementById('f-unidad-modal').value = item.unidad || 'Und';
   document.getElementById('f-estado-modal').value = item.estado || 'Bueno';
   document.getElementById('f-notas').value = item.notas || '';
   if (item.foto){
@@ -470,23 +469,23 @@ function editar(id){
 
 function guardar(){
   const codigo = document.getElementById('f-codigo').value.trim();
-  const herramienta = document.getElementById('f-herramienta').value.trim();
+  const categoria = document.getElementById('f-categoria-modal').value.trim();
   const unidadMinera = document.getElementById('f-unidadMinera').value.trim();
-  if (!codigo){ toast('El código es obligatorio', 'err'); return; }
-  if (!herramienta){ toast('La herramienta/tipo es obligatorio', 'err'); return; }
+  const descripcion = document.getElementById('f-descripcion').value.trim();
+  if (!codigo){ toast('El código patrimonial es obligatorio', 'err'); return; }
+  if (!categoria){ toast('La categoría es obligatoria', 'err'); return; }
   if (!unidadMinera){ toast('La unidad minera es obligatoria', 'err'); return; }
+  if (!descripcion){ toast('La descripción es obligatoria', 'err'); return; }
 
   const item = {
     id: editingId || undefined,
     codigo,
     unidadMinera: unidadMinera.toUpperCase(),
-    herramienta,
-    descripcion: document.getElementById('f-descripcion').value.trim(),
+    categoria,
+    herramienta: '', // mantengo el campo en SP pero ya no se usa
+    descripcion,
     marca: document.getElementById('f-marca').value.trim(),
     modelo: document.getElementById('f-modelo').value.trim(),
-    serie: document.getElementById('f-serie').value.trim(),
-    color: document.getElementById('f-color').value.trim(),
-    aplicacion: document.getElementById('f-aplicacion').value.trim(),
     ubicacion: document.getElementById('f-ubicacion-modal').value.trim(),
     cantidad: parseFloat(document.getElementById('f-cantidad').value) || 0,
     unidad: document.getElementById('f-unidad-modal').value,
