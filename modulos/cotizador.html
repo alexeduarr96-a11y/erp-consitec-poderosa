@@ -1,0 +1,1736 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cotizador — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+/* ===== Layout del cotizador (panel + preview) ===== */
+.cot-layout{display:grid;grid-template-columns:560px 1fr;gap:14px}
+@media (max-width:1300px){.cot-layout{grid-template-columns:500px 1fr}}
+@media (max-width:1100px){.cot-layout{grid-template-columns:1fr}}
+
+.editor{max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.editor .panel{padding:12px}
+.editor .panel h3{font-size:12px;margin:0 0 8px;padding-bottom:5px}
+.editor label{font-size:10.5px;margin:6px 0 2px}
+.editor input,.editor textarea,.editor select{font-size:12px;padding:5px 7px}
+.input-with-add{display:flex;gap:4px}
+.input-with-add select,.input-with-add input{flex:1}
+.input-with-add button{padding:4px 8px;font-size:11px}
+
+#preview-wrap{background:#8a8a8a;padding:18px;border-radius:5px;overflow:auto;max-height:calc(100vh - 120px)}
+
+/* ===== HOJA A4 (replica EXCEL minimal) ===== */
+.sheet{
+  background:#fff;
+  width:210mm;min-height:297mm;
+  margin:0 auto 14px;
+  padding:10mm 12mm 14mm;
+  box-shadow:0 4px 18px rgba(0,0,0,.25);
+  color:#1a1a1a;
+  font-family:'Arial Narrow','Arial',sans-serif;
+  font-size:9.5pt;
+  line-height:1.35;
+  position:relative;
+}
+
+.sheet .head{
+  display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:14px;
+  margin-bottom:14px;padding-bottom:8px;
+}
+.sheet .head .logo-box{display:flex;align-items:center}
+.sheet .head .logo-box img{max-height:58px;max-width:180px;object-fit:contain}
+.sheet .head .logo-box.right{justify-content:flex-end}
+.sheet .head .titulo{text-align:center}
+.sheet .head .titulo h1{
+  margin:0;color:#1a1a1a;font-family:'Calibri','Arial',sans-serif;
+  font-weight:700;font-size:13pt;letter-spacing:1px;line-height:1;
+}
+
+.sheet .info-tabla{width:100%;border-collapse:collapse;margin:2px 0 10px;font-size:8pt}
+.sheet .info-tabla td{border:none;border-bottom:0.5px solid #bbb;padding:2px 6px;vertical-align:middle;font-style:italic}
+.sheet .info-tabla td.k{background:transparent;color:#333;font-weight:700;width:80px;text-align:right;font-style:normal;font-size:8pt}
+.sheet .info-tabla td.s{background:transparent;width:8px;text-align:center;color:#333;font-style:normal}
+.sheet .info-tabla td.v{font-style:italic;color:#222;font-size:8pt}
+.sheet .info-tabla td.k-right{background:transparent;color:#333;font-weight:700;width:110px;text-align:right;font-style:normal;font-size:8pt}
+
+.sheet .sec-h{
+  display:grid;grid-template-columns:24px 1fr 80px 70px;
+  background:#e8e8e8;color:#3a3d42;font-weight:700;
+  font-size:8.5pt;letter-spacing:.3px;align-items:center;
+  margin-top:10px;border-bottom:1px solid #888;
+}
+.sheet .sec-h .n{padding:3px 0;text-align:center;background:#6e7378;color:#fff;font-weight:700;font-size:8.5pt}
+.sheet .sec-h .t{padding:3px 8px;text-transform:uppercase}
+.sheet .sec-h .lbl{padding:3px 6px;text-align:right;font-size:7.5pt;font-weight:600}
+.sheet .sec-h .val{padding:3px 8px;text-align:right;font-weight:700;font-size:8.5pt}
+
+.sheet .sub-h{
+  display:grid;grid-template-columns:44px 1fr 80px 70px;align-items:center;margin-top:3px;padding:2px 0;
+  font-style:italic;font-size:8pt;color:#333;border-bottom:0.5px solid #ccc;
+}
+.sheet .sub-h .n{padding:1px 0 1px 14px;text-align:left;font-style:italic}
+.sheet .sub-h .t{padding:1px 8px;text-transform:uppercase;font-style:italic;letter-spacing:.3px}
+.sheet .sub-h .lbl{padding:1px 6px;text-align:right;font-style:italic;font-size:7.5pt;color:#555}
+.sheet .sub-h .val{padding:1px 8px;text-align:right;font-style:italic;font-weight:600;font-size:8pt;color:#222}
+
+.sheet .alcance-title{padding:6px 0 2px 24px;font-weight:700;font-size:8pt;color:#333;margin-top:6px}
+.sheet .alcance-list{padding:0 8px 0 48px;font-size:8pt;margin:0;list-style:none;font-style:italic;color:#222}
+.sheet .alcance-list li{position:relative;padding:0.5px 0}
+.sheet .alcance-list li:before{content:'-';position:absolute;left:-12px;color:#333;font-style:normal}
+
+.sheet .recursos-titulo{padding:6px 0 2px 24px;font-weight:700;color:#333;font-size:8pt;letter-spacing:.3px}
+
+.sheet .recursos-h{
+  display:grid;grid-template-columns:44px 1fr 80px 70px;align-items:center;padding:2px 0;margin-top:4px;margin-left:24px;
+  font-style:italic;font-size:8pt;color:#222;border-bottom:0.5px solid #ccc;
+}
+.sheet .recursos-h .num{padding:0 0 0 14px;font-style:italic;color:#333}
+.sheet .recursos-h .titulo{padding:0 8px;font-style:italic}
+.sheet .recursos-h .lbl{padding:0 6px;text-align:right;font-style:italic;font-size:7.5pt;color:#555}
+.sheet .recursos-h .val{padding:0 8px;text-align:right;font-style:italic;font-weight:600;color:#222}
+
+.sheet table.rec{width:calc(100% - 24px);border-collapse:collapse;font-size:7.5pt;margin:1px 0 3px 24px}
+.sheet table.rec th{background:transparent;color:#333;font-weight:700;padding:2px 5px;border:none;border-bottom:0.5px solid #999;font-size:7pt;text-transform:uppercase;text-align:right;font-style:normal}
+.sheet table.rec th.left{text-align:left}
+.sheet table.rec td{border:none;padding:1.5px 5px;vertical-align:middle;font-style:italic;color:#222}
+.sheet table.rec td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sheet table.rec td.cod{text-align:center;color:#666;font-size:7.5pt;width:14px;font-style:normal}
+.sheet table.rec td.desc{padding-left:6px}
+
+.sheet table.mat{width:calc(100% - 24px);border-collapse:collapse;font-size:7.5pt;margin:1px 0 3px 24px}
+.sheet table.mat th{background:transparent;color:#333;padding:2px 5px;border:none;border-bottom:0.5px solid #999;font-size:7pt;text-transform:uppercase;font-weight:700;text-align:right}
+.sheet table.mat th.left{text-align:left}
+.sheet table.mat td{border:none;padding:1.5px 5px;vertical-align:top;font-style:italic;color:#222}
+.sheet table.mat td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sheet table.mat td.cen{text-align:center}
+.sheet table.mat tr.cat td{background:transparent;font-weight:700;color:#333;font-style:italic;padding-top:4px;border-bottom:0.5px solid #ccc}
+
+.sheet .resumen{margin-top:14px;width:42%;margin-left:auto;border-collapse:collapse}
+.sheet .resumen td{padding:2.5px 7px;border:none;border-bottom:0.5px solid #bbb;font-size:8pt}
+.sheet .resumen td.lbl{color:#333;font-weight:700;text-align:right;text-transform:uppercase;font-size:7.5pt;width:60%}
+.sheet .resumen td.val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;width:40%;font-style:italic}
+.sheet .resumen tr.tot td{border-top:1px solid #333;border-bottom:1px solid #333;padding:4px 7px}
+.sheet .resumen tr.tot td.lbl{font-size:8.5pt;color:#000}
+.sheet .resumen tr.tot td.val{color:#000;font-weight:700;font-size:9.5pt;font-style:normal}
+
+.sheet .son{padding:6px 0 0;margin-top:6px;font-size:8pt;font-style:italic;color:#333;font-weight:600}
+
+.sheet .seccion-titulo{color:#333;font-weight:700;font-size:8.5pt;margin-top:12px;border-bottom:0.5px solid #999;padding-bottom:2px;text-transform:uppercase;letter-spacing:.2px}
+.sheet .cond-grid{display:grid;grid-template-columns:130px 1fr;gap:1px 8px;font-size:8pt;margin-top:4px;font-style:italic}
+.sheet .cond-grid .k{color:#333;font-weight:700;font-style:normal}
+.sheet .notas-list{margin:3px 0 0;padding-left:22px;font-size:8pt;line-height:1.35;font-style:italic;color:#222}
+
+.sheet .footer-emp{margin-top:14px;color:#333;padding:6px 0 0;font-size:7.5pt;line-height:1.45;border-top:1px solid #999}
+.sheet .footer-emp b{font-size:8pt;letter-spacing:.3px;color:#000}
+
+.sheet .validez{margin-top:8px;text-align:center;font-weight:700;color:#333;font-size:8.5pt;letter-spacing:.4px;border-top:1px solid #999;border-bottom:1px solid #999;padding:4px;font-style:italic}
+
+/* ===== Editor compacto: items dinámicos ===== */
+.item-row{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;padding:8px 10px;margin-top:8px;font-size:11.5px;transition:background .15s}
+.item-row:hover{background:#f0f1f3}
+.item-row.expanded{background:#fff;border-color:var(--brand2);box-shadow:0 1px 4px rgba(15,23,42,.08)}
+.item-row .top{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.item-row .compact-info{display:flex;align-items:center;gap:8px;font-size:11px;color:#475569;padding:2px 6px;background:rgba(255,255,255,.6);border-radius:3px;margin-left:4px;flex:1}
+.item-row .compact-info .formula{color:#64748b;font-style:italic;font-size:10px}
+.item-row .compact-info .total-mini{font-weight:700;color:#0d6efd;margin-left:auto;padding:2px 6px;background:#dcfce7;border-radius:3px;font-size:11px;color:#166534}
+.item-row .btn-expand{background:transparent;color:var(--brand);border:1px solid var(--gray-mid);border-radius:3px;padding:2px 7px;font-size:11px;cursor:pointer;box-shadow:none}
+.item-row .btn-expand:hover{background:var(--brand-soft);border-color:var(--brand)}
+.item-row .expand-body{margin-top:6px;padding-top:6px;border-top:1px dashed var(--gray-mid)}
+.item-row .top .num{background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600}
+.item-row .top .del{margin-left:auto;background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;padding:0;cursor:pointer;font-size:12px}
+.item-row .grid-rec{display:grid;grid-template-columns:50px 50px 50px 65px;gap:3px}
+.item-row .grid-mat{display:grid;grid-template-columns:90px 45px 55px 65px 50px 50px;gap:3px}
+.item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
+.item-row label{margin:0;font-size:9.5px;color:var(--muted)}
+.item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
+.item-row .internal{background:#fff3cd;border-color:#ffc107;color:#856404}
+
+.add-btn{background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:5px;margin-top:5px;font-size:11.5px;font-weight:500}
+.add-btn:hover{background:var(--brand-soft);color:var(--brand)}
+
+.section-tabs{display:flex;gap:2px;margin-bottom:8px;border-bottom:2px solid var(--brand);flex-wrap:wrap}
+.section-tabs button{background:#f0f0f0;color:#444;border:none;padding:6px 10px;font-size:11px;cursor:pointer;border-radius:3px 3px 0 0}
+.section-tabs button.active{background:var(--brand);color:#fff;font-weight:600}
+
+.totales-mini{font-size:11px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;background:var(--brand-soft);border-radius:3px;margin-top:8px}
+.totales-mini .line-tot{font-weight:700;color:var(--brand);font-size:13px;border-top:1px solid var(--brand);padding-top:3px;margin-top:3px}
+.totales-mini .gan{font-weight:700;color:#1b5e20;font-size:13px;border-top:1px dashed #2e7d32;padding-top:3px;margin-top:6px}
+.totales-mini .gan-pct{font-size:10.5px;color:#388e3c}
+
+.simple-item{background:#fafafa;border-left:3px solid var(--brand);padding:5px 8px;margin-top:4px;display:flex;gap:6px;align-items:center;border-radius:0 3px 3px 0;font-size:11.5px}
+.simple-item input,.simple-item select{flex:1;font-size:11.5px}
+.simple-item .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Cotizador — Oferta Económica</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html" class="active">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2 id="pageTitle">📋 Nueva Cotización</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="cargarLista()">📂 Abrir guardadas</button>
+      <button class="ghost sm" onclick="nuevaCotizacion()">+ Nueva</button>
+      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="success sm" onclick="guardarCotizacion()">💾 Guardar</button>
+      <button class="accent sm" onclick="aprobarYCrearProyecto()" title="Marcar como aprobada y crear proyecto en Operaciones">✅ Aprobar y crear proyecto</button>
+    </div>
+  </div>
+
+  <div class="cot-layout">
+
+    <!-- ============ EDITOR ============ -->
+    <div class="editor no-print">
+
+      <div class="panel">
+        <h3>Datos de cabecera</h3>
+        <label>Código de propuesta</label>
+        <div class="input-with-add">
+          <input id="f-codigo" placeholder="CI26-CMP-OE-061">
+          <button class="ghost" onclick="generarCodigo()" title="Regenerar">↻</button>
+        </div>
+        <div class="row">
+          <div><label>Versión</label><input id="f-version" value="1"></div>
+          <div><label>Fecha</label><input id="f-fecha" type="date"></div>
+        </div>
+        <label>Servicio</label>
+        <textarea id="f-servicio" rows="2" placeholder="SERVICIO DE FABRICACIÓN E INSTALACIÓN DE..."></textarea>
+        <div class="row">
+          <div><label>Plazo de ejecución</label><input id="f-plazo" placeholder="16 Días"></div>
+          <div><label>Versión</label><input id="f-version2" value="1" oninput="state.version=this.value;render()" style="display:none"></div>
+        </div>
+
+        <label>Cliente</label>
+        <select id="f-cliente" onchange="aplicarCliente()"></select>
+
+        <label>Lugar / Área</label>
+        <div class="input-with-add">
+          <select id="f-lugar" onchange="aplicarLugar(this.value)"></select>
+          <button class="ghost" onclick="nuevoLugar()" title="Nuevo lugar">+</button>
+        </div>
+
+        <h3 style="margin-top:14px">Contacto del cliente</h3>
+        <div class="input-with-add">
+          <select id="f-contactoCliente" onchange="aplicarContactoCliente(this.value)"></select>
+          <button class="ghost" onclick="nuevoContactoCliente()" title="Nuevo contacto">+</button>
+        </div>
+        <div id="contacto-preview" style="font-size:10.5px;color:var(--muted);margin-top:4px;padding:5px 8px;background:#f7f8f9;border-radius:3px;display:none"></div>
+
+        <label>Contacto CONSITEC</label>
+        <div class="input-with-add">
+          <select id="f-contactoConsitec" onchange="aplicarContactoConsitec(this.value)"></select>
+          <button class="ghost" onclick="nuevoContactoConsitec()" title="Nuevo contacto Consitec">+</button>
+        </div>
+
+        <label>Logo del cliente (opcional)</label>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input type="file" id="f-logoFile" accept="image/*" onchange="cargarLogoCliente(event)" style="flex:1;font-size:11px">
+          <button class="sm ghost" onclick="quitarLogoCliente()" title="Quitar logo">×</button>
+        </div>
+        <div id="logo-preview" style="margin-top:4px;font-size:10.5px;color:var(--muted)"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Secciones</h3>
+        <div class="section-tabs">
+          <button class="active" data-tab="inicio" onclick="cambiarTab('inicio')">1. INICIO</button>
+          <button data-tab="ejecucion" onclick="cambiarTab('ejecucion')">2. EJECUCIÓN</button>
+          <button data-tab="cierre" onclick="cambiarTab('cierre')">Notas / Resumen</button>
+        </div>
+
+        <!-- TAB: INICIO -->
+        <div id="tab-inicio">
+          <label>Alcance (una línea por punto)</label>
+          <textarea id="f-alcance1" rows="5"></textarea>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+            <span>Items de la sección</span>
+            <button class="ghost sm" onclick="autoCompletarMovEqUI('1')" title="Agrega Mov/Alim/Hab + Eq/Herr/Soft que falten" style="font-size:11px;padding:3px 8px">✨ Completar estándar</button>
+          </h3>
+
+          <h3 style="font-size:11.5px;margin-top:8px">1.1.1 Mano de obra</h3>
+          <div id="lst-mo1"></div>
+          <button class="add-btn" onclick="addRecMO('mo1')">+ Agregar mano de obra</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;align-items:center;gap:6px">
+            <label style="display:inline-flex;align-items:center;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="chk-mov1" checked onchange="toggleSeccion('mov1')" style="width:auto;margin:0 5px 0 0">
+              1.1.2 Movilización y alimentación
+            </label>
+          </h3>
+          <div id="lst-mov1"></div>
+          <button class="add-btn" onclick="addRec('mov1', 'mov')">+ Agregar item</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;align-items:center;gap:6px">
+            <label style="display:inline-flex;align-items:center;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="chk-eq1" checked onchange="toggleSeccion('eq1')" style="width:auto;margin:0 5px 0 0">
+              1.1.3 Equipos, herramientas y software
+            </label>
+          </h3>
+          <div id="lst-eq1"></div>
+          <button class="add-btn" onclick="addRec('eq1', 'eq')">+ Agregar item</button>
+        </div>
+
+        <!-- TAB: EJECUCIÓN -->
+        <div id="tab-ejecucion" class="hidden">
+          <label>Alcance (una línea por punto)</label>
+          <textarea id="f-alcance2" rows="8"></textarea>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+            <span>Items de la sección</span>
+            <button class="ghost sm" onclick="autoCompletarMovEqUI('2')" title="Agrega Mov/Alim/Hab + Eq/Herr/Soft que falten" style="font-size:11px;padding:3px 8px">✨ Completar estándar</button>
+          </h3>
+
+          <h3 style="font-size:11.5px;margin-top:8px">2.1.1 Mano de obra</h3>
+          <div id="lst-mo2"></div>
+          <button class="add-btn" onclick="addRecMO('mo2')">+ Agregar mano de obra</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;align-items:center;gap:6px">
+            <label style="display:inline-flex;align-items:center;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="chk-mov2" checked onchange="toggleSeccion('mov2')" style="width:auto;margin:0 5px 0 0">
+              2.1.2 Movilización, alimentación y habitabilidad
+            </label>
+          </h3>
+          <div id="lst-mov2"></div>
+          <button class="add-btn" onclick="addRec('mov2', 'mov')">+ Agregar item</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px;display:flex;align-items:center;gap:6px">
+            <label style="display:inline-flex;align-items:center;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+              <input type="checkbox" id="chk-eq2" checked onchange="toggleSeccion('eq2')" style="width:auto;margin:0 5px 0 0">
+              2.1.3 Equipos, herramientas y software
+            </label>
+          </h3>
+          <div id="lst-eq2"></div>
+          <button class="add-btn" onclick="addRec('eq2', 'eq')">+ Agregar item</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px">2.1.4 Materiales</h3>
+          <div id="lst-mat"></div>
+          <button class="add-btn" onclick="addMaterial()">+ Agregar material</button>
+          <button class="add-btn" onclick="addCategoriaMat()" style="border-style:dotted">+ Categoría (subtítulo)</button>
+        </div>
+
+        <!-- TAB: CIERRE (notas + condiciones + resumen) -->
+        <div id="tab-cierre" class="hidden">
+          <div class="row">
+            <div><label>Gastos Generales (%)</label><input id="f-gg" type="number" step="0.01" value="20" oninput="render()"></div>
+            <div><label>Utilidad (%)</label><input id="f-util" type="number" step="0.01" value="10" oninput="render()"></div>
+          </div>
+          <div class="row3">
+            <div><label>Modalidad</label><input id="f-modalidad" value="Todo costo"></div>
+            <div><label>Validez</label><input id="f-validez" value="15 Días"></div>
+            <div><label>Forma de pago</label><input id="f-formaPago" value="Factura a 15 días"></div>
+          </div>
+          <label>Método de pago</label>
+          <input id="f-metodoPago" value="Transferencia bancaria">
+
+          <h3 style="font-size:11.5px;margin-top:12px">Notas</h3>
+          <div id="lst-notas"></div>
+          <button class="add-btn" onclick="addItemTexto('notas')">+ Agregar nota</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px">Exclusiones</h3>
+          <div id="lst-excl"></div>
+          <button class="add-btn" onclick="addItemTexto('excl')">+ Agregar exclusión</button>
+
+          <h3 style="font-size:11.5px;margin-top:12px">Responsabilidad del cliente</h3>
+          <div id="lst-resp"></div>
+          <button class="add-btn" onclick="addItemTexto('resp')">+ Agregar responsabilidad</button>
+        </div>
+
+        <div class="totales-mini" id="mini-totales"></div>
+      </div>
+
+    </div>
+
+    <!-- ============ PREVIEW A4 ============ -->
+    <div id="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Modal lista de cotizaciones -->
+<div class="modal-overlay no-print" id="modalLista">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Cotizaciones guardadas</h3>
+      <button class="close" onclick="document.getElementById('modalLista').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <table class="data">
+        <thead><tr><th>Código</th><th>Cliente</th><th>Servicio</th><th>Fecha</th><th class="num">Total</th><th class="num">Ganancia</th><th class="actions">Acción</th></tr></thead>
+        <tbody id="tblLista"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+// =========================================================================
+// ESTADO
+// =========================================================================
+let state = nuevoEstado();
+// Items expandidos en el editor (Set de "grupo-índice")
+let expandedItems = new Set();
+function toggleExpandedItem(grupo, i){
+  const key = grupo + '-' + i;
+  if(expandedItems.has(key)) expandedItems.delete(key);
+  else expandedItems.add(key);
+  renderListas();
+}
+function isExpanded(grupo, i){ return expandedItems.has(grupo + '-' + i); }
+function nuevoEstado(){
+  return {
+    id: null,
+    tipo: 'servicios',
+    codigo: '',
+    version: 1,
+    fecha: todayISO(),
+    servicio: '',
+    lugar: '',
+    plazo: '',
+    clienteId: '',
+    clienteRazon: '',
+    clienteCorto: '',
+    contactoClienteId: '',
+    atencion: '',
+    cargo: '',
+    contacto: '',
+    contactoConsitecId: '',
+    contactoConsitec: '',
+    logoCliente: '',
+    alcance1: 'Coordinar la organización general del servicio.\nEvaluar alternativas técnicas y logísticas.\nFomentar una comunicación fluida con el cliente y las partes interesadas.\nGestionar la asignación y disponibilidad de recursos.\nVerificar la calidad y coherencia de los entregables técnicos y administrativos.',
+    alcance2: '',
+    mo1: [], mov1: [], eq1: [],
+    mo2: [], mov2: [], eq2: [],
+    mat: [],
+    gg: 20, util: 10,
+    modalidad:'Todo costo', validez:'15 Días', formaPago:'Factura a 15 días', metodoPago:'Transferencia bancaria',
+    notas: [],
+    excl: [],
+    resp: [],
+  };
+}
+
+// =========================================================================
+// INIT
+// =========================================================================
+function init(){
+  poblarSelects();
+  // Si llega con ?id=... cargar esa cotización directamente
+  const params = new URLSearchParams(location.search);
+  const idParam = params.get('id');
+  if(idParam){
+    const c = DB.cotizaciones.get(idParam);
+    if(c){
+      state = {...nuevoEstado(), ...c};
+      if(!Array.isArray(state.notas)) state.notas = (state.notas||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+      if(!Array.isArray(state.excl))  state.excl  = (state.exclusiones||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+      if(!Array.isArray(state.resp))  state.resp  = (state.respCliente||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+      state.mat = (state.mat||[]).map(m => m.tipo==='cat'?m:({...m, ganancia: m.ganancia||m.margen||1.3, logistica: m.logistica||1.0}));
+      syncFormDesdeEstado();
+      actualizarPreviewLogo();
+      renderListas();
+      renderListaTextos();
+      render();
+      toast('Cotización cargada: '+state.codigo);
+      return;
+    }
+  }
+  // Seed inicial (solo si está vacío)
+  if(state.mo1.length === 0) state.mo1.push({cargo:'Supervisor de Obra', cantidad:1, dias:0.5, jornada:10, precioHH:68.82});
+  if(state.mov1.length === 0){
+    state.mov1.push(itemFromCat('mov', 'Movilización Terrestre'));
+    state.mov1.push(itemFromCat('mov', 'Alimentación en mina'));
+  }
+  if(state.eq1.length === 0){
+    state.eq1.push(itemFromCat('eq', 'Equipos'));
+    state.eq1.push(itemFromCat('eq', 'Herramientas'));
+    state.eq1.push(itemFromCat('eq', 'Software'));
+  }
+  // Asegurar autoDias en items seed; mov tiene autoCantidad=true por defecto, eq=false
+  ['mov1','mov2'].forEach(g => state[g].forEach(it => {
+    if(it.autoDias === undefined) it.autoDias = true;
+    if(it.autoCantidad === undefined) it.autoCantidad = true;
+  }));
+  ['eq1','eq2'].forEach(g => state[g].forEach(it => {
+    if(it.autoDias === undefined) it.autoDias = true;
+    if(it.autoCantidad === undefined) it.autoCantidad = false;
+  }));
+  if(state.notas.length === 0){
+    DB.catNotas.list().forEach(n => state.notas.push({texto: n.descripcion}));
+  }
+  if(state.resp.length === 0){
+    DB.catResponsabilidades.list().forEach(r => state.resp.push({texto: r.descripcion}));
+  }
+  generarCodigo();
+  syncFormDesdeEstado();
+  actualizarPreviewLogo();
+  // Recalcular auto en ambas secciones al inicializar
+  recalcDiasAuto(1);
+  recalcDiasAuto(2);
+  recalcCantidadAuto(1);
+  recalcCantidadAuto(2);
+  renderListas();
+  renderListaTextos();
+  render();
+}
+
+function itemFromCat(tipo, descripcion){
+  const cat = tipo === 'mov' ? DB.catMovilizacion : DB.catEquipos;
+  const found = cat.list().find(x => x.descripcion === descripcion);
+  return {
+    descripcion: descripcion,
+    cantidad: 1, dias: 0.5, jornada: 10,
+    precioHH: found ? found.precio : 0,
+    autoDias: true,
+  };
+}
+
+function poblarSelects(){
+  // Clientes
+  const selC = document.getElementById('f-cliente');
+  const cls = DB.clientes.list();
+  selC.innerHTML = '<option value="">— Selecciona cliente —</option>' +
+    cls.map(c => `<option value="${c.id}">${escapeHtml(c.razonSocial)}</option>`).join('');
+
+  // Contactos Consitec
+  const selCC = document.getElementById('f-contactoConsitec');
+  const ccs = DB.contactosConsitec.list();
+  selCC.innerHTML = '<option value="">— Selecciona contacto Consitec —</option>' +
+    ccs.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)} ${c.cargo?'('+c.cargo+')':''}</option>`).join('');
+}
+
+function poblarLugaresYContactos(){
+  // Áreas/lugares del cliente actual
+  const c = state.clienteId ? DB.clientes.get(state.clienteId) : null;
+  const selL = document.getElementById('f-lugar');
+  const areas = (c && c.areas) ? c.areas : [];
+  selL.innerHTML = '<option value="">— Selecciona o agrega lugar —</option>' +
+    areas.map(a => `<option value="${escapeAttr(a)}" ${a===state.lugar?'selected':''}>${escapeHtml(a)}</option>`).join('');
+
+  // Contactos del cliente
+  const selCC = document.getElementById('f-contactoCliente');
+  const cons = (c && c.contactos) ? c.contactos : [];
+  selCC.innerHTML = '<option value="">— Selecciona o agrega contacto —</option>' +
+    cons.map(co => `<option value="${co.id}" ${co.id===state.contactoClienteId?'selected':''}>${escapeHtml(co.nombre)} ${co.cargo?'('+co.cargo.slice(0,30)+')':''}</option>`).join('');
+
+  actualizarPreviewContacto();
+}
+
+function actualizarPreviewContacto(){
+  const div = document.getElementById('contacto-preview');
+  if(state.atencion || state.cargo || state.contacto){
+    div.style.display = 'block';
+    div.innerHTML = `<b>${escapeHtml(state.atencion)}</b><br>${escapeHtml(state.cargo)}<br>${escapeHtml(state.contacto)}`;
+  } else { div.style.display = 'none'; }
+}
+
+// =========================================================================
+// CLIENTE / CONTACTO / LUGAR
+// =========================================================================
+function aplicarCliente(){
+  const id = document.getElementById('f-cliente').value;
+  state.clienteId = id;
+  state.contactoClienteId = '';
+  state.atencion = ''; state.cargo = ''; state.contacto = '';
+  state.lugar = '';
+  if(id){
+    const c = DB.clientes.get(id);
+    if(c){
+      state.clienteRazon = c.razonSocial;
+      state.clienteCorto = c.corto || 'XXX';
+      if(c.logoBase64) state.logoCliente = c.logoBase64;
+      else if(/poderosa/i.test(c.razonSocial)) state.logoCliente = '../assets/logo-poderosa.png';
+      else state.logoCliente = '';
+      // Auto-elegir primer contacto si solo hay uno
+      if(c.contactos && c.contactos.length === 1) state.contactoClienteId = c.contactos[0].id;
+    }
+  }
+  poblarLugaresYContactos();
+  actualizarPreviewLogo();
+  generarCodigo();
+  if(state.contactoClienteId) aplicarContactoCliente(state.contactoClienteId);
+  render();
+}
+
+function aplicarContactoCliente(id){
+  state.contactoClienteId = id;
+  if(!id){ state.atencion=''; state.cargo=''; state.contacto=''; actualizarPreviewContacto(); render(); return; }
+  const c = DB.clientes.get(state.clienteId); if(!c) return;
+  const co = (c.contactos||[]).find(x => x.id === id); if(!co) return;
+  state.atencion = co.nombre || '';
+  state.cargo = co.cargo || '';
+  state.contacto = `Cel: ${co.telefono||''} | Correo: ${co.email||''}`;
+  document.getElementById('f-contactoCliente').value = id;
+  actualizarPreviewContacto();
+  render();
+}
+
+function nuevoContactoCliente(){
+  if(!state.clienteId){ toast('Primero selecciona un cliente','danger'); return; }
+  const nombre = prompt('Nombre del contacto:'); if(!nombre) return;
+  const cargo = prompt('Cargo:', '') || '';
+  const telefono = prompt('Teléfono:', '') || '';
+  const email = prompt('Email:', '') || '';
+  const co = DB.clienteAddContacto(state.clienteId, {nombre, cargo, telefono, email});
+  toast('Contacto agregado al cliente','success');
+  poblarLugaresYContactos();
+  document.getElementById('f-contactoCliente').value = co.id;
+  aplicarContactoCliente(co.id);
+}
+
+function aplicarLugar(val){
+  state.lugar = val;
+  render();
+}
+function nuevoLugar(){
+  if(!state.clienteId){ toast('Primero selecciona un cliente','danger'); return; }
+  const nombre = prompt('Nombre del lugar / área:'); if(!nombre) return;
+  DB.clienteAddArea(state.clienteId, nombre);
+  state.lugar = nombre;
+  poblarLugaresYContactos();
+  document.getElementById('f-lugar').value = nombre;
+  render();
+  toast('Lugar agregado','success');
+}
+
+function aplicarContactoConsitec(id){
+  state.contactoConsitecId = id;
+  if(!id){ state.contactoConsitec=''; render(); return; }
+  const c = DB.contactosConsitec.get(id); if(!c) return;
+  state.contactoConsitec = `${c.nombre}. | Cel: ${c.telefono||''}`;
+  render();
+}
+function nuevoContactoConsitec(){
+  const nombre = prompt('Nombre del contacto Consitec:'); if(!nombre) return;
+  const cargo = prompt('Cargo:', '') || '';
+  const telefono = prompt('Teléfono:', '') || '';
+  const email = prompt('Email:', '') || '';
+  const c = DB.contactosConsitec.save({nombre, cargo, telefono, email});
+  poblarSelects();
+  document.getElementById('f-contactoConsitec').value = c.id;
+  aplicarContactoConsitec(c.id);
+  toast('Contacto Consitec agregado','success');
+}
+
+function generarCodigo(){
+  const year = new Date().getFullYear().toString().slice(-2);
+  const corto = state.clienteCorto || 'XXX';
+  const n = (DB.cotizaciones.list().length + 1);
+  const sufijo = state.tipo === 'suministro' ? 'OS' : 'OE';
+  state.codigo = `CI${year}-${corto}-${sufijo}-${String(n).padStart(3,'0')}`;
+  document.getElementById('f-codigo').value = state.codigo;
+  render();
+}
+
+// =========================================================================
+// LOGO CLIENTE
+// =========================================================================
+function cargarLogoCliente(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    state.logoCliente = ev.target.result;
+    if(state.clienteId){
+      const c = DB.clientes.get(state.clienteId);
+      if(c){ c.logoBase64 = ev.target.result; DB.clientes.save(c); }
+    }
+    actualizarPreviewLogo();
+    render();
+    toast('Logo cargado','success');
+  };
+  r.readAsDataURL(f);
+}
+function quitarLogoCliente(){
+  state.logoCliente = '';
+  document.getElementById('f-logoFile').value = '';
+  if(state.clienteId){
+    const c = DB.clientes.get(state.clienteId);
+    if(c){ delete c.logoBase64; DB.clientes.save(c); }
+  }
+  actualizarPreviewLogo();
+  render();
+}
+function actualizarPreviewLogo(){
+  const div = document.getElementById('logo-preview');
+  div.innerHTML = state.logoCliente
+    ? `<img src="${state.logoCliente}" style="max-height:32px;max-width:120px;vertical-align:middle"> <small>cargado</small>`
+    : '<small>Sin logo</small>';
+}
+
+// =========================================================================
+// TABS
+// =========================================================================
+function cambiarTab(tab){
+  ['inicio','ejecucion','cierre'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.section-tabs button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+}
+
+// =========================================================================
+// RECURSOS (mano de obra)
+// =========================================================================
+function addRecMO(grupo){
+  state[grupo].push({cargo:'', cantidad:1, dias:1, jornada:10, precioHH:0});
+  // Abrir expandido el nuevo item para que el usuario pueda elegir cargo
+  expandedItems.add(grupo + '-' + (state[grupo].length-1));
+  const sufijo = grupo.endsWith('1') ? '1' : '2';
+  // Auto-completar items estándar (verifica cada item individualmente, agrega solo los que faltan)
+  autoCompletarMovEq(sufijo);
+  renderListas();
+  recalcDiasAuto(sufijo === '1' ? 1 : 2);
+  recalcCantidadAuto(sufijo === '1' ? 1 : 2);
+  render();
+}
+
+// Auto-agrega los items estándar de movilización + equipos que falten en la sección indicada
+function autoCompletarMovEq(sufijo){
+  const movGroup = 'mov' + sufijo;
+  const eqGroup  = 'eq'  + sufijo;
+  // Asegurar que el catálogo tenga estos items (por si fueron borrados o son de versión antigua)
+  DB.ensureCatItem(DB.catMovilizacion, 'Movilización Terrestre', {um:'hh', precio: 1.51});
+  DB.ensureCatItem(DB.catMovilizacion, 'Alimentación en mina',   {um:'hh', precio: 3.52});
+  DB.ensureCatItem(DB.catMovilizacion, 'Habitabilidad',          {um:'hh', precio: 5.00});
+  DB.ensureCatItem(DB.catEquipos,      'Equipos',      {um:'hh', precio: 2.68});
+  DB.ensureCatItem(DB.catEquipos,      'Herramientas', {um:'hh', precio: 1.91});
+  DB.ensureCatItem(DB.catEquipos,      'Software',     {um:'hh', precio: 1.34});
+
+  // Movilización, alimentación, habitabilidad → aplican a TODOS los trabajadores
+  ['Movilización Terrestre','Alimentación en mina','Habitabilidad'].forEach(desc => {
+    const existe = state[movGroup].some(it => (it.descripcion||'').toLowerCase() === desc.toLowerCase());
+    if(!existe){
+      state[movGroup].push({...itemFromCat('mov', desc), autoCantidad: true, aplicaEn: 'todos', activo: true});
+    }
+  });
+  // Equipos → general, Herramientas → técnicos/operarios, Software → supervisores/ingenieros
+  const defaultsEq = {
+    'Equipos': 'equipos',
+    'Herramientas': 'herramientas',
+    'Software': 'software',
+  };
+  Object.entries(defaultsEq).forEach(([desc, aplicaEn]) => {
+    const existe = state[eqGroup].some(it => (it.descripcion||'').toLowerCase() === desc.toLowerCase());
+    if(!existe){
+      state[eqGroup].push({...itemFromCat('eq', desc), autoCantidad: true, aplicaEn, activo: true});
+    }
+  });
+}
+
+// Infiere automáticamente a qué tipo de persona aplica un item según su descripción
+function inferirAplicaEn(descripcion){
+  const d = (descripcion||'').toLowerCase();
+  if(d.includes('herramienta')) return 'herramientas';
+  if(d.includes('software') || d.includes('licencia') || d.includes('cad')) return 'software';
+  if(d.includes('equipo')) return 'equipos';
+  // Movilización, alimentación, habitabilidad, andamios, etc → todos
+  return 'todos';
+}
+
+// Devuelve true si el cargo (por id) usa el tipo de item dado.
+// Para items con aplicaEn='todos' siempre devuelve true.
+function personalUsaItem(cargoId, aplicaEn){
+  if(aplicaEn === 'todos' || !aplicaEn) return true;
+  if(!cargoId) return true; // Si no hay cargo, contar
+  const c = DB.cargos.get(cargoId);
+  if(!c) return true;
+  if(aplicaEn === 'herramientas') return !!c.usaHerramientas;
+  if(aplicaEn === 'software')     return !!c.usaSoftware;
+  if(aplicaEn === 'equipos')      return c.usaEquipos !== false;
+  return true;
+}
+
+// Botón manual: completar items estándar faltantes desde la UI
+function autoCompletarMovEqUI(sufijo){
+  const antesMov = state['mov'+sufijo].length;
+  const antesEq = state['eq'+sufijo].length;
+  autoCompletarMovEq(sufijo);
+  const agregados = (state['mov'+sufijo].length - antesMov) + (state['eq'+sufijo].length - antesEq);
+  if(agregados === 0){
+    toast('Ya tienes todos los items estándar.','');
+  } else {
+    toast(`✨ ${agregados} item(s) estándar agregados`,'success');
+  }
+  const sec = sufijo === '1' ? 1 : 2;
+  recalcDiasAuto(sec);
+  recalcCantidadAuto(sec);
+  renderListas();
+  render();
+}
+
+// Auto-suma personas filtrando según aplicaEn del item (todos/herramientas/software/equipos)
+function recalcCantidadAuto(seccion){
+  const sufijo = String(seccion);
+  const moList = state['mo' + sufijo] || [];
+  ['mov', 'eq'].forEach(tipo => {
+    const grupo = tipo + sufijo;
+    (state[grupo] || []).forEach(it => {
+      if(it.autoCantidad){
+        const aplicaEn = it.aplicaEn || 'todos';
+        let total = 0;
+        moList.forEach(r => {
+          if(personalUsaItem(r.cargoId, aplicaEn)){
+            total += parseFloat(r.cantidad)||0;
+          }
+        });
+        it.cantidad = total;
+      }
+    });
+  });
+}
+function delRec(grupo, i){
+  state[grupo].splice(i,1);
+  renderListas();
+  // Si se elimina MO, recalcular auto-días y cantidad de mov/eq de esa sección
+  if(grupo.startsWith('mo')){
+    const sec = grupo.endsWith('1') ? 1 : 2;
+    recalcDiasAuto(sec);
+    recalcCantidadAuto(sec);
+  }
+  render();
+}
+function updateRec(grupo, i, campo, valor){
+  if(campo === 'cargo' || campo === 'descripcion' || campo === 'aplicaEn'){
+    state[grupo][i][campo] = valor;
+  } else {
+    state[grupo][i][campo] = parseFloat(valor)||0;
+  }
+  // Si se cambió MANUALMENTE el campo "dias" de un item mov/eq, desactivar auto-días para ese item
+  if(campo === 'dias' && (grupo.startsWith('mov') || grupo.startsWith('eq'))){
+    state[grupo][i].autoDias = false;
+    renderListas();
+  }
+  // Si se cambió MANUALMENTE la cantidad de un item mov/eq, desactivar auto-cantidad
+  if(campo === 'cantidad' && (grupo.startsWith('mov') || grupo.startsWith('eq'))){
+    state[grupo][i].autoCantidad = false;
+    renderListas();
+  }
+  // Si cambió aplicaEn, recalcular auto-cantidad Y auto-días para reflejar el nuevo filtro
+  if(campo === 'aplicaEn'){
+    const sec = grupo.endsWith('1') ? 1 : 2;
+    recalcCantidadAuto(sec);
+    recalcDiasAuto(sec);
+    renderListas();
+  }
+  // Si cambia MO: recalcular días Y cantidad de los mov/eq con auto activo
+  const seccion = grupo.endsWith('1') ? 1 : 2;
+  if(grupo.startsWith('mo')){
+    if(['cantidad','dias','jornada'].includes(campo)){
+      recalcDiasAuto(seccion);
+      if(campo === 'cantidad') recalcCantidadAuto(seccion);
+      renderListas();
+    }
+  } else if(grupo.startsWith('mov') || grupo.startsWith('eq')){
+    if(['cantidad','jornada'].includes(campo)){
+      recalcDiasAuto(seccion);
+      renderListas();
+    }
+  }
+  render();
+  actualizarTotalRow(grupo, i);
+}
+
+// Reactivar el auto-cálculo de días para un item específico
+function toggleAutoDias(grupo, i){
+  state[grupo][i].autoDias = !state[grupo][i].autoDias;
+  if(state[grupo][i].autoDias){
+    recalcDiasAuto(grupo.endsWith('1') ? 1 : 2);
+  }
+  renderListas();
+  render();
+}
+
+// Reactivar/desactivar auto-cantidad de personas para un item mov/eq
+function toggleAutoCantidad(grupo, i){
+  state[grupo][i].autoCantidad = !state[grupo][i].autoCantidad;
+  if(state[grupo][i].autoCantidad){
+    recalcCantidadAuto(grupo.endsWith('1') ? 1 : 2);
+  }
+  renderListas();
+  render();
+}
+
+// Activar/desactivar un item completo (sin eliminarlo)
+function toggleActivoItem(grupo, i){
+  state[grupo][i].activo = state[grupo][i].activo === false ? true : false;
+  renderListas();
+  render();
+}
+
+// Activar/desactivar una sección completa (mov1, eq1, mov2, eq2)
+function toggleSeccion(grupo){
+  const key = grupo + '_activa';
+  state[key] = state[key] === false ? true : false;
+  renderListas();
+  render();
+}
+function actualizarTotalRow(grupo, i){
+  const row = state[grupo][i];
+  // Fórmula del Excel: Cantidad × Días × Jornada × P.Unitario
+  const total = row.cantidad*row.dias*row.jornada*row.precioHH;
+  const el = document.querySelector(`[data-tot="${grupo}-${i}"]`);
+  if(el) el.textContent = 'S/ ' + total.toFixed(2);
+}
+
+// =========================================================================
+// RECURSOS (mov/eq con catálogo)
+// =========================================================================
+function addRec(grupo, tipoCat){
+  state[grupo].push({descripcion:'', cantidad:1, dias:1, jornada:10, precioHH:0, tipoCat, autoDias:true});
+  // Abrir expandido el nuevo item para que el usuario pueda elegir del catálogo
+  expandedItems.add(grupo + '-' + (state[grupo].length-1));
+  renderListas();
+  recalcDiasAuto(grupo.endsWith('1') ? 1 : 2);
+  render();
+}
+
+// Fórmula del Excel filtrando por personas que aplican al item:
+//   Días = Σ (horas de personas que usan el item) / (Jornada × Cantidad_aplicables)
+// Para Herramientas se suman solo las horas de operarios/soldadores que las usan.
+// Para Software solo las horas de supervisores/ingenieros.
+// Para "Todos" se suman todas las horas (caso movilización, alimentación, habitabilidad).
+function recalcDiasAuto(seccion){
+  const sufijo = String(seccion);
+  const moList = state['mo' + sufijo] || [];
+  if(moList.length === 0) return;
+  ['mov', 'eq'].forEach(tipo => {
+    const grupo = tipo + sufijo;
+    (state[grupo] || []).forEach(it => {
+      if(it.autoDias && it.cantidad > 0 && it.jornada > 0){
+        const aplicaEn = it.aplicaEn || 'todos';
+        // Sumar solo las horas de los cargos que aplican a este item
+        const horasFiltradas = moList
+          .filter(r => personalUsaItem(r.cargoId, aplicaEn))
+          .reduce((s,r) => s + ((r.cantidad||0)*(r.dias||0)*(r.jornada||0)), 0);
+        it.dias = horasFiltradas / (it.jornada * it.cantidad);
+      }
+    });
+  });
+}
+function aplicarItemCat(grupo, i, val, tipoCat){
+  if(!val) return;
+  if(val === '__custom__'){
+    state[grupo][i].descripcion = '';
+    state[grupo][i].precioHH = 0;
+    renderListas(); return;
+  }
+  const cat = tipoCat === 'mov' ? DB.catMovilizacion : DB.catEquipos;
+  const x = cat.get(val);
+  if(x){
+    state[grupo][i].descripcion = x.descripcion;
+    state[grupo][i].precioHH = x.precio;
+    // Inferir aplicaEn según el nombre del item
+    state[grupo][i].aplicaEn = inferirAplicaEn(x.descripcion);
+    // Reactivar auto-días/cantidad al elegir un item del catálogo
+    state[grupo][i].autoDias = true;
+    const sec = grupo.endsWith('1') ? 1 : 2;
+    recalcDiasAuto(sec);
+    recalcCantidadAuto(sec);
+    renderListas();
+    render();
+  }
+}
+
+function renderItemMO(grupo, i, r){
+  const expanded = isExpanded(grupo, i);
+  const total = (r.cantidad||0)*(r.dias||0)*(r.jornada||0)*(r.precioHH||0);
+  const horas = (r.cantidad||0)*(r.dias||0)*(r.jornada||0);
+  const nombre = r.cargo || '(elige cargo)';
+  if(!expanded){
+    return `
+    <div class="item-row">
+      <div class="top">
+        <span class="num">${i+1}</span>
+        <div class="compact-info" onclick="toggleExpandedItem('${grupo}',${i})" style="cursor:pointer">
+          <span style="font-weight:600;color:var(--brand3)">${escapeHtml(nombre)}</span>
+          <span class="formula">· ${r.cantidad||0} × ${r.dias||0} d × ${r.jornada||0} h × S/${(r.precioHH||0).toFixed(2)}/h</span>
+          <span class="total-mini">S/ ${total.toFixed(2)}</span>
+        </div>
+        <button class="btn-expand" onclick="toggleExpandedItem('${grupo}',${i})" title="Expandir">▼ Editar</button>
+        <button class="del" onclick="delRec('${grupo}',${i})">×</button>
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="item-row expanded">
+    <div class="top">
+      <span class="num">${i+1}</span>
+      ${renderCargoSelect(r.cargo, grupo, i)}
+      <button class="btn-expand" onclick="toggleExpandedItem('${grupo}',${i})" title="Colapsar">▲</button>
+      <button class="del" onclick="delRec('${grupo}',${i})">×</button>
+    </div>
+    <div class="expand-body">
+      <div class="grid-rec">
+        <div><label>Cant.</label><input type="number" step="0.01" value="${r.cantidad}" oninput="updateRec('${grupo}',${i},'cantidad',this.value)"></div>
+        <div><label>Días</label><input type="number" step="0.01" value="${r.dias}" oninput="updateRec('${grupo}',${i},'dias',this.value)"></div>
+        <div><label>Jornada</label><input type="number" step="0.01" value="${r.jornada}" oninput="updateRec('${grupo}',${i},'jornada',this.value)"></div>
+        <div><label>P. HH</label><input type="number" step="0.01" value="${r.precioHH}" oninput="updateRec('${grupo}',${i},'precioHH',this.value)"></div>
+      </div>
+      <div style="text-align:right;margin-top:5px;font-size:10.5px;color:var(--muted)">
+        <span style="margin-right:6px">${r.cantidad} pers × ${r.dias} días × ${r.jornada}h × S/${r.precioHH||0}/h = ${horas.toFixed(0)} HH →</span>
+        <span class="calc" data-tot="${grupo}-${i}">S/ ${total.toFixed(2)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderItemCat(grupo, i, r, tipoCat){
+  const cat = tipoCat === 'mov' ? DB.catMovilizacion : DB.catEquipos;
+  const items = cat.list();
+  const matched = items.find(x => x.descripcion === r.descripcion);
+  const isAuto = r.autoDias !== false;
+  const activo = r.activo !== false;
+  const expanded = isExpanded(grupo, i);
+  const total = (r.cantidad||0)*(r.dias||0)*(r.jornada||0)*(r.precioHH||0);
+  const horas = (r.cantidad||0)*(r.dias||0)*(r.jornada||0);
+  const nombre = r.descripcion || '(sin descripción)';
+
+  // Vista COMPACTA (cerrado)
+  if(!expanded){
+    return `
+    <div class="item-row ${activo?'':'opacity:.45'}" style="${!activo?'opacity:.45;background:#fafafa':''}">
+      <div class="top">
+        <input type="checkbox" ${activo?'checked':''} onchange="event.stopPropagation();toggleActivoItem('${grupo}',${i})" title="${activo?'Activo':'Inactivo'}" style="width:auto;margin:0 4px 0 0">
+        <span class="num">${i+1}</span>
+        <div class="compact-info" onclick="toggleExpandedItem('${grupo}',${i})" style="cursor:pointer">
+          <span style="font-weight:600;color:var(--brand3)">${escapeHtml(nombre)}</span>
+          <span class="formula">· ${r.cantidad||0} × ${(r.dias||0).toFixed(2)} d × ${r.jornada||0} h × S/${(r.precioHH||0).toFixed(2)}</span>
+          <span class="total-mini">S/ ${total.toFixed(2)}</span>
+        </div>
+        <button class="btn-expand" onclick="toggleExpandedItem('${grupo}',${i})" title="Expandir para editar">▼ Editar</button>
+        <button class="del" onclick="delRec('${grupo}',${i})">×</button>
+      </div>
+    </div>`;
+  }
+
+  // Vista EXPANDIDA (editar)
+  return `
+  <div class="item-row expanded" style="${!activo?'opacity:.45;background:#fafafa':''}">
+    <div class="top">
+      <input type="checkbox" ${activo?'checked':''} onchange="toggleActivoItem('${grupo}',${i})" title="${activo?'Activo':'Inactivo'}" style="width:auto;margin:0 4px 0 0">
+      <span class="num">${i+1}</span>
+      <select onchange="aplicarItemCat('${grupo}',${i},this.value,'${tipoCat}')" style="flex:1">
+        <option value="">— Catálogo —</option>
+        ${items.map(x => `<option value="${x.id}" ${matched && matched.id===x.id?'selected':''}>${escapeHtml(x.descripcion)} (S/${x.precio})</option>`).join('')}
+        <option value="__custom__" ${!matched&&r.descripcion?'selected':''}>Otro / Nuevo...</option>
+      </select>
+      <button class="btn-expand" onclick="toggleExpandedItem('${grupo}',${i})" title="Colapsar">▲</button>
+      <button class="del" onclick="delRec('${grupo}',${i})">×</button>
+    </div>
+    <div class="expand-body">
+      ${(!matched) ? `<input value="${escapeAttr(r.descripcion)}" placeholder="Descripción (se guardará en catálogo al salvar)" oninput="updateRec('${grupo}',${i},'descripcion',this.value)" style="margin-bottom:5px">` : ''}
+      <div class="grid-rec">
+        <div>
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            <span>Cant. pers.</span>
+            <span onclick="toggleAutoCantidad('${grupo}',${i})" style="cursor:pointer;font-size:10px;padding:0 4px;border-radius:3px;${r.autoCantidad?'background:#dcfce7;color:#166534;border:1px solid #86efac':'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5'}" title="${r.autoCantidad?'Auto':'Manual'}">${r.autoCantidad?'🔗':'✏'}</span>
+          </label>
+          <input type="number" step="0.01" value="${r.cantidad}" oninput="updateRec('${grupo}',${i},'cantidad',this.value)" style="${r.autoCantidad?'background:#f0fdf4;border-color:#86efac':''}">
+        </div>
+        <div>
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            <span>Días</span>
+            <span onclick="toggleAutoDias('${grupo}',${i})" style="cursor:pointer;font-size:10px;padding:0 4px;border-radius:3px;${isAuto?'background:#dcfce7;color:#166534;border:1px solid #86efac':'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5'}" title="${isAuto?'Auto':'Manual'}">${isAuto?'🔗':'✏'}</span>
+          </label>
+          <input type="number" step="0.01" value="${(r.dias||0).toFixed(2)}" oninput="updateRec('${grupo}',${i},'dias',this.value)" style="${isAuto?'background:#f0fdf4;border-color:#86efac':''}">
+        </div>
+        <div><label>Jornada</label><input type="number" step="0.01" value="${r.jornada}" oninput="updateRec('${grupo}',${i},'jornada',this.value)"></div>
+        <div><label>P. unit.</label><input type="number" step="0.01" value="${r.precioHH}" oninput="updateRec('${grupo}',${i},'precioHH',this.value)"></div>
+      </div>
+      <div style="text-align:right;margin-top:5px;font-size:10.5px;color:var(--muted)">
+        <span style="margin-right:6px">${r.cantidad} × ${(r.dias||0).toFixed(2)} × ${r.jornada} × S/${r.precioHH||0} = ${horas.toFixed(0)} HH →</span>
+        <span class="calc" data-tot="${grupo}-${i}">S/ ${total.toFixed(2)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCargoSelect(actual, grupo, i){
+  // Usar el CATÁLOGO de cargos (no personas reales) para cotizar
+  const cargosLista = DB.cargos.list();
+  const matched = cargosLista.find(c => c.cargo === actual);
+  return `<select onchange="aplicarCargo('${grupo}',${i},this.value)" style="flex:1">
+    <option value="">— Cargo —</option>
+    ${cargosLista.map(c => `<option value="${c.id}" ${c.cargo===actual?'selected':''}>${escapeHtml(c.cargo)} (S/${c.precioHH||0}/h)</option>`).join('')}
+    <option value="__custom__" ${actual && !matched?'selected':''}>Otro...</option>
+  </select>
+  ${actual && !matched ? `<input value="${escapeAttr(actual)}" placeholder="Custom" oninput="updateRec('${grupo}',${i},'cargo',this.value)" style="flex:1">` : ''}`;
+}
+function aplicarCargo(grupo, i, val){
+  if(val === '__custom__'){
+    state[grupo][i].cargo = ''; state[grupo][i].costoRealHH = 0;
+    state[grupo][i].cargoId = '';
+    renderListas();
+  } else if(val){
+    const c = DB.cargos.get(val);
+    if(c){
+      state[grupo][i].cargoId = val;
+      state[grupo][i].cargo = c.cargo;
+      state[grupo][i].precioHH = c.precioHH;
+      const gan = c.ganancia || 1.3;
+      state[grupo][i].costoRealHH = c.costoRealHH != null && c.costoRealHH !== 0
+        ? c.costoRealHH
+        : (c.precioHH ? c.precioHH / gan : 0);
+    }
+    const sec = grupo.endsWith('1') ? 1 : 2;
+    recalcDiasAuto(sec);
+    recalcCantidadAuto(sec);
+    renderListas(); render();
+  }
+}
+
+// =========================================================================
+// MATERIALES (con ganancia + logística INTERNOS)
+// =========================================================================
+function addMaterial(){
+  state.mat.push({tipo:'mat', descripcion:'', marca:'', modelo:'', fabricante:'', um:'UND.', cantidad:1, costoReal:0, ganancia:1.3, logistica:1.0});
+  renderListas(); render();
+}
+function addCategoriaMat(){
+  state.mat.push({tipo:'cat', titulo:'Nueva categoría'});
+  renderListas(); render();
+}
+function delMaterial(i){ state.mat.splice(i,1); renderListas(); render(); }
+function updateMaterial(i, campo, valor){
+  if(['cantidad','costoReal','ganancia','logistica'].includes(campo)){
+    state.mat[i][campo] = parseFloat(valor)||0;
+  } else {
+    state.mat[i][campo] = valor;
+  }
+  render();
+}
+function renderMat(){
+  return state.mat.map((m,i) => {
+    if(m.tipo === 'cat'){
+      return `
+      <div class="item-row" style="background:#fff3cd">
+        <div class="top">
+          <span class="num" style="background:#ff9800">CAT</span>
+          <input value="${escapeAttr(m.titulo)}" placeholder="Categoría" oninput="updateMaterial(${i},'titulo',this.value)" style="flex:1;font-weight:600">
+          <button class="del" onclick="delMaterial(${i})">×</button>
+        </div>
+      </div>`;
+    }
+    const pUnit = (m.costoReal||0) * (m.ganancia||1) * (m.logistica||1);
+    const total = pUnit * (m.cantidad||0);
+    const ganRow = (pUnit - (m.costoReal||0)) * (m.cantidad||0);
+    return `
+    <div class="item-row">
+      <div class="top">
+        <span class="num">${i+1}</span>
+        ${renderMatSelect(m, i)}
+        <button class="del" onclick="delMaterial(${i})">×</button>
+      </div>
+      <textarea rows="1" oninput="updateMaterial(${i},'descripcion',this.value)" placeholder="Descripción" style="width:100%;margin-top:3px">${escapeHtml(m.descripcion)}</textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-top:3px">
+        <div><label>Marca</label><input value="${escapeAttr(m.marca||'')}" oninput="updateMaterial(${i},'marca',this.value)" placeholder="Marca"></div>
+        <div><label>Modelo</label><input value="${escapeAttr(m.modelo||'')}" oninput="updateMaterial(${i},'modelo',this.value)" placeholder="Modelo"></div>
+        <div><label>Fabricante</label><input value="${escapeAttr(m.fabricante||'')}" oninput="updateMaterial(${i},'fabricante',this.value)" placeholder="Fabricante"></div>
+      </div>
+      <div class="grid-mat" style="margin-top:3px;grid-template-columns:45px 55px 65px 50px 50px">
+        <div><label>UM</label><input value="${escapeAttr(m.um||'UND.')}" oninput="updateMaterial(${i},'um',this.value)"></div>
+        <div><label>Cant.</label><input type="number" step="0.01" value="${m.cantidad}" oninput="updateMaterial(${i},'cantidad',this.value)"></div>
+        <div><label>Costo real</label><input type="number" step="0.01" value="${m.costoReal}" oninput="updateMaterial(${i},'costoReal',this.value)"></div>
+        <div><label title="Ganancia (interno)">Ganan.×</label><input type="number" step="0.01" value="${m.ganancia}" oninput="updateMaterial(${i},'ganancia',this.value)" style="background:#fff3cd"></div>
+        <div><label title="Logística (interno)">Logís.×</label><input type="number" step="0.01" value="${m.logistica}" oninput="updateMaterial(${i},'logistica',this.value)" style="background:#fff3cd"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:3px;justify-content:flex-end;align-items:center">
+        <span class="calc internal" title="Ganancia interna">+G: S/ ${ganRow.toFixed(2)}</span>
+        <span class="calc">P.Unit: S/ ${pUnit.toFixed(2)}</span>
+        <span class="calc">Tot: S/ ${total.toFixed(2)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderMatSelect(m, i){
+  const mats = DB.materiales.list();
+  return `<select onchange="aplicarMaterial(${i},this.value)" style="flex:1">
+    <option value="">— De catálogo —</option>
+    ${mats.map(x => `<option value="${x.id}">${escapeHtml(x.descripcion.slice(0,60))}</option>`).join('')}
+  </select>`;
+}
+function aplicarMaterial(i, id){
+  if(!id) return;
+  const x = DB.materiales.get(id);
+  if(x){
+    state.mat[i].descripcion = x.descripcion;
+    state.mat[i].marca       = x.marca || '';
+    state.mat[i].modelo      = x.modelo || '';
+    state.mat[i].fabricante  = x.fabricante || '';
+    state.mat[i].um          = x.um || 'UND.';
+    state.mat[i].costoReal   = x.costoReal || 0;
+    state.mat[i].ganancia    = x.ganancia || (x.margen||1.3); // compatibilidad con seed viejo
+    state.mat[i].logistica   = x.logistica || 1.0;
+    renderListas(); render();
+  }
+}
+
+// =========================================================================
+// NOTAS / EXCLUSIONES / RESPONSABILIDAD (items con catálogo)
+// =========================================================================
+function addItemTexto(tipo){
+  state[tipo].push({texto: ''});
+  renderListaTextos(); render();
+}
+function delItemTexto(tipo, i){ state[tipo].splice(i,1); renderListaTextos(); render(); }
+function updateItemTexto(tipo, i, val){ state[tipo][i].texto = val; render(); }
+function aplicarTextoCat(tipo, i, val){
+  if(val === '__custom__'){ state[tipo][i].texto = ''; renderListaTextos(); return; }
+  const cat = catFromTipo(tipo);
+  const x = cat.get(val);
+  if(x){ state[tipo][i].texto = x.descripcion; renderListaTextos(); render(); }
+}
+function catFromTipo(tipo){
+  return tipo==='notas' ? DB.catNotas : tipo==='excl' ? DB.catExclusiones : DB.catResponsabilidades;
+}
+function renderListaTextos(){
+  ['notas','excl','resp'].forEach(tipo => {
+    const elId = tipo==='notas' ? 'lst-notas' : tipo==='excl' ? 'lst-excl' : 'lst-resp';
+    const cat = catFromTipo(tipo);
+    const items = cat.list();
+    document.getElementById(elId).innerHTML = state[tipo].map((it,i) => {
+      const matched = items.find(x => x.descripcion === it.texto);
+      return `
+      <div class="simple-item">
+        <select onchange="aplicarTextoCat('${tipo}',${i},this.value)">
+          <option value="">— De catálogo —</option>
+          ${items.map(x => `<option value="${x.id}" ${matched&&matched.id===x.id?'selected':''}>${escapeHtml(x.descripcion.slice(0,80))}</option>`).join('')}
+          <option value="__custom__" ${!matched?'selected':''}>Personalizado...</option>
+        </select>
+        ${!matched ? `<input value="${escapeAttr(it.texto)}" placeholder="Escribir texto" oninput="updateItemTexto('${tipo}',${i},this.value)">` : ''}
+        <button class="del" onclick="delItemTexto('${tipo}',${i})">×</button>
+      </div>`;
+    }).join('');
+  });
+}
+
+// =========================================================================
+// RENDER LISTAS (editor)
+// =========================================================================
+function renderListas(){
+  document.getElementById('lst-mo1').innerHTML  = state.mo1.map((r,i)=>renderItemMO('mo1', i, r)).join('');
+  document.getElementById('lst-mov1').innerHTML = state.mov1.map((r,i)=>renderItemCat('mov1',i,r,'mov')).join('');
+  document.getElementById('lst-eq1').innerHTML  = state.eq1.map((r,i)=>renderItemCat('eq1', i,r,'eq')).join('');
+  document.getElementById('lst-mo2').innerHTML  = state.mo2.map((r,i)=>renderItemMO('mo2', i, r)).join('');
+  document.getElementById('lst-mov2').innerHTML = state.mov2.map((r,i)=>renderItemCat('mov2',i,r,'mov')).join('');
+  document.getElementById('lst-eq2').innerHTML  = state.eq2.map((r,i)=>renderItemCat('eq2', i,r,'eq')).join('');
+  document.getElementById('lst-mat').innerHTML  = renderMat();
+  // Sincronizar checkboxes de sección activa
+  ['mov1','eq1','mov2','eq2'].forEach(g => {
+    const chk = document.getElementById('chk-' + g);
+    if(chk) chk.checked = state[g+'_activa'] !== false;
+  });
+}
+
+// =========================================================================
+// CÁLCULOS
+// =========================================================================
+// Fórmula del Excel: Total = Cantidad × Días × Jornada × P.Unitario (igual para MO y mov/eq)
+// Solo cuenta items con activo !== false
+function sumRec(items){
+  return items.filter(r => r.activo !== false)
+              .reduce((s,r) => s + (r.cantidad*r.dias*r.jornada*r.precioHH), 0);
+}
+function sumRecCosto(items){
+  // Costo real de mano de obra usando costoRealHH si existe, sino precioHH (sin ganancia)
+  return items.reduce((s,r) => {
+    const horas = r.cantidad*r.dias*r.jornada;
+    const costo = r.costoRealHH != null ? r.costoRealHH : r.precioHH;
+    return s + (horas * costo);
+  }, 0);
+}
+function sumMat(items){
+  return items.filter(m => m.tipo !== 'cat')
+    .reduce((s,m) => s + ((m.costoReal||0)*(m.ganancia||1)*(m.logistica||1)*(m.cantidad||0)), 0);
+}
+function sumCostoMat(items){
+  return items.filter(m => m.tipo !== 'cat')
+    .reduce((s,m) => s + ((m.costoReal||0)*(m.cantidad||0)), 0);
+}
+function totales(){
+  // Si una sección está desactivada, no suma al total
+  const usar = (grupo) => state[grupo+'_activa'] === false ? [] : state[grupo];
+  const subInicio = sumRec(state.mo1) + sumRec(usar('mov1')) + sumRec(usar('eq1'));
+  const subEjecMO = sumRec(state.mo2) + sumRec(usar('mov2')) + sumRec(usar('eq2'));
+  const subMat    = sumMat(state.mat);
+  const costoMat  = sumCostoMat(state.mat);
+  const mod       = subInicio + subEjecMO;
+  const gg        = mod * (state.gg/100);
+  const utl       = mod * (state.util/100);
+  const totalFinal= mod + subMat + gg + utl;
+  // Sobreprecio MO solo aplica a personal (mo1/mo2), no a movilización ni equipos
+  const ventaMO   = sumRec(state.mo1) + sumRec(state.mo2);
+  const costoMO   = sumRecCosto(state.mo1) + sumRecCosto(state.mo2);
+  const sobreprecioMO  = ventaMO - costoMO;
+  const sobreprecioMat = subMat - costoMat;
+  const ganancia = sobreprecioMat + sobreprecioMO + gg + utl;
+  const pctGanancia = totalFinal > 0 ? (ganancia/totalFinal)*100 : 0;
+  return {subInicio, subEjecMO, subMat, costoMat, mod, gg, utl, totalFinal,
+          ganancia, sobreprecioMat, sobreprecioMO, costoMO, ventaMO, pctGanancia};
+}
+function calcularMini(){
+  const t = totales();
+  document.getElementById('mini-totales').innerHTML = `
+    <div>Sub Inicio:</div>            <div>${fmtPEN(t.subInicio)}</div>
+    <div>Sub Ejecución (MO+Mov+Eq):</div><div>${fmtPEN(t.subEjecMO)}</div>
+    <div>Sub Materiales (venta):</div>        <div>${fmtPEN(t.subMat)}</div>
+    <div style="color:#888">- Costo real materiales:</div><div style="color:#888">${fmtPEN(t.costoMat)}</div>
+    <div style="color:#888">- Costo real MO:</div><div style="color:#888">${fmtPEN(t.costoMO)}</div>
+    <div>Mano de obra directa (venta):</div>  <div>${fmtPEN(t.mod)}</div>
+    <div>Gastos generales (${state.gg}%):</div><div>${fmtPEN(t.gg)}</div>
+    <div>Utilidad (${state.util}%):</div>     <div>${fmtPEN(t.utl)}</div>
+    <div class="line-tot">TOTAL VENTA (sin IGV):</div><div class="line-tot">${fmtPEN(t.totalFinal)}</div>
+    <div style="font-size:10.5px;color:#388e3c;margin-top:4px">  + Sobreprecio Materiales:</div><div style="font-size:10.5px;color:#388e3c;margin-top:4px">${fmtPEN(t.sobreprecioMat)}</div>
+    <div style="font-size:10.5px;color:#388e3c">  + Sobreprecio Mano de obra:</div><div style="font-size:10.5px;color:#388e3c">${fmtPEN(t.sobreprecioMO)}</div>
+    <div style="font-size:10.5px;color:#388e3c">  + Gastos Grales + Utilidad:</div><div style="font-size:10.5px;color:#388e3c">${fmtPEN(t.gg + t.utl)}</div>
+    <div class="gan">💰 GANANCIA TOTAL:</div><div class="gan">${fmtPEN(t.ganancia)}</div>
+    <div class="gan-pct">Margen sobre venta:</div><div class="gan-pct">${t.pctGanancia.toFixed(1)}%</div>
+  `;
+}
+
+// =========================================================================
+// SYNC formulario ↔ estado
+// =========================================================================
+function syncEstadoDesdeForm(){
+  state.codigo  = document.getElementById('f-codigo').value;
+  state.version = document.getElementById('f-version').value;
+  state.fecha   = document.getElementById('f-fecha').value;
+  state.servicio= document.getElementById('f-servicio').value;
+  state.plazo   = document.getElementById('f-plazo').value;
+  state.alcance1= document.getElementById('f-alcance1').value;
+  state.alcance2= document.getElementById('f-alcance2').value;
+  state.gg      = parseFloat(document.getElementById('f-gg').value)||0;
+  state.util    = parseFloat(document.getElementById('f-util').value)||0;
+  state.modalidad = document.getElementById('f-modalidad').value;
+  state.validez   = document.getElementById('f-validez').value;
+  state.formaPago = document.getElementById('f-formaPago').value;
+  state.metodoPago= document.getElementById('f-metodoPago').value;
+}
+function syncFormDesdeEstado(){
+  document.getElementById('f-codigo').value  = state.codigo;
+  document.getElementById('f-version').value = state.version;
+  document.getElementById('f-fecha').value   = state.fecha;
+  document.getElementById('f-servicio').value= state.servicio;
+  document.getElementById('f-plazo').value   = state.plazo;
+  document.getElementById('f-cliente').value = state.clienteId;
+  poblarLugaresYContactos();
+  document.getElementById('f-lugar').value = state.lugar;
+  document.getElementById('f-contactoCliente').value = state.contactoClienteId;
+  document.getElementById('f-contactoConsitec').value= state.contactoConsitecId;
+  document.getElementById('f-alcance1').value= state.alcance1;
+  document.getElementById('f-alcance2').value= state.alcance2;
+  document.getElementById('f-gg').value      = state.gg;
+  document.getElementById('f-util').value    = state.util;
+  document.getElementById('f-modalidad').value = state.modalidad;
+  document.getElementById('f-validez').value   = state.validez;
+  document.getElementById('f-formaPago').value = state.formaPago;
+  document.getElementById('f-metodoPago').value= state.metodoPago;
+  actualizarPreviewContacto();
+}
+
+// =========================================================================
+// RENDER VISTA PREVIA A4 (sin mostrar ganancia/logística)
+// =========================================================================
+function render(){
+  syncEstadoDesdeForm();
+  const t = totales();
+  const cfg = DB.getConfig();
+  const fechaFmt = state.fecha ? new Date(state.fecha+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+
+  const alc1 = (state.alcance1||'').split('\n').filter(s=>s.trim()).map(s=>`<li>${escapeHtml(s)}</li>`).join('');
+  const alc2 = (state.alcance2||'').split('\n').filter(s=>s.trim()).map(s=>`<li>${escapeHtml(s)}</li>`).join('');
+
+  const html = `
+    <div class="head">
+      <div class="logo-box"><img src="../assets/logo-consitec.png" alt="CONSITEC"></div>
+      <div class="titulo"><h1>OFERTA ECONÓMICA</h1></div>
+      <div class="logo-box right">${state.logoCliente ? `<img src="${state.logoCliente}" alt="Cliente">` : ''}</div>
+    </div>
+
+    <table class="info-tabla">
+      <tr>
+        <td class="k">Servicio</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.servicio)}</td>
+        <td class="k-right">Propuesta</td><td class="s">:</td><td class="v" style="width:130px">${escapeHtml(state.codigo)}</td>
+      </tr>
+      <tr>
+        <td class="k">Lugar / Área</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.lugar)}</td>
+        <td class="k-right">Versión</td><td class="s">:</td><td class="v">${escapeHtml(state.version)}</td>
+      </tr>
+      <tr>
+        <td class="k">Cliente</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.clienteRazon)}</td>
+        <td class="k-right">Fecha</td><td class="s">:</td><td class="v">${fechaFmt}</td>
+      </tr>
+      <tr>
+        <td class="k">Atención</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.atencion)}</td>
+        <td class="k-right">Plazo Ejecución</td><td class="s">:</td><td class="v">${escapeHtml(state.plazo)}</td>
+      </tr>
+      <tr>
+        <td class="k">Cargo</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.cargo)}</td>
+        <td class="k-right">Contacto Consitec</td><td class="s">:</td><td class="v">${escapeHtml(state.contactoConsitec)}</td>
+      </tr>
+      <tr>
+        <td class="k">Contacto</td><td class="s">:</td><td class="v" colspan="5">${escapeHtml(state.contacto)}</td>
+      </tr>
+    </table>
+
+    <div class="sec-h">
+      <div class="n">1</div><div class="t">INICIO</div>
+      <div class="lbl">TOTAL</div><div class="val">${fmtNum(t.subInicio,2)}</div>
+    </div>
+    <div class="sub-h">
+      <div class="n">1.1</div><div class="t">DESARROLLO</div>
+      <div class="lbl">SUB TOTAL</div><div class="val">${fmtNum(t.subInicio,2)}</div>
+    </div>
+    ${alc1 ? `<div class="alcance-title">ALCANCE</div><ul class="alcance-list">${alc1}</ul>` : ''}
+    <div class="recursos-titulo">RECURSOS</div>
+    ${renderBloqueRec('1.1.1', 'Mano de Obra',                      state.mo1,  true)}
+    ${state.mov1_activa===false ? '' : renderBloqueRec('1.1.2', 'Movilización y alimentación',        state.mov1, false)}
+    ${state.eq1_activa===false  ? '' : renderBloqueRec('1.1.3', 'Equipos, herramientas y software',   state.eq1,  false)}
+
+    <div class="sec-h">
+      <div class="n">2</div><div class="t">EJECUCIÓN</div>
+      <div class="lbl">TOTAL</div><div class="val">${fmtNum(t.subEjecMO + t.subMat,2)}</div>
+    </div>
+    <div class="sub-h">
+      <div class="n">2.1</div><div class="t">${escapeHtml(state.servicio || 'SERVICIO')}</div>
+      <div class="lbl">SUB TOTAL</div><div class="val">${fmtNum(t.subEjecMO + t.subMat,2)}</div>
+    </div>
+    ${alc2 ? `<div class="alcance-title">ALCANCE</div><ul class="alcance-list">${alc2}</ul>` : ''}
+    <div class="recursos-titulo">RECURSOS</div>
+    ${renderBloqueRec('2.1.1', 'Mano de Obra',                              state.mo2,  true)}
+    ${state.mov2_activa===false ? '' : renderBloqueRec('2.1.2', 'Movilización, alimentación y habitabilidad',state.mov2, false)}
+    ${state.eq2_activa===false  ? '' : renderBloqueRec('2.1.3', 'Equipos, herramientas y software',          state.eq2,  false)}
+    ${renderBloqueMat(t.subMat)}
+
+    <table class="resumen">
+      <tr><td class="lbl">MANO DE OBRA DIRECTA</td><td class="val">${fmtPEN(t.mod)}</td></tr>
+      <tr><td class="lbl">MATERIALES</td><td class="val">${fmtPEN(t.subMat)}</td></tr>
+      <tr><td class="lbl">GASTOS GENERALES (${state.gg}%)</td><td class="val">${fmtPEN(t.gg)}</td></tr>
+      <tr><td class="lbl">UTILIDAD (${state.util}%)</td><td class="val">${fmtPEN(t.utl)}</td></tr>
+      <tr class="tot"><td class="lbl">TOTAL (PEN)</td><td class="val">${fmtPEN(t.totalFinal)}</td></tr>
+    </table>
+    <div class="son">SON: ${numEnLetras(t.totalFinal)}</div>
+
+    <div class="seccion-titulo">Condiciones comerciales</div>
+    <div class="cond-grid">
+      <div class="k">Modalidad:</div><div>${escapeHtml(state.modalidad)}</div>
+      <div class="k">Validez de oferta:</div><div>${escapeHtml(state.validez)}</div>
+      <div class="k">Forma de pago:</div><div>${escapeHtml(state.formaPago)}</div>
+      <div class="k">Método de pago:</div><div>${escapeHtml(state.metodoPago)}</div>
+    </div>
+
+    ${state.notas.filter(n=>n.texto.trim()).length ? `
+      <div class="seccion-titulo">Notas</div>
+      <ul class="notas-list">${state.notas.filter(n=>n.texto.trim()).map(n=>`<li>${escapeHtml(n.texto)}</li>`).join('')}</ul>
+    ` : ''}
+
+    ${state.excl.filter(n=>n.texto.trim()).length ? `
+      <div class="seccion-titulo">Exclusiones</div>
+      <ol class="notas-list">${state.excl.filter(n=>n.texto.trim()).map(n=>`<li>${escapeHtml(n.texto)}</li>`).join('')}</ol>
+    ` : ''}
+
+    ${state.resp.filter(n=>n.texto.trim()).length ? `
+      <div class="seccion-titulo">Responsabilidad del cliente</div>
+      <ol class="notas-list">${state.resp.filter(n=>n.texto.trim()).map(n=>`<li>${escapeHtml(n.texto)}</li>`).join('')}</ol>
+    ` : ''}
+
+    <div class="footer-emp">
+      <b>${escapeHtml(cfg.slogan)}</b><br>
+      <b>${escapeHtml(cfg.empresa)}</b><br>
+      RUC: ${escapeHtml(cfg.ruc)} &nbsp;|&nbsp; ${escapeHtml(cfg.telefono)}<br>
+      ${escapeHtml(cfg.email)}<br>
+      ${escapeHtml(cfg.direccion)}
+    </div>
+
+    <div class="validez">OFERTA VÁLIDA POR LA TOTALIDAD DEL SERVICIO</div>
+  `;
+  document.getElementById('sheet').innerHTML = html;
+  calcularMini();
+}
+
+function renderBloqueRec(num, titulo, items, isMO){
+  // Filtrar items inactivos (no aparecen en PDF, no suman)
+  const itemsActivos = items.filter(r => r.activo !== false);
+  const sub = sumRec(itemsActivos);
+  const header = `
+    <div class="recursos-h">
+      <div class="num">${num}</div><div class="titulo">${escapeHtml(titulo)}</div>
+      <div class="lbl">SUB TOTAL</div><div class="val">${fmtNum(sub,2)}</div>
+    </div>
+  `;
+  if(itemsActivos.length === 0) return header;
+  // Formato del Excel: CANTIDAD | DÍAS | JORNADA | P.UNITARIO | T.HORAS | TOTAL (igual para MO y mov/eq)
+  const rows = itemsActivos.map(r => {
+    const horas = r.cantidad*r.dias*r.jornada;
+    const total = horas * r.precioHH;
+    return `<tr>
+      <td class="cod">-</td>
+      <td class="desc">${escapeHtml(isMO ? r.cargo : r.descripcion)}</td>
+      <td class="num">${fmtNum(r.cantidad,0)}</td>
+      <td class="num">${fmtNum(r.dias,2)}</td>
+      <td class="num">${fmtNum(r.jornada,0)}</td>
+      <td class="num">${fmtNum(r.precioHH,2)}</td>
+      <td class="num">${fmtNum(horas,0)}</td>
+      <td class="num">${fmtNum(total,2)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    ${header}
+    <table class="rec">
+      <thead><tr>
+        <th style="width:18px"></th>
+        <th class="left"></th>
+        <th style="width:55px">CANTIDAD</th>
+        <th style="width:50px">DÍAS</th>
+        <th style="width:55px">JORNADA</th>
+        <th style="width:70px">P. UNITARIO</th>
+        <th style="width:55px">T. HORAS</th>
+        <th style="width:80px"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderBloqueMat(subMat){
+  const header = `
+    <div class="recursos-h">
+      <div class="num">2.1.4</div><div class="titulo">Materiales</div>
+      <div class="lbl">SUB TOTAL</div><div class="val">${fmtNum(subMat,2)}</div>
+    </div>
+  `;
+  if(state.mat.length === 0) return header;
+  const rows = state.mat.map(m => {
+    if(m.tipo === 'cat'){
+      return `<tr class="cat"><td colspan="7">${escapeHtml(m.titulo)}</td></tr>`;
+    }
+    const pUnit = (m.costoReal||0)*(m.ganancia||1)*(m.logistica||1);
+    const total = pUnit*(m.cantidad||0);
+    const marcaModelo = [m.marca, m.modelo].filter(x => x && x.trim()).join(' / ');
+    return `<tr>
+      <td class="desc">${escapeHtml(m.descripcion)}</td>
+      <td>${escapeHtml(marcaModelo)}</td>
+      <td>${escapeHtml(m.fabricante||'')}</td>
+      <td class="cen">${escapeHtml(m.um)}</td>
+      <td class="num">${fmtNum(m.cantidad,2)}</td>
+      <td class="num">${fmtNum(pUnit,2)}</td>
+      <td class="num">${fmtNum(total,2)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    ${header}
+    <table class="mat">
+      <thead><tr>
+        <th class="left">DESCRIPCIÓN</th>
+        <th class="left" style="width:100px">MARCA / MODELO</th>
+        <th class="left" style="width:100px">FABRICANTE</th>
+        <th style="width:40px">UM</th>
+        <th style="width:50px">CANT.</th>
+        <th style="width:65px">P. UNIT.</th>
+        <th style="width:75px">TOTAL</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// =========================================================================
+// AUTO-GUARDADO de items nuevos en catálogos (al guardar cotización)
+// =========================================================================
+function autoGuardarCatalogos(){
+  // Movilización
+  [...state.mov1, ...state.mov2].forEach(it => {
+    if(it.descripcion && it.descripcion.trim()){
+      DB.ensureCatItem(DB.catMovilizacion, it.descripcion, {um:'día', precio: it.precioHH});
+    }
+  });
+  // Equipos
+  [...state.eq1, ...state.eq2].forEach(it => {
+    if(it.descripcion && it.descripcion.trim()){
+      DB.ensureCatItem(DB.catEquipos, it.descripcion, {um:'día', precio: it.precioHH});
+    }
+  });
+  // Materiales nuevos
+  state.mat.filter(m => m.tipo !== 'cat').forEach(m => {
+    if(m.descripcion && m.descripcion.trim()){
+      const items = DB.materiales.list();
+      const exists = items.find(x => (x.descripcion||'').toLowerCase() === m.descripcion.toLowerCase());
+      if(!exists){
+        DB.materiales.save({descripcion:m.descripcion, marca:m.marca||'', modelo:m.modelo||'', fabricante:m.fabricante, um:m.um, costoReal:m.costoReal, ganancia:m.ganancia, logistica:m.logistica});
+      }
+    }
+  });
+  // Personal nuevo (cargos custom)
+  [...state.mo1, ...state.mo2].forEach(p => {
+    if(p.cargo && p.cargo.trim()){
+      const items = DB.personal.list();
+      const exists = items.find(x => (x.cargo||'').toLowerCase() === p.cargo.toLowerCase());
+      if(!exists) DB.personal.save({cargo:p.cargo, precioHH:p.precioHH});
+    }
+  });
+  // Notas / exclusiones / resp nuevas
+  state.notas.forEach(n => { if(n.texto.trim()) DB.ensureCatItem(DB.catNotas, n.texto); });
+  state.excl.forEach(n  => { if(n.texto.trim()) DB.ensureCatItem(DB.catExclusiones, n.texto); });
+  state.resp.forEach(n  => { if(n.texto.trim()) DB.ensureCatItem(DB.catResponsabilidades, n.texto); });
+  // Lugar/área
+  if(state.clienteId && state.lugar) DB.clienteAddArea(state.clienteId, state.lugar);
+}
+
+// =========================================================================
+// GUARDAR / CARGAR / LISTAR
+// =========================================================================
+function guardarCotizacion(){
+  syncEstadoDesdeForm();
+  autoGuardarCatalogos();
+  const t = totales();
+  const item = { ...state, id: state.id || undefined, totales: t, estado: state.estado || 'borrador' };
+  const saved = DB.cotizaciones.save(item);
+  state.id = saved.id;
+  toast('Cotización guardada: ' + state.codigo, 'success');
+}
+
+function nuevaCotizacion(){
+  if(!confirm('¿Iniciar nueva cotización? Se perderán cambios no guardados.')) return;
+  state = nuevoEstado();
+  init();
+}
+
+function aprobarYCrearProyecto(){
+  guardarCotizacion();
+  if(!state.id){ toast('Guarda primero la cotización','danger'); return; }
+  const c = DB.cotizaciones.get(state.id); if(!c) return;
+  if(c.proyectoId){
+    if(confirm('Esta cotización ya tiene un proyecto vinculado. ¿Ir a Operaciones?')){
+      location.href = 'operaciones.html';
+    }
+    return;
+  }
+  if(!confirm(`¿Aprobar la cotización "${c.codigo}" y crear el proyecto en Operaciones?\n\n• Se marcará como APROBADA\n• Se creará el proyecto vinculado\n• Aparecerá en Operaciones para asignar al supervisor`)) return;
+  c.estado = 'aprobada';
+  DB.cotizaciones.save(c);
+  state.estado = 'aprobada';
+  const p = DB.crearProyectoDesdeCotizacion(state.id);
+  if(p){
+    toast(`✅ Aprobada. Proyecto ${p.codigo} creado.`,'success');
+    if(confirm(`Proyecto ${p.codigo} creado.\n\n¿Ir ahora a Operaciones para asignar al supervisor?`)){
+      location.href = 'operaciones.html';
+    }
+  }
+}
+
+function cargarLista(){
+  const items = DB.cotizaciones.list().sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+  const tbody = document.getElementById('tblLista');
+  tbody.innerHTML = items.length === 0
+    ? `<tr><td colspan="7" class="empty">No hay cotizaciones guardadas.</td></tr>`
+    : items.map(c => `
+      <tr>
+        <td><b>${c.codigo}</b></td>
+        <td>${escapeHtml(c.clienteRazon||'')}</td>
+        <td><small>${escapeHtml((c.servicio||'').slice(0,60))}...</small></td>
+        <td>${fmtDate(c.updatedAt)}</td>
+        <td class="num">${fmtPEN(c.totales?.totalFinal||0)}</td>
+        <td class="num text-success">${fmtPEN(c.totales?.ganancia||0)}</td>
+        <td class="actions">
+          <button class="sm ghost" onclick="cargarCotizacion('${c.id}')">Abrir</button>
+          <button class="sm danger" onclick="eliminarCotizacion('${c.id}')">×</button>
+        </td>
+      </tr>
+    `).join('');
+  document.getElementById('modalLista').classList.add('show');
+}
+function cargarCotizacion(id){
+  const c = DB.cotizaciones.get(id); if(!c) return;
+  // Migrar campos viejos por compatibilidad
+  state = {...nuevoEstado(), ...c};
+  if(!Array.isArray(state.notas)) state.notas = (state.notas||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+  if(!Array.isArray(state.excl))  state.excl  = (state.exclusiones||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+  if(!Array.isArray(state.resp))  state.resp  = (state.respCliente||'').split('\n').filter(s=>s.trim()).map(t=>({texto:t}));
+  state.mat = (state.mat||[]).map(m => m.tipo==='cat'?m:({...m, ganancia: m.ganancia||m.margen||1.3, logistica: m.logistica||1.0}));
+  syncFormDesdeEstado();
+  actualizarPreviewLogo();
+  // Inferir aplicaEn en items viejos sin marcador
+  ['mov1','eq1','mov2','eq2'].forEach(g => {
+    (state[g]||[]).forEach(it => {
+      if(!it.aplicaEn) it.aplicaEn = inferirAplicaEn(it.descripcion);
+      if(it.activo === undefined) it.activo = true;
+    });
+  });
+  // Recalcular auto-días/cantidad para items sin marcador explícito (cotizaciones viejas)
+  recalcDiasAuto(1);
+  recalcDiasAuto(2);
+  recalcCantidadAuto(1);
+  recalcCantidadAuto(2);
+  renderListas();
+  renderListaTextos();
+  render();
+  document.getElementById('modalLista').classList.remove('show');
+  toast('Cotización cargada: ' + state.codigo);
+}
+function eliminarCotizacion(id){
+  if(!confirm('¿Eliminar esta cotización?')) return;
+  DB.cotizaciones.remove(id);
+  cargarLista();
+}
+
+// =========================================================================
+// HELPERS
+// =========================================================================
+function escapeHtml(s){
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+// Auto-render al escribir en el editor (excluyendo controles que ya tienen handler)
+document.addEventListener('input', e => {
+  const inEd = e.target.closest('.editor');
+  if(inEd && !e.target.closest('.item-row') && !e.target.closest('.simple-item')) render();
+});
+
+init();
+</script>
+</body>
+</html>

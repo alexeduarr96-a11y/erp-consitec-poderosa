@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Proyectos — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.progress-bar{height:6px;background:#e6e8eb;border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-bar .fill{height:100%;background:var(--brand);transition:width .25s}
+.progress-bar .fill.done{background:var(--success)}
+.progress-bar .fill.warn{background:#f57c00}
+
+/* Cronograma / Tareas */
+.tarea-row{
+  background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;
+  padding:6px;margin-top:5px;display:grid;grid-template-columns:24px 1fr 110px 110px 55px 22px;gap:5px;align-items:center;
+}
+.tarea-row .num{background:var(--brand);color:#fff;font-size:10.5px;padding:2px 7px;border-radius:8px;font-weight:600;text-align:center}
+.tarea-row input,.tarea-row select{font-size:11.5px;padding:4px 6px}
+.tarea-row .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.tarea-row.padre{background:#fef3c7;border-color:#f59e0b}
+.tarea-row.padre .num{background:#f59e0b}
+
+/* Mini Gantt en modal */
+.gantt-mini{margin-top:10px;background:#fff;border:1px solid var(--gray-line);border-radius:4px;padding:8px;overflow-x:auto}
+.gantt-mini h4{margin:0 0 6px;font-size:11.5px;color:var(--brand3);text-transform:uppercase;letter-spacing:.3px}
+.gantt-mini .timeline{position:relative;min-width:600px}
+.gantt-mini .gh{display:flex;border-bottom:1px solid var(--gray-line);padding-bottom:3px;margin-bottom:4px;font-size:9.5px;color:var(--muted);font-weight:600}
+.gantt-mini .gh .gh-cell{flex:1;text-align:center;border-right:1px dashed #ddd;padding:2px 0}
+.gantt-mini .gh .gh-cell:last-child{border-right:none}
+.gantt-mini .grow{display:grid;grid-template-columns:170px 1fr;gap:5px;margin-top:2px;align-items:center;font-size:11px}
+.gantt-mini .grow .tname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333}
+.gantt-mini .grow .tbar{position:relative;height:14px;background:#f1f5f9;border-radius:4px}
+.gantt-mini .grow .tbar .seg{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:4px;display:flex;align-items:center;justify-content:flex-start;padding-left:4px;color:#fff;font-size:9.5px;font-weight:600;overflow:hidden;white-space:nowrap}
+.gantt-mini .grow .tbar .seg.done{background:linear-gradient(90deg,var(--success),#34d399)}
+.gantt-mini .grow .tbar .seg.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.gantt-mini .grow .tbar .seg .av{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.18);border-radius:4px 0 0 4px}
+.gantt-mini .hoy{position:absolute;top:0;bottom:0;width:1px;background:#dc3545;z-index:5}
+.gantt-mini .hoy::before{content:'HOY';position:absolute;top:-12px;left:-12px;font-size:8px;color:#dc3545;font-weight:700;background:#fff;padding:0 3px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Proyectos en ejecución</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html" class="active">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>🏗️ Proyectos</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Proyecto</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por nombre, cliente, código..." oninput="render()"></div>
+      <select id="filtroEstado" onchange="render()" style="max-width:180px">
+        <option value="">Todos los estados</option>
+        <option value="planificado">Planificado</option>
+        <option value="en_curso">En curso</option>
+        <option value="completado">Completado</option>
+        <option value="pausado">Pausado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <span class="tag" id="counter"></span>
+    </div>
+    <table class="data" id="tabla">
+      <thead>
+        <tr>
+          <th>Código / Nombre</th>
+          <th>Cliente</th>
+          <th>Cotización</th>
+          <th>Inicio → Fin</th>
+          <th>Avance</th>
+          <th>Estado</th>
+          <th class="num">Monto (S/)</th>
+          <th class="actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Modal Proyecto -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Proyecto</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <div class="row">
+        <div>
+          <label>Código interno</label>
+          <input id="f-codigo" placeholder="PRY-26-001">
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="f-estado">
+            <option value="planificado">Planificado</option>
+            <option value="en_curso">En curso</option>
+            <option value="completado">Completado</option>
+            <option value="pausado">Pausado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Nombre del proyecto *</label>
+      <input id="f-nombre" placeholder="Ej: Fabricación e instalación de escalera y plataforma metálica">
+
+      <div class="row">
+        <div>
+          <label>Cliente *</label>
+          <select id="f-cliente" onchange="filtrarCotizaciones()"></select>
+        </div>
+        <div>
+          <label>Lugar / Área</label>
+          <input id="f-lugar">
+        </div>
+      </div>
+
+      <label>Cotización vinculada</label>
+      <select id="f-cotizacion" onchange="aplicarCotizacion()">
+        <option value="">— Sin vincular —</option>
+      </select>
+
+      <div class="row3">
+        <div>
+          <label>Fecha inicio</label>
+          <input id="f-fechaInicio" type="date">
+        </div>
+        <div>
+          <label>Fecha fin estimada</label>
+          <input id="f-fechaFin" type="date">
+        </div>
+        <div>
+          <label>Avance (%)</label>
+          <input id="f-avance" type="number" min="0" max="100" value="0">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Monto contractual (S/)</label>
+          <input id="f-monto" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div>
+          <label>Responsable de obra</label>
+          <input id="f-responsable">
+        </div>
+      </div>
+
+      <label>Notas / Observaciones</label>
+      <textarea id="f-notas" rows="3"></textarea>
+
+      <!-- Cronograma / Tareas -->
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        📅 Cronograma del proyecto
+        <small class="text-muted" style="font-weight:normal;font-size:10.5px">— Define las tareas con sus fechas para ver el Gantt</small>
+      </h3>
+      <div id="lst-tareas"></div>
+      <button class="ghost" onclick="addTarea()" style="margin-top:6px;width:100%;padding:6px;font-size:12px;border:1px dashed var(--brand);background:transparent;color:var(--brand);border-radius:3px;cursor:pointer">
+        + Agregar tarea
+      </button>
+      <button class="ghost" onclick="generarTareasBase()" style="margin-top:5px;width:100%;padding:5px;font-size:11px;border:1px dashed #94a3b8;background:transparent;color:#475569;border-radius:3px;cursor:pointer">
+        🪄 Generar plantilla básica (Movilización · Habilitación · Fabricación · Montaje · Entrega)
+      </button>
+
+      <!-- Mini Gantt preview -->
+      <div class="gantt-mini" id="gantt-preview" style="display:none">
+        <h4>📊 Vista previa del cronograma</h4>
+        <div class="timeline" id="gantt-timeline"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+function pintarKPIs(){
+  const items = DB.proyectos.list();
+  const enCurso = items.filter(p => p.estado === 'en_curso').length;
+  const completados = items.filter(p => p.estado === 'completado').length;
+  const totalMonto = items.filter(p => p.estado !== 'cancelado').reduce((s,p) => s + (p.monto||0), 0);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi">
+      <div class="label">Total proyectos</div>
+      <div class="value">${items.length}</div>
+    </div>
+    <div class="kpi accent">
+      <div class="label">En curso</div>
+      <div class="value">${enCurso}</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">Completados</div>
+      <div class="value">${completados}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Monto total contratado</div>
+      <div class="value" style="font-size:18px">${fmtPEN(totalMonto)}</div>
+    </div>
+  `;
+}
+
+function render(){
+  pintarKPIs();
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const fEst = document.getElementById('filtroEstado').value;
+  const items = DB.proyectos.list()
+    .filter(p => !q || (p.nombre||'').toLowerCase().includes(q) || (p.clienteRazon||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q))
+    .filter(p => !fEst || p.estado === fEst)
+    .sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">No hay proyectos. Crea el primero.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(p => {
+      const avance = Math.min(100, Math.max(0, p.avance||0));
+      const cls = avance === 100 ? 'done' : avance < 30 ? 'warn' : '';
+      const inicioFmt = p.fechaInicio ? new Date(p.fechaInicio+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const finFmt    = p.fechaFin    ? new Date(p.fechaFin   +'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      return `
+      <tr>
+        <td>
+          <small class="text-muted">${escapeHtml(p.codigo||'')}</small><br>
+          <b>${escapeHtml((p.nombre||'').slice(0,60))}</b>
+        </td>
+        <td>${escapeHtml(p.clienteRazon||'-')}<br><small class="text-muted">${escapeHtml(p.lugar||'')}</small></td>
+        <td>${p.cotizacionCodigo?`<span class="tag">${escapeHtml(p.cotizacionCodigo)}</span>`:'<small class="text-muted">—</small>'}</td>
+        <td><small>${inicioFmt} → ${finFmt}</small></td>
+        <td style="min-width:120px">
+          <div style="display:flex;justify-content:space-between;font-size:11px"><span>${avance}%</span><span class="text-muted">${p.responsable||''}</span></div>
+          <div class="progress-bar"><div class="fill ${cls}" style="width:${avance}%"></div></div>
+        </td>
+        <td><span class="badge ${badgeClass(p.estado)}">${labelEstado(p.estado)}</span></td>
+        <td class="num"><b>${fmtPEN(p.monto||0)}</b></td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${p.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} proyecto${items.length!==1?'s':''}`;
+}
+
+function labelEstado(e){
+  return {planificado:'Planificado', en_curso:'En curso', completado:'Completado', pausado:'Pausado', cancelado:'Cancelado'}[e] || e;
+}
+function badgeClass(e){
+  return {planificado:'borrador', en_curso:'enviada', completado:'aprobada', pausado:'facturada', cancelado:'rechazada'}[e] || 'borrador';
+}
+
+function poblarSelects(){
+  const sel = document.getElementById('f-cliente');
+  sel.innerHTML = '<option value="">— Selecciona cliente —</option>' +
+    DB.clientes.list().map(c => `<option value="${c.id}">${escapeHtml(c.razonSocial)}</option>`).join('');
+}
+function filtrarCotizaciones(){
+  const cliId = document.getElementById('f-cliente').value;
+  const cots = DB.cotizaciones.list().filter(c => !cliId || c.clienteId === cliId);
+  document.getElementById('f-cotizacion').innerHTML = '<option value="">— Sin vincular —</option>' +
+    cots.map(c => `<option value="${c.id}">${escapeHtml(c.codigo)} — ${escapeHtml((c.servicio||'').slice(0,50))}</option>`).join('');
+}
+function aplicarCotizacion(){
+  const id = document.getElementById('f-cotizacion').value;
+  if(!id) return;
+  const c = DB.cotizaciones.get(id); if(!c) return;
+  // Auto-llenar campos del proyecto desde la cotización
+  if(!document.getElementById('f-nombre').value) document.getElementById('f-nombre').value = c.servicio||'';
+  if(!document.getElementById('f-lugar').value) document.getElementById('f-lugar').value = c.lugar||'';
+  if(!document.getElementById('f-monto').value && c.totales?.totalFinal){
+    document.getElementById('f-monto').value = c.totales.totalFinal.toFixed(2);
+  }
+}
+
+let formTareas = []; // [{nombre, fechaIni, fechaFin, avance, responsableId}]
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Proyecto';
+  ['f-id','f-codigo','f-nombre','f-lugar','f-monto','f-responsable','f-notas','f-fechaInicio','f-fechaFin'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-avance').value = 0;
+  document.getElementById('f-estado').value = 'planificado';
+  formTareas = [];
+  poblarSelects();
+  filtrarCotizaciones();
+  renderTareas();
+  // Generar código automático
+  const year = new Date().getFullYear().toString().slice(-2);
+  const n = DB.proyectos.list().length + 1;
+  document.getElementById('f-codigo').value = `PRY-${year}-${String(n).padStart(3,'0')}`;
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+}
+
+// ===== CRONOGRAMA / TAREAS =====
+function addTarea(){
+  formTareas.push({id:'t_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), nombre:'', fechaIni:document.getElementById('f-fechaInicio').value||'', fechaFin:'', avance:0});
+  renderTareas();
+}
+function delTarea(i){ formTareas.splice(i,1); renderTareas(); }
+function updTarea(i, campo, val){
+  formTareas[i][campo] = campo === 'avance' ? (parseFloat(val)||0) : val;
+  renderTareas();
+}
+function generarTareasBase(){
+  if(formTareas.length > 0 && !confirm('Esto reemplazará las tareas actuales. ¿Continuar?')) return;
+  const ini = document.getElementById('f-fechaInicio').value;
+  const fin = document.getElementById('f-fechaFin').value;
+  if(!ini || !fin){ toast('Define primero las fechas inicio y fin del proyecto','danger'); return; }
+  const d1 = new Date(ini+'T00:00:00');
+  const d2 = new Date(fin+'T00:00:00');
+  const totalDias = Math.max(1, Math.round((d2-d1)/86400000));
+  const distrib = [0.1, 0.2, 0.35, 0.25, 0.1]; // %s por etapa
+  const nombres = ['Movilización y preparativos','Habilitación de materiales','Fabricación','Montaje en campo','Entrega y desmovilización'];
+  formTareas = [];
+  let acumDias = 0;
+  distrib.forEach((pct, i) => {
+    const dur = Math.max(1, Math.round(totalDias * pct));
+    const fIni = new Date(d1); fIni.setDate(d1.getDate()+acumDias);
+    const fFin = new Date(d1); fFin.setDate(d1.getDate()+acumDias+dur-1);
+    formTareas.push({
+      id:'t_'+Date.now().toString(36)+i,
+      nombre: nombres[i],
+      fechaIni: fIni.toISOString().slice(0,10),
+      fechaFin: fFin.toISOString().slice(0,10),
+      avance: 0,
+    });
+    acumDias += dur;
+  });
+  renderTareas();
+  toast('Plantilla generada','success');
+}
+function renderTareas(){
+  const cont = document.getElementById('lst-tareas');
+  if(formTareas.length === 0){
+    cont.innerHTML = '<small class="text-muted" style="font-style:italic;display:block;padding:8px;text-align:center">Sin tareas. Agrega una abajo o usa la plantilla básica.</small>';
+    document.getElementById('gantt-preview').style.display = 'none';
+    return;
+  }
+  cont.innerHTML = formTareas.map((t,i) => `
+    <div class="tarea-row">
+      <span class="num">${i+1}</span>
+      <input value="${escapeAttr(t.nombre)}" oninput="updTarea(${i},'nombre',this.value)" placeholder="Nombre de la tarea">
+      <input type="date" value="${t.fechaIni||''}" oninput="updTarea(${i},'fechaIni',this.value)" title="Inicio">
+      <input type="date" value="${t.fechaFin||''}" oninput="updTarea(${i},'fechaFin',this.value)" title="Fin">
+      <input type="number" min="0" max="100" value="${t.avance||0}" oninput="updTarea(${i},'avance',this.value)" title="Avance %" placeholder="%">
+      <button class="del" onclick="delTarea(${i})">×</button>
+    </div>
+  `).join('');
+  pintarMiniGantt();
+}
+function pintarMiniGantt(){
+  const tareasValidas = formTareas.filter(t => t.nombre && t.fechaIni && t.fechaFin);
+  if(tareasValidas.length === 0){ document.getElementById('gantt-preview').style.display = 'none'; return; }
+  document.getElementById('gantt-preview').style.display = 'block';
+  // Rango: min(fechaIni) — max(fechaFin)
+  const fechasIni = tareasValidas.map(t => new Date(t.fechaIni+'T00:00:00'));
+  const fechasFin = tareasValidas.map(t => new Date(t.fechaFin+'T00:00:00'));
+  const minF = new Date(Math.min(...fechasIni.map(d=>d.getTime())));
+  const maxF = new Date(Math.max(...fechasFin.map(d=>d.getTime())));
+  const totalDias = Math.max(1, Math.round((maxF - minF)/86400000) + 1);
+  // Cabecera por semanas o meses según rango
+  const numSemanas = Math.ceil(totalDias / 7);
+  let cabezas = [];
+  if(numSemanas <= 12){
+    // semanas
+    let d = new Date(minF);
+    for(let i = 0; i < numSemanas; i++){
+      cabezas.push(d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}));
+      d.setDate(d.getDate()+7);
+    }
+  } else {
+    // meses
+    let d = new Date(minF.getFullYear(), minF.getMonth(), 1);
+    while(d <= maxF){
+      cabezas.push(d.toLocaleDateString('es-PE',{month:'short',year:'2-digit'}));
+      d.setMonth(d.getMonth()+1);
+    }
+  }
+  // Hoy
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const hoyOffset = hoy >= minF && hoy <= maxF ? ((hoy - minF)/86400000) / totalDias * 100 : null;
+
+  const ghHTML = `<div class="gh">${cabezas.map(c => `<div class="gh-cell">${c}</div>`).join('')}</div>`;
+  const rowsHTML = tareasValidas.map(t => {
+    const ti = new Date(t.fechaIni+'T00:00:00');
+    const tf = new Date(t.fechaFin+'T00:00:00');
+    const left = ((ti - minF)/86400000) / totalDias * 100;
+    const dur = (tf - ti)/86400000 + 1;
+    const width = (dur/totalDias) * 100;
+    const av = Math.min(100, Math.max(0, t.avance||0));
+    const cls = av === 100 ? 'done' : av < 30 ? 'warn' : '';
+    return `
+      <div class="grow">
+        <div class="tname" title="${escapeAttr(t.nombre)}">${escapeHtml(t.nombre)}</div>
+        <div class="tbar">
+          <div class="seg ${cls}" style="left:${left}%;width:${width}%" title="${t.fechaIni} → ${t.fechaFin} (${av}%)">
+            <div class="av" style="width:${av}%"></div>
+            <span style="position:relative;z-index:2">${av>0?av+'%':''}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  const hoyHTML = hoyOffset !== null ? `<div class="hoy" style="left:calc(170px + 5px + (100% - 175px) * ${hoyOffset}/100)"></div>` : '';
+  document.getElementById('gantt-timeline').innerHTML = ghHTML + rowsHTML + hoyHTML;
+}
+
+function escapeAttr(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function editar(id){
+  const p = DB.proyectos.get(id); if(!p) return;
+  document.getElementById('modalTitle').textContent = 'Editar Proyecto — ' + (p.codigo||'');
+  poblarSelects();
+  document.getElementById('f-id').value = p.id;
+  document.getElementById('f-codigo').value = p.codigo||'';
+  document.getElementById('f-nombre').value = p.nombre||'';
+  document.getElementById('f-cliente').value = p.clienteId||'';
+  document.getElementById('f-lugar').value = p.lugar||'';
+  filtrarCotizaciones();
+  document.getElementById('f-cotizacion').value = p.cotizacionId||'';
+  document.getElementById('f-estado').value = p.estado||'planificado';
+  document.getElementById('f-fechaInicio').value = p.fechaInicio||'';
+  document.getElementById('f-fechaFin').value = p.fechaFin||'';
+  document.getElementById('f-avance').value = p.avance||0;
+  document.getElementById('f-monto').value = p.monto||0;
+  document.getElementById('f-responsable').value = p.responsable||'';
+  document.getElementById('f-notas').value = p.notas||'';
+  formTareas = (p.tareas||[]).map(t => ({...t}));
+  renderTareas();
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+}
+
+function guardar(){
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const cliId = document.getElementById('f-cliente').value;
+  if(!nombre){ toast('El nombre es obligatorio','danger'); return; }
+  if(!cliId){ toast('Selecciona un cliente','danger'); return; }
+  const cliente = DB.clientes.get(cliId);
+  const cotId = document.getElementById('f-cotizacion').value;
+  const cot = cotId ? DB.cotizaciones.get(cotId) : null;
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.proyectos.get(id) : {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    codigo: document.getElementById('f-codigo').value.trim(),
+    nombre,
+    clienteId: cliId,
+    clienteRazon: cliente?.razonSocial || '',
+    lugar: document.getElementById('f-lugar').value.trim(),
+    cotizacionId: cotId || '',
+    cotizacionCodigo: cot?.codigo || '',
+    estado: document.getElementById('f-estado').value,
+    fechaInicio: document.getElementById('f-fechaInicio').value,
+    fechaFin: document.getElementById('f-fechaFin').value,
+    avance: parseFloat(document.getElementById('f-avance').value)||0,
+    monto: parseFloat(document.getElementById('f-monto').value)||0,
+    responsable: document.getElementById('f-responsable').value.trim(),
+    notas: document.getElementById('f-notas').value.trim(),
+    tareas: formTareas.filter(t => t.nombre && t.nombre.trim()),
+  };
+  DB.proyectos.save(item);
+  toast('Proyecto guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  if(!confirm('¿Eliminar este proyecto?')) return;
+  DB.proyectos.remove(id);
+  toast('Proyecto eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+render();
+</script>
+</body>
+</html>

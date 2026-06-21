@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Test conexión SharePoint — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.test-card{background:#fff;border:1px solid var(--gray-line);border-radius:6px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.test-card h3{margin:0 0 12px;color:var(--brand3);font-size:14px;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--gray-mid);padding-bottom:6px;font-weight:600}
+.test-row{display:flex;gap:10px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.estado{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600}
+.estado.ok{background:#d1fae5;color:#065f46}
+.estado.err{background:#fee2e2;color:#991b1b}
+.estado.warn{background:#fef3c7;color:#92400e}
+.estado.info{background:#dbeafe;color:#1e3a8a}
+pre{background:#0f172a;color:#86efac;padding:10px 14px;border-radius:5px;font-size:11px;overflow:auto;max-height:280px;line-height:1.4}
+.dato{font-family:'Consolas',monospace;font-size:12px;color:var(--brand3);background:#f1f5f9;padding:2px 6px;border-radius:3px;word-break:break-all}
+.usuario-info{display:flex;align-items:center;gap:10px;background:#dbeafe;padding:8px 14px;border-radius:5px;color:#1e3a8a;font-size:13px;font-weight:500}
+.usuario-info .avatar{width:32px;height:32px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+table.listas-info{width:100%;border-collapse:collapse;font-size:12px}
+table.listas-info th{background:var(--brand3);color:#fff;padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase}
+table.listas-info td{padding:6px 10px;border-bottom:1px solid var(--gray-line)}
+table.listas-info tr.found td{background:#f0fdf4}
+table.listas-info tr.missing td{background:#fef2f2;color:#991b1b}
+.log{font-size:11px;color:var(--muted);padding:6px 10px;background:#f8fafc;border-radius:4px;margin-top:6px;font-family:'Consolas',monospace}
+</style>
+
+<!-- MSAL.js descargado localmente (no requiere internet) -->
+<script src="../js/lib/msal-browser.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Test de conexión SharePoint</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">← Volver al ERP</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>🧪 Test de conexión SharePoint</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="cerrarSesion()" id="btnLogout" style="display:none">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- 1. Configuración -->
+  <div class="test-card">
+    <h3>1. Configuración cargada</h3>
+    <div class="test-row">
+      <span>Cliente ID:</span>
+      <span class="dato" id="cfg-client">—</span>
+      <span class="estado" id="est-config">…</span>
+    </div>
+    <div class="test-row">
+      <span>Tenant ID:</span>
+      <span class="dato" id="cfg-tenant">—</span>
+    </div>
+    <div class="test-row">
+      <span>Sitio SharePoint:</span>
+      <span class="dato" id="cfg-site">—</span>
+    </div>
+  </div>
+
+  <!-- 2. Login -->
+  <div class="test-card">
+    <h3>2. Autenticación Microsoft 365</h3>
+    <div id="login-area">
+      <button class="success" onclick="hacerLogin()" id="btnLogin">🔐 Iniciar sesión con M365</button>
+      <span class="estado info" style="margin-left:10px">Click para abrir popup de Microsoft</span>
+    </div>
+    <div id="usuario-area" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <!-- 3. Conexión SharePoint -->
+  <div class="test-card">
+    <h3>3. Conexión a SharePoint</h3>
+    <button class="ghost" onclick="probarConexion()" id="btnPing" disabled>📡 Probar conexión (ping)</button>
+    <div id="ping-result" style="margin-top:10px"></div>
+  </div>
+
+  <!-- 4. Listar listas -->
+  <div class="test-card">
+    <h3>4. Verificar las 10 listas</h3>
+    <button class="ghost" onclick="verificarListas()" id="btnListas" disabled>📋 Verificar listas</button>
+    <div id="listas-result" style="margin-top:10px"></div>
+  </div>
+
+  <!-- 5. Test CRUD -->
+  <div class="test-card">
+    <h3>5. Prueba CRUD (Crear → Leer → Eliminar un cliente)</h3>
+    <button class="ghost" onclick="testCRUD()" id="btnCRUD" disabled>🧪 Ejecutar test completo</button>
+    <div id="crud-result" style="margin-top:10px"></div>
+  </div>
+
+  <!-- 6. Consola -->
+  <div class="test-card">
+    <h3>6. Consola de eventos</h3>
+    <pre id="consola">Esperando eventos...</pre>
+  </div>
+
+</main>
+
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script>
+let logSeq = 0;
+function log(msg, tipo){
+  logSeq++;
+  const ts = new Date().toLocaleTimeString();
+  const prefix = tipo === 'err' ? '[ERR]' : tipo === 'ok' ? '[OK ]' : '[INF]';
+  const consola = document.getElementById('consola');
+  if(consola.textContent === 'Esperando eventos...') consola.textContent = '';
+  consola.textContent += `\n${ts} ${prefix} ${msg}`;
+  consola.scrollTop = consola.scrollHeight;
+}
+function setEstado(id, clase, texto){
+  const el = document.getElementById(id);
+  el.className = 'estado ' + clase;
+  el.textContent = texto;
+}
+
+// 1. Configuración
+function checkConfig(){
+  if(!window.SP_CONFIG){
+    setEstado('est-config','err','SP_CONFIG no cargado');
+    return false;
+  }
+  document.getElementById('cfg-client').textContent = SP_CONFIG.clientId;
+  document.getElementById('cfg-tenant').textContent = SP_CONFIG.tenantId;
+  document.getElementById('cfg-site').textContent = SP_CONFIG.siteUrl;
+  const ok = SP_CONFIG.clientId && !SP_CONFIG.clientId.startsWith('PEGAR') && SP_CONFIG.tenantId && !SP_CONFIG.tenantId.startsWith('PEGAR');
+  setEstado('est-config', ok?'ok':'err', ok?'OK':'Falta config');
+  if(ok) log('Configuración cargada correctamente', 'ok');
+  return ok;
+}
+
+// 2. Login
+async function hacerLogin(){
+  try {
+    log('Iniciando login con M365...');
+    await Auth.init();
+    const acc = await Auth.login();
+    log(`Login exitoso: ${acc.username}`, 'ok');
+    actualizarUI();
+  } catch(e){
+    log('Error de login: '+e.message, 'err');
+    alert('Error de login: '+e.message);
+  }
+}
+async function cerrarSesion(){
+  try {
+    await Auth.logout();
+    log('Sesión cerrada', 'ok');
+    actualizarUI();
+  } catch(e){
+    log('Error cerrando sesión: '+e.message, 'err');
+  }
+}
+
+function actualizarUI(){
+  const loggedIn = Auth.isLoggedIn();
+  const acc = Auth.getAccount();
+  document.getElementById('btnLogin').style.display = loggedIn ? 'none' : '';
+  document.getElementById('btnLogout').style.display = loggedIn ? '' : 'none';
+  const userArea = document.getElementById('usuario-area');
+  if(loggedIn && acc){
+    const inicial = (acc.name || acc.username || '?').charAt(0).toUpperCase();
+    userArea.style.display = 'block';
+    userArea.innerHTML = `
+      <div class="usuario-info">
+        <div class="avatar">${inicial}</div>
+        <div>
+          <div style="font-weight:600">${acc.name||'(sin nombre)'}</div>
+          <div style="font-size:11.5px;opacity:.7">${acc.username||''}</div>
+        </div>
+      </div>`;
+  } else {
+    userArea.style.display = 'none';
+    userArea.innerHTML = '';
+  }
+  ['btnPing','btnListas','btnCRUD'].forEach(id => {
+    document.getElementById(id).disabled = !loggedIn;
+  });
+}
+
+// 3. Ping
+async function probarConexion(){
+  const area = document.getElementById('ping-result');
+  area.innerHTML = '<div class="estado info">Probando...</div>';
+  try {
+    log('Llamando SPAdapter.ping()');
+    const r = await SPAdapter.ping();
+    if(r.ok){
+      log(`Ping OK · siteId: ${r.siteId.slice(0,50)}...`, 'ok');
+      area.innerHTML = `
+        <span class="estado ok">✓ Conectado</span>
+        <div class="log">Site ID: ${r.siteId}</div>
+        <div class="log">Listas detectadas: ${r.listas.join(', ')}</div>
+      `;
+    } else {
+      log('Ping ERROR: '+r.error, 'err');
+      area.innerHTML = `<span class="estado err">✗ Error</span><div class="log">${r.error}</div>`;
+    }
+  } catch(e){
+    log('Ping excepción: '+e.message, 'err');
+    area.innerHTML = `<span class="estado err">✗ Excepción</span><div class="log">${e.message}</div>`;
+  }
+}
+
+// 4. Verificar listas
+async function verificarListas(){
+  const area = document.getElementById('listas-result');
+  area.innerHTML = '<div class="estado info">Verificando...</div>';
+  try {
+    const esperadas = ['Clientes','Proveedores','Cargos','Personal','Gestion','Materiales','Cotizaciones','OrdenesCompra','Proyectos','Reportes'];
+    await SPAdapter.loadAllListIds();
+    const ids = await SPAdapter.loadAllListIds();
+    let rows = '';
+    let okCount = 0;
+    for(const nombre of esperadas){
+      const existe = ids[nombre];
+      let count = '—';
+      if(existe){
+        okCount++;
+        try {
+          const items = await SPAdapter.list(nombre);
+          count = items.length + ' items';
+        } catch(e){ count = 'err leyendo'; }
+      }
+      rows += `<tr class="${existe?'found':'missing'}"><td>${nombre}</td><td>${existe?'✓ Existe':'✗ Falta'}</td><td>${count}</td></tr>`;
+    }
+    area.innerHTML = `
+      <span class="estado ${okCount===10?'ok':'warn'}">${okCount}/10 listas encontradas</span>
+      <table class="listas-info" style="margin-top:8px"><thead><tr><th>Lista</th><th>Estado</th><th>Items</th></tr></thead><tbody>${rows}</tbody></table>
+    `;
+    log(`Verificación de listas: ${okCount}/10`, okCount===10?'ok':'err');
+  } catch(e){
+    log('Error verificando listas: '+e.message, 'err');
+    area.innerHTML = `<span class="estado err">✗ Error</span><div class="log">${e.message}</div>`;
+  }
+}
+
+// 5. Test CRUD
+async function testCRUD(){
+  const area = document.getElementById('crud-result');
+  area.innerHTML = '<div class="estado info">Ejecutando CRUD...</div>';
+  let html = '<ol style="font-size:12.5px;line-height:1.6;margin:0;padding-left:18px">';
+  let creado = null;
+  try {
+    // CREATE
+    log('CRUD: creando cliente de prueba...');
+    const nuevo = {
+      razonSocial: 'TEST_CONEXION_'+Date.now(),
+      ruc: '99999999999',
+      corto: 'TEST',
+      sector: 'Prueba',
+      direccion: 'Test address',
+      contactos: [{nombre:'Test Contact', email:'test@test.com'}],
+      areas: ['Area 1','Area 2'],
+    };
+    creado = await SPAdapter.save('Clientes', nuevo);
+    html += `<li>✅ CREATE: cliente creado con spId <b>${creado.spId}</b></li>`;
+    log('CREATE OK · spId='+creado.spId, 'ok');
+
+    // READ
+    const items = await SPAdapter.list('Clientes');
+    html += `<li>✅ READ: lista tiene ${items.length} cliente(s)</li>`;
+    log(`READ OK · ${items.length} items`, 'ok');
+
+    // GET por ID
+    const obtenido = await SPAdapter.get('Clientes', creado.spId);
+    html += `<li>✅ GET: cliente obtenido — razón: <b>${obtenido.razonSocial}</b></li>`;
+    log('GET OK', 'ok');
+
+    // VERIFY JSON deserialization
+    if(Array.isArray(obtenido.contactos) && obtenido.contactos[0]?.email === 'test@test.com'){
+      html += `<li>✅ Deserialización JSON OK (contactos[]: ${obtenido.contactos.length})</li>`;
+    } else {
+      html += `<li>⚠ JSON contactos no se deserializó bien: ${JSON.stringify(obtenido.contactos)}</li>`;
+    }
+
+    // UPDATE
+    await SPAdapter.save('Clientes', { spId: creado.spId, razonSocial: 'TEST_ACTUALIZADO_'+Date.now() });
+    html += `<li>✅ UPDATE: cliente actualizado</li>`;
+    log('UPDATE OK', 'ok');
+
+    // DELETE
+    await SPAdapter.remove('Clientes', creado.spId);
+    html += `<li>✅ DELETE: cliente eliminado</li>`;
+    log('DELETE OK', 'ok');
+
+    html += '</ol>';
+    area.innerHTML = `<span class="estado ok">✓ TODOS LOS CRUD FUNCIONAN</span>${html}`;
+    log('🎉 TEST CRUD COMPLETO EXITOSO', 'ok');
+  } catch(e){
+    log('CRUD error: '+e.message, 'err');
+    html += `<li>❌ Error: ${e.message}</li></ol>`;
+    area.innerHTML = `<span class="estado err">✗ Error</span>${html}`;
+    // Cleanup si quedó algo
+    if(creado && creado.spId){
+      try { await SPAdapter.remove('Clientes', creado.spId); log('Limpieza: cliente eliminado', 'ok'); } catch(e2){}
+    }
+  }
+}
+
+// Init
+(async function(){
+  log('Inicializando...');
+  if(!checkConfig()) return;
+  try {
+    await Auth.init();
+    log('MSAL inicializado', 'ok');
+    Auth.onChange(actualizarUI);
+    actualizarUI();
+  } catch(e){
+    log('Error init Auth: '+e.message, 'err');
+  }
+})();
+</script>
+</body>
+</html>

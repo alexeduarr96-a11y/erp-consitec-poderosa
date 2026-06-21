@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Operaciones — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.tab-bar{display:flex;gap:2px;border-bottom:2px solid var(--brand);margin-bottom:14px}
+.tab-bar button{background:#e2e8f0;color:#475569;border:none;padding:8px 16px;font-size:12.5px;cursor:pointer;border-radius:5px 5px 0 0;font-weight:500}
+.tab-bar button.active{background:var(--brand);color:#fff;font-weight:600}
+
+/* Vista por proyecto */
+.proyecto-card{
+  background:#fff;border:1px solid var(--gray-line);border-radius:6px;
+  padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(15,23,42,.06);
+}
+.proyecto-card .ph{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--gray-line);padding-bottom:8px;margin-bottom:10px}
+.proyecto-card .ph .nombre{font-weight:700;color:var(--brand3);font-size:14.5px}
+.proyecto-card .ph .codigo{font-size:11px;color:var(--muted);font-family:'Consolas',monospace}
+.proyecto-card .ph .cliente{font-size:11.5px;color:var(--muted);margin-top:2px}
+.proyecto-card .ph .acciones{display:flex;gap:5px;align-items:center}
+
+.asign-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.asign-pill{
+  background:var(--brand-soft);border:1px solid var(--brand);border-radius:18px;
+  padding:5px 10px 5px 8px;font-size:11.5px;display:flex;align-items:center;gap:6px;
+}
+.asign-pill .nombre{font-weight:600;color:var(--brand3)}
+.asign-pill .rol{font-size:10.5px;color:var(--muted)}
+.asign-pill .x{margin-left:auto;background:transparent;color:#dc3545;border:none;cursor:pointer;font-weight:bold;padding:0 2px;font-size:14px}
+.asign-pill.lead{background:#fef3c7;border-color:#f59e0b}
+.asign-pill.lead .nombre{color:#92400e}
+
+.btn-add-asign{
+  background:#fff;color:var(--brand);border:1px dashed var(--brand);
+  padding:5px 10px;border-radius:18px;font-size:11.5px;font-weight:500;cursor:pointer;
+}
+.btn-add-asign:hover{background:var(--brand-soft)}
+
+.reportes-resumen{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;align-items:center}
+.reportes-resumen .pill{background:var(--gray-soft);border:1px solid var(--gray-line);padding:3px 9px;border-radius:10px;font-weight:600;color:var(--ink)}
+.reportes-resumen .pill.ok{background:#d1fae5;border-color:#86efac;color:#065f46}
+.reportes-resumen .pill.warn{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+
+.proyecto-card.urgente{border-left:5px solid #f59e0b;background:linear-gradient(180deg,#fffbeb 0%,#fff 60px)}
+.proyecto-card.urgente .ph .nombre::before{content:'⚠ ';color:#f59e0b}
+.alerta-urgente{background:#fef3c7;color:#92400e;padding:5px 10px;border-radius:4px;font-size:11.5px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.cot-origen{font-size:11px;color:var(--muted);margin-top:3px}
+.cot-origen a{color:var(--brand);text-decoration:none;font-weight:600}
+.cot-origen a:hover{text-decoration:underline}
+
+.bar{height:8px;background:var(--gray-line);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar .fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:4px;transition:width .25s}
+.bar .fill.done{background:linear-gradient(90deg,var(--success),#34d399)}
+.bar .fill.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+
+.actions-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.actions-row .btn{font-size:11.5px;padding:5px 11px}
+
+/* Tabla reportes */
+.foto-mini{display:inline-block;width:30px;height:30px;background:var(--gray-soft);border-radius:3px;overflow:hidden;border:1px solid var(--gray-line);vertical-align:middle;margin-right:2px}
+.foto-mini img{width:100%;height:100%;object-fit:cover}
+
+/* Modal asignación */
+.asign-row{display:grid;grid-template-columns:1fr 130px 90px 22px;gap:5px;align-items:center;padding:6px;background:#f7f8f9;border:1px solid var(--gray-line);border-radius:3px;margin-top:5px}
+.asign-row input,.asign-row select{font-size:11.5px;padding:4px 6px}
+.asign-row .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Operaciones — Asignaciones y Seguimiento</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html" class="active">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>🔧 Operaciones</h2>
+    <div class="actions">
+      <a class="btn ghost sm" href="reporte-diario.html" style="text-decoration:none">📝 Nuevo Reporte Diario</a>
+      <a class="btn ghost sm" href="reporte-semanal.html" style="text-decoration:none">📊 Informe Semanal</a>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="active" data-tab="proyectos" onclick="cambiarTab('proyectos')">🏗️ Proyectos activos</button>
+    <button data-tab="reportes" onclick="cambiarTab('reportes')">📝 Reportes diarios</button>
+  </div>
+
+  <!-- TAB: PROYECTOS ACTIVOS -->
+  <div id="tab-proyectos">
+    <div class="panel">
+      <div class="toolbar">
+        <div class="search"><input id="q" placeholder="Buscar proyecto..." oninput="renderProyectos()"></div>
+        <select id="fEstado" onchange="renderProyectos()" style="max-width:200px">
+          <option value="activos" selected>🟢 Activos (planificados + en curso)</option>
+          <option value="sin_asignar">⚠ Por asignar (sin supervisor)</option>
+          <option value="">Todos los estados</option>
+          <option value="planificado">Solo planificados</option>
+          <option value="en_curso">Solo en curso</option>
+          <option value="completado">Completado</option>
+          <option value="pausado">Pausado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <span class="tag" id="counter"></span>
+      </div>
+      <div id="lst-proyectos"></div>
+    </div>
+  </div>
+
+  <!-- TAB: REPORTES DIARIOS -->
+  <div id="tab-reportes" class="hidden">
+    <div class="panel">
+      <div class="toolbar">
+        <div class="search"><input id="qr" placeholder="Buscar por proyecto..." oninput="renderReportes()"></div>
+        <select id="fProyecto" onchange="renderReportes()" style="max-width:280px"><option value="">Todos los proyectos</option></select>
+        <input type="date" id="fDesde" oninput="renderReportes()" title="Desde">
+        <input type="date" id="fHasta" oninput="renderReportes()" title="Hasta">
+        <span class="tag" id="counterR"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data" id="tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Proyecto</th>
+              <th>Responsable</th>
+              <th>Personal</th>
+              <th>Avance</th>
+              <th>Fotos</th>
+              <th>Incidencias</th>
+              <th class="actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyR"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal Asignaciones -->
+<div class="modal-overlay" id="modalAsign">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <h3 id="modalAsignTitle">Asignar personal al proyecto</h3>
+      <button class="close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ma-proyectoId">
+      <div style="background:var(--brand-soft);padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:12px">
+        <b>Proyecto:</b> <span id="ma-proyectoNombre"></span>
+      </div>
+
+      <h3 style="font-size:12px;margin:0 0 6px;color:var(--brand3);text-transform:uppercase;letter-spacing:.4px">Personal asignado</h3>
+      <div id="ma-lst"></div>
+      <button class="add-btn ghost" onclick="addAsignRow()" style="margin-top:8px;padding:6px;font-size:11.5px;border:1px dashed var(--brand);background:transparent;color:var(--brand);width:100%;border-radius:3px;cursor:pointer">
+        + Agregar persona
+      </button>
+
+      <label class="mt-3">Responsable / Supervisor de obra</label>
+      <select id="ma-responsable" style="font-size:12.5px"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="success" onclick="guardarAsign()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let formAsign = []; // [{personalId, rol, horasSemana}]
+
+function cambiarTab(tab){
+  ['proyectos','reportes'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab));
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  if(tab === 'reportes') renderReportes();
+}
+
+// ===================== KPIs =====================
+function pintarKPIs(){
+  const proys = DB.proyectos.list();
+  const activos = proys.filter(p => p.estado === 'en_curso' || p.estado === 'planificado');
+  const enCurso = proys.filter(p => p.estado === 'en_curso');
+  const asigns = DB.asignaciones.list();
+  const sinSupervisor = activos.filter(p => {
+    const a = asigns.find(x => x.proyectoId === p.id);
+    return !a || (!a.responsable && (a.personas||[]).length === 0);
+  });
+  const totPersonas = asigns.reduce((s,a) => s + (a.personas?.length||0), 0);
+  const reportes = DB.reportesDiarios.list();
+  const hoy = todayISO();
+  const reportesHoy = reportes.filter(r => r.fecha === hoy).length;
+  const sinReporteHoy = enCurso.filter(p => !reportes.find(r => r.fecha === hoy && r.proyectoId === p.id)).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi" style="border-left-color:${sinSupervisor.length>0?'#f59e0b':'var(--success)'}">
+      <div class="label">${sinSupervisor.length>0?'⚠ ':''}Por asignar</div>
+      <div class="value" style="color:${sinSupervisor.length>0?'#b45309':'var(--success)'}">${sinSupervisor.length}</div>
+      <div class="sub">Proyectos sin supervisor</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Proyectos en curso</div>
+      <div class="value">${enCurso.length}</div>
+      <div class="sub">${activos.length} activos · ${totPersonas} personas asignadas</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">Reportes hoy</div>
+      <div class="value">${reportesHoy}</div>
+      <div class="sub">${hoy}</div>
+    </div>
+    <div class="kpi" style="border-left-color:${sinReporteHoy>0?'#dc3545':'var(--success)'}">
+      <div class="label">${sinReporteHoy>0?'⚠ ':''}Sin reporte hoy</div>
+      <div class="value" style="color:${sinReporteHoy>0?'#dc3545':'var(--success)'}">${sinReporteHoy}</div>
+      <div class="sub">de los proyectos en curso</div>
+    </div>
+  `;
+}
+
+// ===================== PROYECTOS =====================
+function renderProyectos(){
+  pintarKPIs();
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const fEst = document.getElementById('fEstado').value;
+  const asigns = DB.asignaciones.list();
+  const sinAsignFn = id => {
+    const a = asigns.find(x => x.proyectoId === id);
+    return !a || (!a.responsable && (a.personas||[]).length === 0);
+  };
+  let proys = DB.proyectos.list().filter(p => {
+    if(q && !((p.nombre||'').toLowerCase().includes(q) || (p.clienteRazon||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q))) return false;
+    if(fEst === 'activos') return p.estado === 'planificado' || p.estado === 'en_curso';
+    if(fEst === 'sin_asignar') return sinAsignFn(p.id) && (p.estado === 'planificado' || p.estado === 'en_curso');
+    if(fEst) return p.estado === fEst;
+    return true;
+  });
+
+  // Ordenar: primero los SIN asignación (para destacar los recién aprobados), luego en curso, después planificados
+  proys.sort((a,b) => {
+    const aSA = sinAsignFn(a.id), bSA = sinAsignFn(b.id);
+    if(aSA !== bSA) return aSA ? -1 : 1;
+    const orden = {en_curso:0, planificado:1, pausado:2, completado:3, cancelado:4};
+    const oa = orden[a.estado] ?? 5, ob = orden[b.estado] ?? 5;
+    if(oa !== ob) return oa - ob;
+    return (b.updatedAt||0) - (a.updatedAt||0);
+  });
+
+  const cont = document.getElementById('lst-proyectos');
+  const reportes = DB.reportesDiarios.list();
+  const personalDB = DB.personal.list();
+
+  if(proys.length === 0){
+    cont.innerHTML = `
+      <div class="empty" style="padding:30px;text-align:center;color:var(--muted);background:#f8fafc;border-radius:8px">
+        <h3 style="margin-bottom:8px;color:var(--brand3)">No hay proyectos para operar</h3>
+        <p>Los proyectos se generan automáticamente cuando una cotización pasa a estado <b>"Aprobada"</b>.</p>
+        <p>Ve a <a href="cotizaciones.html" style="color:var(--brand);font-weight:600">📊 Cotizaciones</a> y marca alguna como aprobada para crear el proyecto.</p>
+      </div>`;
+    document.getElementById('counter').textContent = '0 proyectos';
+    return;
+  }
+
+  cont.innerHTML = proys.map(p => {
+    const asign = asigns.find(a => a.proyectoId === p.id);
+    const personas = (asign?.personas)||[];
+    const responsable = asign?.responsable ? personalDB.find(x => x.id === asign.responsable) : null;
+    const sinPersonal = personas.length === 0 && !responsable;
+    const reportesP = reportes.filter(r => r.proyectoId === p.id);
+    const ultimoReporte = reportesP.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''))[0];
+    const hoy = todayISO();
+    const reporteHoy = reportesP.find(r => r.fecha === hoy);
+    const avance = p.avance || 0;
+    const cls = avance === 100 ? 'done' : avance < 30 ? 'warn' : '';
+    const esUrgente = sinPersonal && (p.estado === 'planificado' || p.estado === 'en_curso');
+    const tipoCot = p.cotizacionTipo === 'suministro' ? '📦 Suministro' : '📋 Servicio';
+
+    const personasHTML = personas.length === 0
+      ? '<small class="text-muted" style="font-style:italic">Sin personal asignado</small>'
+      : personas.map(pe => {
+          const per = personalDB.find(x => x.id === pe.personalId);
+          const esLead = asign.responsable === pe.personalId;
+          return `<span class="asign-pill ${esLead?'lead':''}" title="${escapeHtml(pe.rol||'')}">
+            <span class="nombre">${esLead?'⭐ ':''}${escapeHtml(personalNombre(per))}</span>
+            <span class="rol">${escapeHtml(pe.rol||per?.cargo||'')}</span>
+          </span>`;
+        }).join('');
+
+    return `
+      <div class="proyecto-card ${esUrgente?'urgente':''}">
+        ${esUrgente ? `<div class="alerta-urgente">⚠ Proyecto sin supervisor asignado — Asigna al responsable para comenzar la ejecución</div>` : ''}
+        <div class="ph">
+          <div style="flex:1">
+            <div class="nombre">${escapeHtml(p.nombre||'')}</div>
+            <div class="codigo">${escapeHtml(p.codigo||'')} ${p.lugar?'· '+escapeHtml(p.lugar):''}</div>
+            <div class="cliente">🏢 ${escapeHtml(p.clienteRazon||'-')}</div>
+            ${p.cotizacionCodigo ? `<div class="cot-origen">📄 Origen: ${tipoCot} <a href="cotizaciones.html">${escapeHtml(p.cotizacionCodigo)}</a> · Monto: <b style="color:var(--brand3)">${fmtPEN(p.monto||0)}</b></div>` : ''}
+          </div>
+          <div class="acciones">
+            <span class="badge ${badgeEstado(p.estado)}">${labelEstado(p.estado)}</span>
+            <button class="${esUrgente?'accent':'ghost'} sm" onclick="abrirAsign('${p.id}')">👷 ${sinPersonal?'Asignar supervisor':'Asignar'}</button>
+          </div>
+        </div>
+
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px">
+          ${responsable ? `<b>Responsable:</b> ⭐ ${escapeHtml(personalNombre(responsable))}${responsable.cargo?' ('+escapeHtml(responsable.cargo)+')':''} · ` : ''}
+          <b>Personal:</b> ${personas.length}
+        </div>
+
+        <div class="asign-grid" style="margin-bottom:10px">${personasHTML}</div>
+
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:8px">
+          <span><b>Avance:</b> ${avance}%</span>
+          <span class="text-muted">${reportesP.length} reportes registrados</span>
+        </div>
+        <div class="bar"><div class="fill ${cls}" style="width:${avance}%"></div></div>
+
+        <div class="reportes-resumen">
+          ${reporteHoy
+            ? `<span class="pill ok">✓ Reporte de hoy registrado</span>`
+            : `<span class="pill warn">⚠ Sin reporte hoy</span>`}
+          ${ultimoReporte ? `<span class="pill">Último: ${formatearFecha(ultimoReporte.fecha)}</span>` : ''}
+        </div>
+
+        <div class="actions-row">
+          <a class="btn sm" href="reporte-diario.html?proyectoId=${p.id}" style="text-decoration:none">📝 Nuevo reporte diario</a>
+          <a class="btn ghost sm" href="reporte-semanal.html?proyectoId=${p.id}" style="text-decoration:none">📊 Informe semanal</a>
+          <a class="btn ghost sm" href="proyectos.html" style="text-decoration:none">✏ Editar proyecto</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('counter').textContent = `${proys.length} proyecto${proys.length!==1?'s':''}`;
+}
+
+function labelEstado(e){
+  return {planificado:'Planificado', en_curso:'En curso', completado:'Completado', pausado:'Pausado', cancelado:'Cancelado'}[e] || e;
+}
+function badgeEstado(e){
+  return {planificado:'borrador', en_curso:'enviada', completado:'aprobada', pausado:'facturada', cancelado:'rechazada'}[e] || 'borrador';
+}
+function formatearFecha(iso){
+  if(!iso) return '—';
+  return new Date(iso+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'2-digit'});
+}
+
+// ===================== MODAL ASIGNACIÓN =====================
+function abrirAsign(proyectoId){
+  const p = DB.proyectos.get(proyectoId); if(!p) return;
+  document.getElementById('ma-proyectoId').value = proyectoId;
+  document.getElementById('ma-proyectoNombre').textContent = `${p.codigo||''} — ${p.nombre||''}`;
+
+  const existing = DB.asignaciones.list().find(a => a.proyectoId === proyectoId);
+  formAsign = existing ? [...(existing.personas||[])] : [];
+
+  renderAsignRows();
+
+  // Responsable dropdown (solo activos)
+  const sel = document.getElementById('ma-responsable');
+  const personal = DB.personal.list().filter(p => p.activo !== false);
+  sel.innerHTML = '<option value="">— Sin responsable —</option>' +
+    personal.map(per => `<option value="${per.id}">${escapeHtml(personalLabel(per))}</option>`).join('');
+  sel.value = existing?.responsable || '';
+
+  document.getElementById('modalAsign').classList.add('show');
+}
+function cerrarModal(){ document.getElementById('modalAsign').classList.remove('show'); }
+function addAsignRow(){ formAsign.push({personalId:'', rol:'', horasSemana:48}); renderAsignRows(); }
+function delAsignRow(i){ formAsign.splice(i,1); renderAsignRows(); }
+function updAsignRow(i, campo, val){
+  formAsign[i][campo] = campo === 'horasSemana' ? (parseFloat(val)||0) : val;
+}
+function renderAsignRows(){
+  const personal = DB.personal.list().filter(p => p.activo !== false);
+  const cont = document.getElementById('ma-lst');
+  if(formAsign.length === 0){
+    cont.innerHTML = '<small class="text-muted" style="font-style:italic">Sin personal asignado. Agrega uno.</small>';
+    return;
+  }
+  cont.innerHTML = formAsign.map((a,i) => `
+    <div class="asign-row">
+      <select onchange="updAsignRow(${i},'personalId',this.value)">
+        <option value="">— Trabajador —</option>
+        ${personal.map(p => `<option value="${p.id}" ${p.id===a.personalId?'selected':''}>${escapeHtml(personalLabel(p))} (S/${p.precioHH||0}/h)</option>`).join('')}
+      </select>
+      <input value="${escapeAttr(a.rol||'')}" oninput="updAsignRow(${i},'rol',this.value)" placeholder="Rol / Tarea">
+      <input type="number" step="0.5" value="${a.horasSemana||48}" oninput="updAsignRow(${i},'horasSemana',this.value)" placeholder="Hrs/sem">
+      <button class="del" onclick="delAsignRow(${i})">×</button>
+    </div>
+  `).join('');
+}
+function guardarAsign(){
+  const proyectoId = document.getElementById('ma-proyectoId').value;
+  const responsable = document.getElementById('ma-responsable').value;
+  // Limpiar entries sin personalId
+  const personasLimpias = formAsign.filter(a => a.personalId);
+  const existing = DB.asignaciones.list().find(a => a.proyectoId === proyectoId);
+  const item = {
+    ...(existing||{}),
+    id: existing?.id,
+    proyectoId,
+    personas: personasLimpias,
+    responsable,
+  };
+  DB.asignaciones.save(item);
+  toast('Asignación guardada','success');
+  cerrarModal();
+  renderProyectos();
+}
+
+// ===================== REPORTES DIARIOS =====================
+function poblarFiltroProyectos(){
+  const sel = document.getElementById('fProyecto');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los proyectos</option>' +
+    DB.proyectos.list().map(p => `<option value="${p.id}">${escapeHtml(p.codigo||'')} — ${escapeHtml(p.nombre||'')}</option>`).join('');
+  sel.value = cur;
+}
+function renderReportes(){
+  poblarFiltroProyectos();
+  const q = (document.getElementById('qr').value||'').toLowerCase();
+  const fProy = document.getElementById('fProyecto').value;
+  const desde = document.getElementById('fDesde').value;
+  const hasta = document.getElementById('fHasta').value;
+  const proysMap = Object.fromEntries(DB.proyectos.list().map(p => [p.id, p]));
+  const personalMap = Object.fromEntries(DB.personal.list().map(p => [p.id, p]));
+
+  const items = DB.reportesDiarios.list()
+    .filter(r => {
+      const p = proysMap[r.proyectoId];
+      if(q && !(p?.nombre||'').toLowerCase().includes(q) && !(p?.codigo||'').toLowerCase().includes(q)) return false;
+      if(fProy && r.proyectoId !== fProy) return false;
+      if(desde && (r.fecha||'') < desde) return false;
+      if(hasta && (r.fecha||'') > hasta) return false;
+      return true;
+    })
+    .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  const tbody = document.getElementById('tbodyR');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">No hay reportes que coincidan.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(r => {
+      const p = proysMap[r.proyectoId];
+      const resp = r.responsableId ? personalMap[r.responsableId] : null;
+      const fotos = r.fotos || [];
+      const fotosHTML = fotos.slice(0,4).map(f => `<span class="foto-mini"><img src="${f.thumb||f.base64}" alt=""></span>`).join('') + (fotos.length>4 ? `<small> +${fotos.length-4}</small>`:'');
+      const inc = (r.incidencias||'').trim();
+      return `
+        <tr>
+          <td><b>${formatearFecha(r.fecha)}</b></td>
+          <td><small><b>${escapeHtml(p?.codigo||'')}</b><br>${escapeHtml((p?.nombre||'').slice(0,40))}</small></td>
+          <td><small>${resp?escapeHtml(personalNombre(resp)):'—'}</small></td>
+          <td class="num">${(r.personalPresente||[]).length}</td>
+          <td><small>${r.avance!=null?r.avance+'%':'—'}</small></td>
+          <td>${fotosHTML || '<small class="text-muted">—</small>'}</td>
+          <td>${inc ? `<span class="badge rechazada" title="${escapeAttr(inc)}">⚠ Sí</span>` : '<small class="text-muted">No</small>'}</td>
+          <td class="actions">
+            <a class="btn sm ghost" href="reporte-diario.html?id=${r.id}" style="text-decoration:none">Abrir</a>
+            <button class="sm danger" onclick="eliminarReporte('${r.id}')">×</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+  document.getElementById('counterR').textContent = `${items.length} reporte${items.length!==1?'s':''}`;
+}
+function eliminarReporte(id){
+  if(!confirm('¿Eliminar este reporte diario?')) return;
+  DB.reportesDiarios.remove(id);
+  renderReportes();
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+renderProyectos();
+</script>
+</body>
+</html>

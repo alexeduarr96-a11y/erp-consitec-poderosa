@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reportes — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.section{margin-top:18px}
+.section h3{margin:0 0 12px;font-size:13px;color:var(--brand3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;border-bottom:2px solid var(--brand);padding-bottom:5px}
+
+/* Selector de año/filtros */
+.filtros{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filtros label{margin:0;font-weight:600;color:var(--ink)}
+.filtros select{max-width:200px}
+
+/* Tabla mensual con gráfica */
+.tabla-mes{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+.tabla-mes th{background:var(--brand3);color:#fff;text-align:left;padding:9px 10px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+.tabla-mes th.num{text-align:right}
+.tabla-mes td{padding:8px 10px;border-bottom:1px solid var(--gray-line);vertical-align:middle}
+.tabla-mes td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tabla-mes tr:hover td{background:var(--brand-soft)}
+.tabla-mes tr.actual td{background:#fef3c7}
+.tabla-mes tr.total td{background:var(--brand3);color:#fff;font-weight:700;border-bottom:none}
+.tabla-mes tr.total td.num{color:#fff}
+
+/* Mini-gráfica de barras horizontal */
+.bar-cell{position:relative;min-width:120px}
+.bar-cell .bar{height:14px;background:var(--gray-line);border-radius:7px;overflow:hidden;position:relative}
+.bar-cell .bar .fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:7px;transition:width .3s}
+.bar-cell .bar .fill.success{background:linear-gradient(90deg,var(--success),#34d399)}
+.bar-cell .bar .fill.danger{background:linear-gradient(90deg,var(--accent),#fb7185)}
+.bar-cell .label{font-size:11px;color:var(--muted);position:absolute;right:0;top:-14px}
+
+/* Cards de KPI grandes */
+.kpis-grandes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}
+.kpi-grande{background:#fff;border:1px solid var(--gray-line);border-radius:8px;padding:18px;border-left:5px solid var(--brand);box-shadow:0 2px 6px rgba(15,23,42,.05)}
+.kpi-grande .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.kpi-grande .val{font-size:28px;font-weight:700;color:var(--brand3);margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi-grande .sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-grande.success{border-left-color:var(--success)}
+.kpi-grande.success .val{color:var(--success)}
+.kpi-grande.danger{border-left-color:var(--accent)}
+.kpi-grande.danger .val{color:var(--accent)}
+.kpi-grande.warn{border-left-color:#f59e0b}
+.kpi-grande.warn .val{color:#b45309}
+
+/* Gráfica de columnas mensuales (CSS puro) */
+.grafica-meses{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end;height:180px;padding:10px 0;border-bottom:1px solid var(--gray-line);margin-bottom:8px}
+.grafica-meses .col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+.grafica-meses .col .bars{display:flex;gap:2px;align-items:flex-end;height:90%;width:100%;justify-content:center}
+.grafica-meses .col .bars .b{width:40%;background:var(--brand);border-radius:3px 3px 0 0;min-height:1px;transition:all .25s;position:relative}
+.grafica-meses .col .bars .b.cot{background:#94a3b8}
+.grafica-meses .col .bars .b.gan{background:var(--brand)}
+.grafica-meses .col .bars .b:hover{filter:brightness(1.15)}
+.grafica-meses .col .label{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:4px;font-weight:600;letter-spacing:.3px}
+.leyenda{display:flex;gap:18px;font-size:11.5px;color:var(--muted);margin-bottom:10px;justify-content:center;flex-wrap:wrap}
+.leyenda .dot{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+.pill-est{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10.5px;font-weight:600}
+.pill-est.win{background:#d1fae5;color:#065f46}
+.pill-est.lose{background:#fee2e2;color:#991b1b}
+.pill-est.pend{background:#fef3c7;color:#92400e}
+
+.tab-bar{display:flex;gap:2px;border-bottom:2px solid var(--brand);margin-bottom:14px}
+.tab-bar button{background:#e2e8f0;color:#475569;border:none;padding:8px 16px;font-size:12.5px;cursor:pointer;border-radius:5px 5px 0 0;font-weight:500}
+.tab-bar button.active{background:var(--brand);color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Reportes y Análisis</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html" class="active">Reportes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>📈 Reportes y Análisis</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <button class="ghost sm" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="active" data-tab="cot" onclick="cambiarTab('cot')">📋 Cotizaciones</button>
+    <button data-tab="oc" onclick="cambiarTab('oc')">📑 Órdenes de Compra</button>
+    <button data-tab="cli" onclick="cambiarTab('cli')">🏢 Por Cliente</button>
+  </div>
+
+  <!-- TAB COTIZACIONES -->
+  <div id="tab-cot">
+
+    <div class="panel">
+      <div class="filtros">
+        <label>Año:</label>
+        <select id="fAnio" onchange="render()"></select>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+          💡 Cotizaciones agrupadas por mes según fecha de creación.
+        </span>
+      </div>
+
+      <div class="kpis-grandes" id="kpisAnio"></div>
+
+      <div class="section">
+        <h3>Resumen mensual</h3>
+        <div class="leyenda">
+          <span><span class="dot" style="background:#94a3b8"></span> Total cotizado</span>
+          <span><span class="dot" style="background:var(--brand)"></span> Ganancia (cotizada)</span>
+        </div>
+        <div class="grafica-meses" id="grafica"></div>
+
+        <div style="overflow-x:auto">
+          <table class="tabla-mes" id="tablaMes">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th class="num">Cotizaciones</th>
+                <th class="num">Ganadas</th>
+                <th class="num">Perdidas</th>
+                <th class="num">Pendientes</th>
+                <th class="num">Total cotizado</th>
+                <th class="num">Ganado</th>
+                <th class="num">Ganancia</th>
+                <th>% Éxito</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB OC -->
+  <div id="tab-oc" class="hidden">
+
+    <div class="panel">
+      <div class="kpis-grandes" id="kpisOC"></div>
+
+      <div class="section">
+        <h3>📅 OCs por vencer / vencidas</h3>
+        <div style="overflow-x:auto">
+          <table class="tabla-mes" id="tablaOC">
+            <thead>
+              <tr>
+                <th>OC</th>
+                <th>Proveedor</th>
+                <th>Proyecto</th>
+                <th>Emisión</th>
+                <th>Vencimiento</th>
+                <th class="num">Total</th>
+                <th class="num">Pagado</th>
+                <th class="num">Saldo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOC"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Resumen mensual de compras</h3>
+        <div style="overflow-x:auto">
+          <table class="tabla-mes" id="tablaOCMes">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th class="num"># OCs</th>
+                <th class="num">Total Emitido</th>
+                <th class="num">Pagado</th>
+                <th class="num">Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOCMes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB POR CLIENTE -->
+  <div id="tab-cli" class="hidden">
+
+    <div class="panel">
+      <h3 style="margin:0 0 12px">Ranking de clientes (por monto cotizado)</h3>
+      <div style="overflow-x:auto">
+        <table class="tabla-mes" id="tablaCli">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th class="num">Cotizaciones</th>
+              <th class="num">Ganadas</th>
+              <th class="num">Total cotizado</th>
+              <th class="num">Ganado</th>
+              <th class="num">Ganancia</th>
+              <th>% Éxito</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCli"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const ESTADOS_GANADAS = ['aprobada','facturada','pagada'];
+const ESTADOS_PERDIDAS = ['rechazada'];
+
+function poblarAnios(){
+  const cots = DB.cotizaciones.list();
+  const anios = new Set([new Date().getFullYear()]);
+  cots.forEach(c => {
+    if(c.fecha) anios.add(new Date(c.fecha+'T00:00:00').getFullYear());
+    else if(c.createdAt) anios.add(new Date(c.createdAt).getFullYear());
+  });
+  const sel = document.getElementById('fAnio');
+  const lista = [...anios].sort((a,b) => b - a);
+  sel.innerHTML = lista.map(a => `<option value="${a}">${a}</option>`).join('');
+  sel.value = new Date().getFullYear();
+}
+
+function mesDeCot(c){
+  if(c.fecha){
+    const d = new Date(c.fecha+'T00:00:00');
+    return {anio: d.getFullYear(), mes: d.getMonth()};
+  }
+  if(c.createdAt){
+    const d = new Date(c.createdAt);
+    return {anio: d.getFullYear(), mes: d.getMonth()};
+  }
+  return {anio: 0, mes: 0};
+}
+
+function cambiarTab(tab){
+  ['cot','oc','cli'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab));
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+}
+
+// =============== TAB COTIZACIONES ===============
+function renderCotizaciones(){
+  const anio = parseInt(document.getElementById('fAnio').value) || new Date().getFullYear();
+  const cots = DB.cotizaciones.list().filter(c => mesDeCot(c).anio === anio);
+  const hoy = new Date();
+  const mesActual = hoy.getFullYear() === anio ? hoy.getMonth() : -1;
+
+  // Agrupar por mes
+  const byMes = Array.from({length:12}, (_,i) => ({
+    mes:i, items:[], total:0, ganado:0, ganancia:0, win:0, lose:0, pend:0
+  }));
+  cots.forEach(c => {
+    const m = mesDeCot(c).mes;
+    if(m < 0 || m > 11) return;
+    const tot = c.totales?.totalFinal||0;
+    const gan = c.totales?.ganancia||0;
+    byMes[m].items.push(c);
+    byMes[m].total += tot;
+    const est = c.estado || 'borrador';
+    if(ESTADOS_GANADAS.includes(est)){
+      byMes[m].win++;
+      byMes[m].ganado += tot;
+      byMes[m].ganancia += gan;
+    } else if(ESTADOS_PERDIDAS.includes(est)){
+      byMes[m].lose++;
+    } else {
+      byMes[m].pend++;
+    }
+  });
+
+  // Totales año
+  const totAnio = {
+    cot: cots.length,
+    win: byMes.reduce((s,m)=>s+m.win,0),
+    lose: byMes.reduce((s,m)=>s+m.lose,0),
+    pend: byMes.reduce((s,m)=>s+m.pend,0),
+    total: byMes.reduce((s,m)=>s+m.total,0),
+    ganado: byMes.reduce((s,m)=>s+m.ganado,0),
+    ganancia: byMes.reduce((s,m)=>s+m.ganancia,0),
+  };
+  const tasa = totAnio.cot ? (totAnio.win/totAnio.cot)*100 : 0;
+
+  // KPIs
+  document.getElementById('kpisAnio').innerHTML = `
+    <div class="kpi-grande">
+      <div class="lbl">Cotizaciones ${anio}</div>
+      <div class="val">${totAnio.cot}</div>
+      <div class="sub">${totAnio.pend} pendientes</div>
+    </div>
+    <div class="kpi-grande success">
+      <div class="lbl">Ganadas</div>
+      <div class="val">${totAnio.win} <small style="font-size:14px;color:var(--muted)">(${tasa.toFixed(0)}%)</small></div>
+      <div class="sub">${fmtPEN(totAnio.ganado)} contratado</div>
+    </div>
+    <div class="kpi-grande danger">
+      <div class="lbl">Perdidas</div>
+      <div class="val">${totAnio.lose}</div>
+      <div class="sub">${totAnio.cot ? (totAnio.lose/totAnio.cot*100).toFixed(0)+'%' : '0%'} del total</div>
+    </div>
+    <div class="kpi-grande warn">
+      <div class="lbl">💰 Ganancia ${anio}</div>
+      <div class="val" style="font-size:22px">${fmtPEN(totAnio.ganancia)}</div>
+      <div class="sub">de ${fmtPEN(totAnio.ganado)} ganado</div>
+    </div>
+  `;
+
+  // Gráfica de barras mensuales (total cotizado + ganancia)
+  const maxBar = Math.max(...byMes.map(m => Math.max(m.total, m.ganancia)), 1);
+  document.getElementById('grafica').innerHTML = byMes.map((m,i) => {
+    const hTotal = m.total > 0 ? (m.total/maxBar)*100 : 0;
+    const hGan   = m.ganancia > 0 ? (m.ganancia/maxBar)*100 : 0;
+    return `
+      <div class="col">
+        <div class="bars" title="Cot: ${fmtPEN(m.total)} / Gan: ${fmtPEN(m.ganancia)}">
+          <div class="b cot" style="height:${hTotal}%"></div>
+          <div class="b gan" style="height:${hGan}%"></div>
+        </div>
+        <div class="label">${MESES[i]}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Tabla mensual
+  document.getElementById('tbodyMes').innerHTML = byMes.map((m,i) => {
+    const tasaMes = m.items.length ? (m.win/m.items.length)*100 : 0;
+    return `
+    <tr class="${i===mesActual?'actual':''}">
+      <td><b>${MESES[i]} ${anio}</b>${i===mesActual?' <span class="tag" style="background:#fef3c7;color:#92400e">Actual</span>':''}</td>
+      <td class="num">${m.items.length}</td>
+      <td class="num"><span class="pill-est win">${m.win}</span></td>
+      <td class="num"><span class="pill-est lose">${m.lose}</span></td>
+      <td class="num"><span class="pill-est pend">${m.pend}</span></td>
+      <td class="num">${fmtPEN(m.total)}</td>
+      <td class="num text-success fw-bold">${fmtPEN(m.ganado)}</td>
+      <td class="num"><b style="color:var(--brand)">${fmtPEN(m.ganancia)}</b></td>
+      <td>${tasaMes.toFixed(0)}%</td>
+    </tr>
+  `;}).join('') + `
+    <tr class="total">
+      <td><b>TOTAL ${anio}</b></td>
+      <td class="num">${totAnio.cot}</td>
+      <td class="num">${totAnio.win}</td>
+      <td class="num">${totAnio.lose}</td>
+      <td class="num">${totAnio.pend}</td>
+      <td class="num">${fmtPEN(totAnio.total)}</td>
+      <td class="num">${fmtPEN(totAnio.ganado)}</td>
+      <td class="num">${fmtPEN(totAnio.ganancia)}</td>
+      <td>${tasa.toFixed(0)}%</td>
+    </tr>
+  `;
+}
+
+// =============== TAB OC ===============
+function ocEstadoYSaldo(o){
+  const total = o.totales?.total || 0;
+  const pagos = o.pagos || [];
+  const pagado = pagos.reduce((s,p) => s + (p.monto||0), 0);
+  const saldo = total - pagado;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const vence = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00') : null;
+  let estado = 'pendiente';
+  if(saldo <= 0.01) estado = 'pagada';
+  else if(pagado > 0) estado = 'pagada_parcial';
+  if(estado !== 'pagada' && vence && vence < hoy) estado = 'vencida';
+  return {total, pagado, saldo, estado, vence};
+}
+function lblEstadoOC(est){
+  return {pendiente:'Pendiente', pagada_parcial:'Pago parcial', pagada:'Pagada', vencida:'⚠ Vencida'}[est] || est;
+}
+function clsEstadoOC(est){
+  return {pendiente:'enviada', pagada_parcial:'facturada', pagada:'pagada', vencida:'rechazada'}[est] || 'borrador';
+}
+
+function renderOCs(){
+  const ocs = DB.ocs.list();
+  const detallados = ocs.map(o => ({...o, ...ocEstadoYSaldo(o)}));
+  const tot   = detallados.reduce((s,o)=>s+o.total,0);
+  const pag   = detallados.reduce((s,o)=>s+o.pagado,0);
+  const saldo = detallados.reduce((s,o)=>s+o.saldo,0);
+  const vencidas = detallados.filter(o => o.estado === 'vencida');
+  const pendientes = detallados.filter(o => o.estado === 'pendiente' || o.estado === 'pagada_parcial' || o.estado === 'vencida');
+  const saldoVencido = vencidas.reduce((s,o)=>s+o.saldo,0);
+
+  document.getElementById('kpisOC').innerHTML = `
+    <div class="kpi-grande">
+      <div class="lbl">Total OCs</div>
+      <div class="val">${ocs.length}</div>
+      <div class="sub">${pendientes.length} pendientes</div>
+    </div>
+    <div class="kpi-grande warn">
+      <div class="lbl">Saldo por pagar</div>
+      <div class="val" style="font-size:22px">${fmtPEN(saldo)}</div>
+      <div class="sub">de ${fmtPEN(tot)} emitido</div>
+    </div>
+    <div class="kpi-grande danger">
+      <div class="lbl">⚠ Vencidas</div>
+      <div class="val">${vencidas.length}</div>
+      <div class="sub">Saldo: ${fmtPEN(saldoVencido)}</div>
+    </div>
+    <div class="kpi-grande success">
+      <div class="lbl">Pagado</div>
+      <div class="val" style="font-size:22px">${fmtPEN(pag)}</div>
+      <div class="sub">${tot>0 ? ((pag/tot)*100).toFixed(0)+'%' : '0%'} del total</div>
+    </div>
+  `;
+
+  // Tabla OCs pendientes/vencidas (orden por vencimiento)
+  const pend = detallados.filter(o => o.estado !== 'pagada').sort((a,b) => {
+    const da = a.vence ? a.vence.getTime() : 9e15;
+    const db = b.vence ? b.vence.getTime() : 9e15;
+    return da - db;
+  });
+  document.getElementById('tbodyOC').innerHTML = pend.length === 0
+    ? `<tr><td colspan="9" class="empty">No hay OCs pendientes 🎉</td></tr>`
+    : pend.map(o => {
+      const fechaFmt = o.fecha ? new Date(o.fecha+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const venceFmt = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const monSym = (o.moneda||'PEN')==='USD'?'US$':'S/';
+      return `
+      <tr>
+        <td><b>${escapeHtml(o.codigo)}</b></td>
+        <td><small>${escapeHtml(o.proveedorRazon||'—')}</small></td>
+        <td><small>${escapeHtml((o.proyectoNombre||'—').slice(0,30))}</small></td>
+        <td><small>${fechaFmt}</small></td>
+        <td><small>${venceFmt}</small></td>
+        <td class="num">${monSym} ${fmtNum(o.total,2)}</td>
+        <td class="num text-success">${monSym} ${fmtNum(o.pagado,2)}</td>
+        <td class="num"><b>${monSym} ${fmtNum(o.saldo,2)}</b></td>
+        <td><span class="badge ${clsEstadoOC(o.estado)}">${lblEstadoOC(o.estado)}</span></td>
+      </tr>`;
+    }).join('');
+
+  // Resumen mensual OCs
+  const byMes = {};
+  detallados.forEach(o => {
+    if(!o.fecha) return;
+    const d = new Date(o.fecha+'T00:00:00');
+    const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if(!byMes[k]) byMes[k] = {label: MESES[d.getMonth()]+' '+d.getFullYear(), n:0, total:0, pagado:0, saldo:0};
+    byMes[k].n++;
+    byMes[k].total += o.total;
+    byMes[k].pagado += o.pagado;
+    byMes[k].saldo += o.saldo;
+  });
+  const meses = Object.entries(byMes).sort((a,b) => b[0].localeCompare(a[0]));
+  document.getElementById('tbodyOCMes').innerHTML = meses.length === 0
+    ? `<tr><td colspan="5" class="empty">Sin OCs.</td></tr>`
+    : meses.map(([k,m]) => `
+      <tr>
+        <td><b>${m.label}</b></td>
+        <td class="num">${m.n}</td>
+        <td class="num">${fmtPEN(m.total)}</td>
+        <td class="num text-success">${fmtPEN(m.pagado)}</td>
+        <td class="num"><b>${fmtPEN(m.saldo)}</b></td>
+      </tr>
+    `).join('');
+}
+
+// =============== TAB POR CLIENTE ===============
+function renderClientes(){
+  const cots = DB.cotizaciones.list();
+  const byCli = {};
+  cots.forEach(c => {
+    const k = c.clienteId || '_sc';
+    if(!byCli[k]) byCli[k] = {nombre: c.clienteRazon||'(Sin cliente)', items:[], total:0, ganado:0, ganancia:0, win:0};
+    byCli[k].items.push(c);
+    byCli[k].total += c.totales?.totalFinal||0;
+    if(ESTADOS_GANADAS.includes(c.estado)){
+      byCli[k].win++;
+      byCli[k].ganado += c.totales?.totalFinal||0;
+      byCli[k].ganancia += c.totales?.ganancia||0;
+    }
+  });
+  const arr = Object.values(byCli).sort((a,b) => b.total - a.total);
+  document.getElementById('tbodyCli').innerHTML = arr.length === 0
+    ? `<tr><td colspan="7" class="empty">Sin datos.</td></tr>`
+    : arr.map(c => {
+      const tasa = c.items.length ? (c.win/c.items.length)*100 : 0;
+      return `
+      <tr>
+        <td><b>${escapeHtml(c.nombre)}</b></td>
+        <td class="num">${c.items.length}</td>
+        <td class="num"><span class="pill-est win">${c.win}</span></td>
+        <td class="num">${fmtPEN(c.total)}</td>
+        <td class="num text-success">${fmtPEN(c.ganado)}</td>
+        <td class="num"><b style="color:var(--brand)">${fmtPEN(c.ganancia)}</b></td>
+        <td>${tasa.toFixed(0)}%</td>
+      </tr>`;
+    }).join('');
+}
+
+function render(){
+  renderCotizaciones();
+  renderOCs();
+  renderClientes();
+}
+
+function exportarCSV(){
+  const anio = parseInt(document.getElementById('fAnio').value);
+  const cots = DB.cotizaciones.list().filter(c => mesDeCot(c).anio === anio);
+  const headers = ['Mes','Cotizaciones','Ganadas','Perdidas','Pendientes','Total','Ganado','Ganancia','% Éxito'];
+  const byMes = Array.from({length:12}, () => ({n:0,w:0,l:0,p:0,t:0,g:0,gn:0}));
+  cots.forEach(c => {
+    const m = mesDeCot(c).mes;
+    byMes[m].n++;
+    byMes[m].t += c.totales?.totalFinal||0;
+    const e = c.estado||'borrador';
+    if(ESTADOS_GANADAS.includes(e)){ byMes[m].w++; byMes[m].g += c.totales?.totalFinal||0; byMes[m].gn += c.totales?.ganancia||0; }
+    else if(ESTADOS_PERDIDAS.includes(e)) byMes[m].l++;
+    else byMes[m].p++;
+  });
+  const rows = byMes.map((m,i) => [MESES[i]+' '+anio, m.n, m.w, m.l, m.p, m.t.toFixed(2), m.g.toFixed(2), m.gn.toFixed(2), m.n?((m.w/m.n)*100).toFixed(0)+'%':'0%']);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `reportes-cotizaciones-${anio}.csv`;
+  a.click();
+  toast('CSV exportado','success');
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+poblarAnios();
+render();
+</script>
+</body>
+</html>

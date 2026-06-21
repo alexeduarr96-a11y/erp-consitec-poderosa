@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cotizador Suministros — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+.cot-layout{display:grid;grid-template-columns:560px 1fr;gap:14px}
+@media (max-width:1300px){.cot-layout{grid-template-columns:500px 1fr}}
+@media (max-width:1100px){.cot-layout{grid-template-columns:1fr}}
+
+.editor{max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.editor .panel{padding:12px}
+.editor .panel h3{font-size:12px;margin:0 0 8px;padding-bottom:5px}
+.editor label{font-size:10.5px;margin:6px 0 2px}
+.editor input,.editor textarea,.editor select{font-size:12px;padding:5px 7px}
+.input-with-add{display:flex;gap:4px}
+.input-with-add select,.input-with-add input{flex:1}
+.input-with-add button{padding:4px 8px;font-size:11px}
+
+#preview-wrap{background:#8a8a8a;padding:18px;border-radius:5px;overflow:auto;max-height:calc(100vh - 120px)}
+
+/* ===== HOJA A4 SUMINISTRO (estilo minimal igual a servicios) ===== */
+.sheet{
+  background:#fff;width:210mm;min-height:297mm;margin:0 auto 14px;
+  padding:10mm 12mm 14mm;box-shadow:0 4px 18px rgba(0,0,0,.25);
+  color:#1a1a1a;font-family:'Arial Narrow','Arial',sans-serif;font-size:9.5pt;line-height:1.35;
+}
+
+.sheet .head{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:8px}
+.sheet .head .logo-box{display:flex;align-items:center}
+.sheet .head .logo-box img{max-height:58px;max-width:180px;object-fit:contain}
+.sheet .head .logo-box.right{justify-content:flex-end}
+.sheet .head .titulo{text-align:center}
+.sheet .head .titulo h1{margin:0;color:#1a1a1a;font-family:'Calibri','Arial',sans-serif;font-weight:700;font-size:13pt;letter-spacing:1px;line-height:1}
+.sheet .head .titulo .sub{font-size:8pt;color:#666;margin-top:4px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+
+.sheet .info-tabla{width:100%;border-collapse:collapse;margin:2px 0 10px;font-size:8pt}
+.sheet .info-tabla td{border:none;border-bottom:0.5px solid #bbb;padding:2px 6px;vertical-align:middle;font-style:italic}
+.sheet .info-tabla td.k{background:transparent;color:#333;font-weight:700;width:80px;text-align:right;font-style:normal;font-size:8pt}
+.sheet .info-tabla td.s{background:transparent;width:8px;text-align:center;color:#333;font-style:normal}
+.sheet .info-tabla td.v{font-style:italic;color:#222;font-size:8pt}
+.sheet .info-tabla td.k-right{background:transparent;color:#333;font-weight:700;width:110px;text-align:right;font-style:normal;font-size:8pt}
+
+/* Sección — barra plomo sutil */
+.sheet .sec-h{
+  display:grid;grid-template-columns:1fr 80px 90px;
+  background:#e8e8e8;color:#3a3d42;font-weight:700;
+  font-size:9pt;letter-spacing:.3px;align-items:center;
+  margin-top:10px;border-bottom:1px solid #888;padding:0;
+}
+.sheet .sec-h .t{padding:4px 10px;text-transform:uppercase}
+.sheet .sec-h .lbl{padding:4px 6px;text-align:right;font-size:7.5pt;font-weight:600}
+.sheet .sec-h .val{padding:4px 8px;text-align:right;font-weight:700;font-size:9pt}
+
+/* Tabla items productos */
+.sheet table.prod{width:100%;border-collapse:collapse;font-size:8pt;margin-top:4px}
+.sheet table.prod th{
+  background:transparent;color:#333;padding:4px 5px;
+  border:none;border-bottom:1px solid #555;
+  font-size:7.5pt;text-transform:uppercase;font-weight:700;letter-spacing:.3px;text-align:right;
+}
+.sheet table.prod th.left{text-align:left}
+.sheet table.prod th.cen{text-align:center}
+.sheet table.prod td{border:none;border-bottom:0.5px solid #ddd;padding:3px 5px;vertical-align:top;font-style:italic;color:#222}
+.sheet table.prod td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sheet table.prod td.cen{text-align:center}
+.sheet table.prod td.idx{font-style:normal;color:#666;font-size:7.5pt;font-weight:600}
+.sheet table.prod tr.cat td{background:transparent;font-weight:700;color:#333;font-style:italic;padding-top:6px;border-bottom:0.5px solid #ccc}
+
+/* Resumen */
+.sheet .resumen{margin-top:12px;width:42%;margin-left:auto;border-collapse:collapse}
+.sheet .resumen td{padding:3px 7px;border:none;border-bottom:0.5px solid #bbb;font-size:8.5pt}
+.sheet .resumen td.lbl{color:#333;font-weight:700;text-align:right;text-transform:uppercase;font-size:7.5pt;width:60%}
+.sheet .resumen td.val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;width:40%;font-style:italic}
+.sheet .resumen tr.tot td{border-top:1px solid #333;border-bottom:1px solid #333;padding:5px 7px}
+.sheet .resumen tr.tot td.lbl{font-size:9pt;color:#000}
+.sheet .resumen tr.tot td.val{color:#000;font-weight:700;font-size:10.5pt;font-style:normal}
+
+.sheet .son{padding:6px 0 0;margin-top:6px;font-size:8pt;font-style:italic;color:#333;font-weight:600}
+
+.sheet .seccion-titulo{color:#333;font-weight:700;font-size:8.5pt;margin-top:12px;border-bottom:0.5px solid #999;padding-bottom:2px;text-transform:uppercase;letter-spacing:.2px}
+.sheet .cond-grid{display:grid;grid-template-columns:130px 1fr;gap:1px 8px;font-size:8pt;margin-top:4px;font-style:italic}
+.sheet .cond-grid .k{color:#333;font-weight:700;font-style:normal}
+.sheet .notas-list{margin:3px 0 0;padding-left:22px;font-size:8pt;line-height:1.35;font-style:italic;color:#222}
+
+.sheet .footer-emp{margin-top:14px;color:#333;padding:6px 0 0;font-size:7.5pt;line-height:1.45;border-top:1px solid #999}
+.sheet .footer-emp b{font-size:8pt;letter-spacing:.3px;color:#000}
+
+.sheet .validez{margin-top:8px;text-align:center;font-weight:700;color:#333;font-size:8.5pt;letter-spacing:.4px;border-top:1px solid #999;border-bottom:1px solid #999;padding:4px;font-style:italic}
+
+/* Editor items */
+.item-row{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:3px;padding:6px;margin-top:5px;font-size:11.5px}
+.item-row .top{display:flex;gap:5px;align-items:center;margin-bottom:4px}
+.item-row .top .num{background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600}
+.item-row .top .del{margin-left:auto;background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
+.item-row label{margin:0;font-size:9.5px;color:var(--muted)}
+.item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
+.item-row .internal{background:#fff3cd;border-color:#ffc107;color:#856404}
+
+.add-btn{background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:5px;margin-top:5px;font-size:11.5px;font-weight:500}
+.add-btn:hover{background:var(--brand-soft)}
+
+.totales-mini{font-size:11px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;background:var(--brand-soft);border-radius:3px;margin-top:8px}
+.totales-mini .line-tot{font-weight:700;color:var(--brand);font-size:13px;border-top:1px solid var(--brand);padding-top:3px;margin-top:3px}
+.totales-mini .gan{font-weight:700;color:#1b5e20;font-size:13px;border-top:1px dashed #2e7d32;padding-top:3px;margin-top:6px}
+
+.simple-item{background:#fafafa;border-left:3px solid var(--brand);padding:5px 8px;margin-top:4px;display:flex;gap:6px;align-items:center;border-radius:0 3px 3px 0;font-size:11.5px}
+.simple-item input,.simple-item select{flex:1;font-size:11.5px}
+.simple-item .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0}
+
+.tipo-banner{
+  background:linear-gradient(90deg,#0466c8,#0353a4);color:#fff;
+  padding:6px 12px;border-radius:4px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+}
+.tipo-banner a{color:#fff;text-decoration:underline;font-weight:500;font-size:11px;opacity:.9}
+
+/* ===== Fichas técnicas ===== */
+.ficha-card{
+  background:#f7f8f9;border:1px solid var(--gray-line);border-radius:5px;
+  padding:8px;margin-top:8px;
+}
+.ficha-card .ficha-head{
+  display:flex;align-items:center;gap:8px;margin-bottom:6px;
+  padding-bottom:5px;border-bottom:1px solid var(--gray-line);
+}
+.ficha-card .ficha-head .nombre{flex:1;font-weight:600;font-size:12px;color:var(--brand3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ficha-card .ficha-head .info{font-size:10.5px;color:var(--muted)}
+.ficha-card .ficha-head .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.ficha-card .ficha-head .item-link{font-size:10.5px;padding:3px 5px}
+
+.ficha-thumbs{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:5px;
+  max-height:240px;overflow-y:auto;padding:4px;background:#fff;border-radius:3px;
+}
+.ficha-thumbs .thumb{
+  position:relative;background:#fff;border:2px solid var(--gray-line);
+  border-radius:3px;overflow:hidden;cursor:pointer;transition:all .15s;
+  aspect-ratio:0.707;display:flex;align-items:center;justify-content:center;
+}
+.ficha-thumbs .thumb.sel{border-color:var(--brand);box-shadow:0 0 0 2px rgba(3,83,164,.2)}
+.ficha-thumbs .thumb:hover{border-color:var(--brand2)}
+.ficha-thumbs .thumb img{width:100%;height:100%;object-fit:contain}
+.ficha-thumbs .thumb .pnum{
+  position:absolute;top:2px;left:2px;background:rgba(0,0,0,.55);color:#fff;
+  font-size:9px;padding:1px 4px;border-radius:6px;font-weight:600;
+}
+.ficha-thumbs .thumb .check{
+  position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:2px solid var(--gray-mid);display:flex;align-items:center;
+  justify-content:center;font-size:11px;color:transparent;font-weight:bold;
+}
+.ficha-thumbs .thumb.sel .check{background:var(--brand);border-color:var(--brand);color:#fff}
+
+.ficha-thumbs .thumb.loading{
+  background:repeating-linear-gradient(45deg,#f7f8f9 0,#f7f8f9 8px,#e8eaec 8px,#e8eaec 16px);
+  color:var(--muted);font-size:10px;
+}
+.ficha-actions{display:flex;gap:5px;margin-top:6px;font-size:11px}
+.ficha-actions button{padding:3px 8px;font-size:11px}
+
+/* Páginas anexas en el A4 */
+.sheet-anexo{
+  background:#fff;width:210mm;min-height:297mm;margin:0 auto 14px;
+  padding:0;box-shadow:0 4px 18px rgba(0,0,0,.25);
+  page-break-before:always;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;overflow:hidden;
+}
+.sheet-anexo .anexo-header{
+  width:100%;padding:5mm 10mm;border-bottom:1px solid #ccc;
+  font-family:'Arial Narrow','Arial',sans-serif;font-size:8.5pt;color:#666;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.sheet-anexo .anexo-header b{color:#333}
+.sheet-anexo img.pagina{
+  width:100%;height:auto;display:block;
+  max-height:280mm;object-fit:contain;
+}
+
+@media print{
+  .sheet-anexo{box-shadow:none;margin:0}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Cotizador — Suministros</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html" class="active">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="tipo-banner">
+    <span>📦 COTIZACIÓN DE SUMINISTROS — Lista de productos</span>
+    <a href="cotizador.html">¿Es cotización de servicio? Ir al cotizador de servicios →</a>
+  </div>
+
+  <div class="page-title">
+    <h2 id="pageTitle">📦 Nueva Cotización de Suministro</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="cargarLista()">📂 Abrir guardadas</button>
+      <button class="ghost sm" onclick="nuevaCot()">+ Nueva</button>
+      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="success sm" onclick="guardar()">💾 Guardar</button>
+      <button class="accent sm" onclick="aprobarYCrearProyecto()" title="Marcar como aprobada y crear proyecto en Operaciones">✅ Aprobar y crear proyecto</button>
+    </div>
+  </div>
+
+  <div class="cot-layout">
+
+    <!-- EDITOR -->
+    <div class="editor no-print">
+
+      <div class="panel">
+        <h3>Datos de cabecera</h3>
+        <label>Código de propuesta</label>
+        <div class="input-with-add">
+          <input id="f-codigo" placeholder="CI26-CMP-OS-001">
+          <button class="ghost" onclick="generarCodigo()" title="Regenerar">↻</button>
+        </div>
+        <div class="row">
+          <div><label>Versión</label><input id="f-version" value="1" oninput="render()"></div>
+          <div><label>Fecha</label><input id="f-fecha" type="date" oninput="render()"></div>
+        </div>
+        <label>Suministro / Descripción general</label>
+        <textarea id="f-servicio" rows="2" placeholder="Ej: SUMINISTRO DE EQUIPOS Y MATERIALES PARA..."></textarea>
+        <div class="row">
+          <div><label>Plazo de entrega</label><input id="f-plazo" placeholder="15 días calendario" oninput="render()"></div>
+          <div><label>Lugar de entrega</label><input id="f-lugarEntrega" placeholder="Almacén CONSITEC" oninput="render()"></div>
+        </div>
+
+        <label>Cliente</label>
+        <select id="f-cliente" onchange="aplicarCliente()"></select>
+
+        <label>Lugar / Área</label>
+        <div class="input-with-add">
+          <select id="f-lugar" onchange="aplicarLugar(this.value)"></select>
+          <button class="ghost" onclick="nuevoLugar()" title="Nuevo lugar">+</button>
+        </div>
+
+        <h3 style="margin-top:14px">Contacto del cliente</h3>
+        <div class="input-with-add">
+          <select id="f-contactoCliente" onchange="aplicarContactoCliente(this.value)"></select>
+        </div>
+        <div id="contacto-preview" style="font-size:10.5px;color:var(--muted);margin-top:4px;padding:5px 8px;background:#f7f8f9;border-radius:3px;display:none"></div>
+
+        <label>Contacto CONSITEC</label>
+        <select id="f-contactoConsitec" onchange="aplicarContactoConsitec(this.value)"></select>
+
+        <label>Logo del cliente (opcional)</label>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input type="file" id="f-logoFile" accept="image/*" onchange="cargarLogoCliente(event)" style="flex:1;font-size:11px">
+          <button class="sm ghost" onclick="quitarLogoCliente()">×</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>📦 Productos / Items</h3>
+        <div id="lst-items"></div>
+        <button class="add-btn" onclick="addItem()">+ Agregar producto</button>
+        <button class="add-btn" onclick="addCategoria()" style="border-style:dotted">+ Categoría (subtítulo)</button>
+
+        <div class="row mt-2">
+          <div><label>Descuento (%)</label><input id="f-desc" type="number" step="0.01" value="0" oninput="render()"></div>
+          <div>
+            <label>IGV</label>
+            <select id="f-igvIncluido" oninput="render()">
+              <option value="0">Sin IGV (precios netos)</option>
+              <option value="18">+ IGV 18% (no incluido)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="totales-mini" id="mini-totales"></div>
+      </div>
+
+      <div class="panel">
+        <h3>📎 Fichas Técnicas (PDF)</h3>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input type="file" id="f-fichaFile" accept="application/pdf" onchange="cargarFicha(event)" style="flex:1;font-size:11px" multiple>
+        </div>
+        <small class="text-muted" style="font-size:10.5px;display:block;margin-top:3px">
+          💡 Sube uno o varios PDFs. Marca las páginas que quieres incluir en la cotización final.
+        </small>
+        <div id="lst-fichas" style="margin-top:8px"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Condiciones y notas</h3>
+        <div class="row3">
+          <div><label>Modalidad</label><input id="f-modalidad" value="Suministro" oninput="render()"></div>
+          <div><label>Validez</label><input id="f-validez" value="15 Días" oninput="render()"></div>
+          <div><label>Garantía</label><input id="f-garantia" placeholder="Ej: 12 meses contra defectos de fábrica" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div><label>Forma de pago</label><input id="f-formaPago" value="Factura a 15 días" oninput="render()"></div>
+          <div><label>Método de pago</label><input id="f-metodoPago" value="Transferencia bancaria" oninput="render()"></div>
+        </div>
+
+        <h3 style="font-size:11.5px;margin-top:12px">Notas</h3>
+        <div id="lst-notas"></div>
+        <button class="add-btn" onclick="addItemTexto('notas')">+ Agregar nota</button>
+
+        <h3 style="font-size:11.5px;margin-top:12px">Exclusiones</h3>
+        <div id="lst-excl"></div>
+        <button class="add-btn" onclick="addItemTexto('excl')">+ Agregar exclusión</button>
+      </div>
+
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+      <div id="anexos"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Modal lista cotizaciones -->
+<div class="modal-overlay no-print" id="modalLista">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Cotizaciones de Suministro guardadas</h3>
+      <button class="close" onclick="document.getElementById('modalLista').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <table class="data">
+        <thead><tr><th>Código</th><th>Cliente</th><th>Descripción</th><th>Fecha</th><th class="num">Total</th><th class="num">Ganancia</th><th class="actions">Acción</th></tr></thead>
+        <tbody id="tblLista"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+// ============= ESTADO =============
+let state = nuevoEstado();
+function nuevoEstado(){
+  return {
+    id: null,
+    tipo: 'suministro',
+    codigo: '',
+    version: 1,
+    fecha: todayISO(),
+    servicio: '',
+    plazo: '',
+    lugarEntrega: 'Almacén CONSITEC - Lima',
+    clienteId: '', clienteRazon: '', clienteCorto: '',
+    contactoClienteId: '', atencion: '', cargo: '', contacto: '',
+    contactoConsitecId: '', contactoConsitec: '',
+    lugar: '',
+    logoCliente: '',
+    items: [],
+    desc: 0, igvIncluido: 0,  // 0 = sin IGV, 18 = +IGV
+    modalidad: 'Suministro', validez: '15 Días', garantia: '',
+    formaPago: 'Factura a 15 días', metodoPago: 'Transferencia bancaria',
+    notas: [], excl: [],
+    fichas: [], // [{id, nombre, paginas:[{num,thumb,full}], seleccionadas:[1,2,...]}]
+  };
+}
+
+// Configurar worker de pdf.js
+if(typeof pdfjsLib !== 'undefined'){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ============= INIT =============
+function init(){
+  poblarSelects();
+  const params = new URLSearchParams(location.search);
+  const idParam = params.get('id');
+  if(idParam){
+    const c = DB.cotizaciones.get(idParam);
+    if(c && c.tipo === 'suministro'){
+      state = {...nuevoEstado(), ...c};
+      if(!Array.isArray(state.notas)) state.notas = [];
+      if(!Array.isArray(state.excl))  state.excl  = [];
+      syncFormDesdeEstado();
+      actualizarPreviewLogo();
+      renderItems();
+      renderListaTextos();
+      renderFichas();
+      render();
+      toast('Cotización cargada: '+state.codigo);
+      return;
+    }
+  }
+  // Seed notas iniciales
+  if(state.notas.length === 0){
+    DB.catNotas.list().slice(0,5).forEach(n => state.notas.push({texto: n.descripcion}));
+  }
+  generarCodigo();
+  syncFormDesdeEstado();
+  actualizarPreviewLogo();
+  renderItems();
+  renderListaTextos();
+  renderFichas();
+  render();
+}
+
+function poblarSelects(){
+  const selC = document.getElementById('f-cliente');
+  selC.innerHTML = '<option value="">— Selecciona cliente —</option>' +
+    DB.clientes.list().map(c => `<option value="${c.id}">${escapeHtml(c.razonSocial)}</option>`).join('');
+  const selCC = document.getElementById('f-contactoConsitec');
+  selCC.innerHTML = '<option value="">— Selecciona contacto Consitec —</option>' +
+    DB.contactosConsitec.list().map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
+}
+
+function poblarLugaresYContactos(){
+  const c = state.clienteId ? DB.clientes.get(state.clienteId) : null;
+  const selL = document.getElementById('f-lugar');
+  const areas = (c && c.areas) ? c.areas : [];
+  selL.innerHTML = '<option value="">— Selecciona o agrega lugar —</option>' +
+    areas.map(a => `<option value="${escapeAttr(a)}" ${a===state.lugar?'selected':''}>${escapeHtml(a)}</option>`).join('');
+  const selCC = document.getElementById('f-contactoCliente');
+  const cons = (c && c.contactos) ? c.contactos : [];
+  selCC.innerHTML = '<option value="">— Selecciona o agrega contacto —</option>' +
+    cons.map(co => `<option value="${co.id}" ${co.id===state.contactoClienteId?'selected':''}>${escapeHtml(co.nombre)} ${co.cargo?'('+co.cargo.slice(0,30)+')':''}</option>`).join('');
+  actualizarPreviewContacto();
+}
+
+function actualizarPreviewContacto(){
+  const div = document.getElementById('contacto-preview');
+  if(state.atencion || state.cargo || state.contacto){
+    div.style.display = 'block';
+    div.innerHTML = `<b>${escapeHtml(state.atencion)}</b><br>${escapeHtml(state.cargo)}<br>${escapeHtml(state.contacto)}`;
+  } else { div.style.display = 'none'; }
+}
+
+// ============= CLIENTE / LUGAR / CONTACTO =============
+function aplicarCliente(){
+  const id = document.getElementById('f-cliente').value;
+  state.clienteId = id;
+  state.contactoClienteId = '';
+  state.atencion = ''; state.cargo = ''; state.contacto = '';
+  state.lugar = '';
+  if(id){
+    const c = DB.clientes.get(id);
+    if(c){
+      state.clienteRazon = c.razonSocial;
+      state.clienteCorto = c.corto || 'XXX';
+      if(c.logoBase64) state.logoCliente = c.logoBase64;
+      else if(/poderosa/i.test(c.razonSocial)) state.logoCliente = '../assets/logo-poderosa.png';
+      else state.logoCliente = '';
+      if(c.contactos && c.contactos.length === 1) state.contactoClienteId = c.contactos[0].id;
+    }
+  }
+  poblarLugaresYContactos();
+  actualizarPreviewLogo();
+  generarCodigo();
+  if(state.contactoClienteId) aplicarContactoCliente(state.contactoClienteId);
+  render();
+}
+function aplicarContactoCliente(id){
+  state.contactoClienteId = id;
+  if(!id){ state.atencion=''; state.cargo=''; state.contacto=''; actualizarPreviewContacto(); render(); return; }
+  const c = DB.clientes.get(state.clienteId); if(!c) return;
+  const co = (c.contactos||[]).find(x => x.id === id); if(!co) return;
+  state.atencion = co.nombre || '';
+  state.cargo = co.cargo || '';
+  state.contacto = `Cel: ${co.telefono||''} | Correo: ${co.email||''}`;
+  document.getElementById('f-contactoCliente').value = id;
+  actualizarPreviewContacto();
+  render();
+}
+function aplicarLugar(val){ state.lugar = val; render(); }
+function nuevoLugar(){
+  if(!state.clienteId){ toast('Primero selecciona un cliente','danger'); return; }
+  const nombre = prompt('Nombre del lugar / área:'); if(!nombre) return;
+  DB.clienteAddArea(state.clienteId, nombre);
+  state.lugar = nombre;
+  poblarLugaresYContactos();
+  document.getElementById('f-lugar').value = nombre;
+  render();
+}
+function aplicarContactoConsitec(id){
+  state.contactoConsitecId = id;
+  if(!id){ state.contactoConsitec=''; render(); return; }
+  const c = DB.contactosConsitec.get(id); if(!c) return;
+  state.contactoConsitec = `${c.nombre}. | Cel: ${c.telefono||''}`;
+  render();
+}
+
+function generarCodigo(){
+  const year = new Date().getFullYear().toString().slice(-2);
+  const corto = state.clienteCorto || 'XXX';
+  const n = (DB.cotizaciones.list().length + 1);
+  state.codigo = `CI${year}-${corto}-OS-${String(n).padStart(3,'0')}`;
+  document.getElementById('f-codigo').value = state.codigo;
+  render();
+}
+
+// ============= LOGO =============
+function cargarLogoCliente(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    state.logoCliente = ev.target.result;
+    if(state.clienteId){
+      const c = DB.clientes.get(state.clienteId);
+      if(c){ c.logoBase64 = ev.target.result; DB.clientes.save(c); }
+    }
+    actualizarPreviewLogo();
+    render();
+  };
+  r.readAsDataURL(f);
+}
+function quitarLogoCliente(){ state.logoCliente=''; document.getElementById('f-logoFile').value=''; actualizarPreviewLogo(); render(); }
+function actualizarPreviewLogo(){ /* sin preview en suministro */ }
+
+// ============= ITEMS =============
+function addItem(){
+  state.items.push({tipo:'mat', descripcion:'', marca:'', modelo:'', fabricante:'', um:'UND.', cantidad:1, costoReal:0, ganancia:1.3, logistica:1.0});
+  renderItems(); render();
+}
+function addCategoria(){
+  state.items.push({tipo:'cat', titulo:'Nueva categoría'});
+  renderItems(); render();
+}
+function delItem(i){ state.items.splice(i,1); renderItems(); render(); }
+function updateItem(i, campo, val){
+  if(['cantidad','costoReal','ganancia','logistica'].includes(campo)){
+    state.items[i][campo] = parseFloat(val)||0;
+  } else state.items[i][campo] = val;
+  render();
+}
+function aplicarMaterial(i, id){
+  if(!id) return;
+  const m = DB.materiales.get(id); if(!m) return;
+  state.items[i].descripcion = m.descripcion;
+  state.items[i].marca       = m.marca || '';
+  state.items[i].modelo      = m.modelo || '';
+  state.items[i].fabricante  = m.fabricante || '';
+  state.items[i].um          = m.um || 'UND.';
+  state.items[i].costoReal   = m.costoReal || 0;
+  state.items[i].ganancia    = m.ganancia || m.margen || 1.3;
+  state.items[i].logistica   = m.logistica || 1.0;
+  renderItems(); render();
+}
+
+function renderItems(){
+  const mats = DB.materiales.list();
+  document.getElementById('lst-items').innerHTML = state.items.map((m,i) => {
+    if(m.tipo === 'cat'){
+      return `
+      <div class="item-row" style="background:#fff3cd">
+        <div class="top">
+          <span class="num" style="background:#ff9800">CAT</span>
+          <input value="${escapeAttr(m.titulo)}" placeholder="Categoría" oninput="updateItem(${i},'titulo',this.value)" style="flex:1;font-weight:600">
+          <button class="del" onclick="delItem(${i})">×</button>
+        </div>
+      </div>`;
+    }
+    const pUnit = (m.costoReal||0)*(m.ganancia||1)*(m.logistica||1);
+    const total = pUnit*(m.cantidad||0);
+    const gan   = (pUnit-(m.costoReal||0))*(m.cantidad||0);
+    return `
+    <div class="item-row">
+      <div class="top">
+        <span class="num">${i+1}</span>
+        <select onchange="aplicarMaterial(${i},this.value)" style="flex:1">
+          <option value="">— De catálogo —</option>
+          ${mats.map(x => `<option value="${x.id}">${escapeHtml(x.descripcion.slice(0,60))}</option>`).join('')}
+        </select>
+        <button class="del" onclick="delItem(${i})">×</button>
+      </div>
+      <textarea rows="1" oninput="updateItem(${i},'descripcion',this.value)" placeholder="Descripción" style="width:100%;margin-top:3px">${escapeHtml(m.descripcion)}</textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-top:3px">
+        <div><label>Marca</label><input value="${escapeAttr(m.marca||'')}" oninput="updateItem(${i},'marca',this.value)" placeholder="Marca"></div>
+        <div><label>Modelo</label><input value="${escapeAttr(m.modelo||'')}" oninput="updateItem(${i},'modelo',this.value)" placeholder="Modelo"></div>
+        <div><label>Fabricante</label><input value="${escapeAttr(m.fabricante||'')}" oninput="updateItem(${i},'fabricante',this.value)" placeholder="Fabricante"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:45px 55px 65px 50px 50px;gap:3px;margin-top:3px">
+        <div><label>UM</label><input value="${escapeAttr(m.um||'UND.')}" oninput="updateItem(${i},'um',this.value)"></div>
+        <div><label>Cant.</label><input type="number" step="0.01" value="${m.cantidad}" oninput="updateItem(${i},'cantidad',this.value)"></div>
+        <div><label>Costo real</label><input type="number" step="0.01" value="${m.costoReal}" oninput="updateItem(${i},'costoReal',this.value)"></div>
+        <div><label title="Ganancia (interno)">Ganan.×</label><input type="number" step="0.01" value="${m.ganancia}" oninput="updateItem(${i},'ganancia',this.value)" style="background:#fff3cd"></div>
+        <div><label title="Logística (interno)">Logís.×</label><input type="number" step="0.01" value="${m.logistica}" oninput="updateItem(${i},'logistica',this.value)" style="background:#fff3cd"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:3px;justify-content:flex-end;align-items:center">
+        <span class="calc internal" title="Ganancia interna">+G: S/ ${gan.toFixed(2)}</span>
+        <span class="calc">P.Unit: S/ ${pUnit.toFixed(2)}</span>
+        <span class="calc">Tot: S/ ${total.toFixed(2)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============= FICHAS TÉCNICAS (PDF) =============
+async function cargarFicha(e){
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if(files.length === 0) return;
+  if(typeof pdfjsLib === 'undefined'){
+    toast('Librería PDF no cargada. Verifica tu conexión a internet.', 'danger');
+    return;
+  }
+  for(const f of files){
+    if(f.type !== 'application/pdf'){
+      toast('Solo se aceptan archivos PDF: ' + f.name, 'danger');
+      continue;
+    }
+    await procesarPDF(f);
+  }
+}
+
+async function procesarPDF(file){
+  const ficha = {
+    id: 'fi_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nombre: file.name,
+    paginas: [],
+    seleccionadas: [],
+    loading: true,
+  };
+  state.fichas.push(ficha);
+  renderFichas();
+  toast(`Procesando ${file.name}...`);
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+    const numPaginas = pdf.numPages;
+    for(let p = 1; p <= numPaginas; p++){
+      const page = await pdf.getPage(p);
+      // Thumbnail (pequeña)
+      const viewportT = page.getViewport({scale: 0.35});
+      const canvasT = document.createElement('canvas');
+      canvasT.width = viewportT.width; canvasT.height = viewportT.height;
+      await page.render({canvasContext: canvasT.getContext('2d'), viewport: viewportT}).promise;
+      const thumb = canvasT.toDataURL('image/jpeg', 0.65);
+      // Full (para incluir en cotización)
+      const viewportF = page.getViewport({scale: 1.5});
+      const canvasF = document.createElement('canvas');
+      canvasF.width = viewportF.width; canvasF.height = viewportF.height;
+      await page.render({canvasContext: canvasF.getContext('2d'), viewport: viewportF}).promise;
+      const full = canvasF.toDataURL('image/jpeg', 0.82);
+      ficha.paginas.push({num: p, thumb, full});
+      // Render incremental cada 2 páginas para ver progreso
+      if(p % 2 === 0 || p === numPaginas) renderFichas();
+    }
+    ficha.loading = false;
+    renderFichas();
+    toast(`✓ ${file.name} cargado (${numPaginas} págs.)`, 'success');
+    render();
+  } catch(err){
+    console.error(err);
+    toast('Error al leer PDF: ' + err.message, 'danger');
+    state.fichas = state.fichas.filter(x => x.id !== ficha.id);
+    renderFichas();
+  }
+}
+
+function delFicha(id){
+  if(!confirm('¿Eliminar esta ficha técnica?')) return;
+  state.fichas = state.fichas.filter(f => f.id !== id);
+  renderFichas();
+  render();
+}
+
+function togglePagina(fichaId, num){
+  const f = state.fichas.find(x => x.id === fichaId); if(!f) return;
+  const i = f.seleccionadas.indexOf(num);
+  if(i >= 0) f.seleccionadas.splice(i, 1);
+  else f.seleccionadas.push(num);
+  f.seleccionadas.sort((a,b)=>a-b);
+  renderFichas();
+  render();
+}
+
+function toggleTodas(fichaId){
+  const f = state.fichas.find(x => x.id === fichaId); if(!f) return;
+  if(f.seleccionadas.length === f.paginas.length){
+    f.seleccionadas = [];
+  } else {
+    f.seleccionadas = f.paginas.map(p => p.num);
+  }
+  renderFichas();
+  render();
+}
+
+function renderFichas(){
+  const cont = document.getElementById('lst-fichas');
+  if(state.fichas.length === 0){
+    cont.innerHTML = '<small class="text-muted" style="font-style:italic">Sin fichas adjuntas.</small>';
+    return;
+  }
+  cont.innerHTML = state.fichas.map(f => {
+    const total = f.paginas.length;
+    const sel = f.seleccionadas.length;
+    const thumbsHTML = f.paginas.map(p => `
+      <div class="thumb ${f.seleccionadas.includes(p.num)?'sel':''}" onclick="togglePagina('${f.id}',${p.num})" title="Página ${p.num}">
+        <img src="${p.thumb}" alt="p${p.num}">
+        <span class="pnum">${p.num}</span>
+        <span class="check">✓</span>
+      </div>
+    `).join('');
+    return `
+      <div class="ficha-card">
+        <div class="ficha-head">
+          <span style="font-size:14px">📄</span>
+          <span class="nombre" title="${escapeAttr(f.nombre)}">${escapeHtml(f.nombre)}</span>
+          <span class="info">${sel}/${total} págs.</span>
+          <button class="del" onclick="delFicha('${f.id}')" title="Eliminar ficha">×</button>
+        </div>
+        ${f.loading && total === 0 ? '<small class="text-muted">⏳ Procesando PDF...</small>' : `
+          <div class="ficha-thumbs">${thumbsHTML}</div>
+          <div class="ficha-actions">
+            <button class="ghost sm" onclick="toggleTodas('${f.id}')">
+              ${sel===total ? '☐ Deseleccionar todas' : '☑ Seleccionar todas'}
+            </button>
+          </div>
+        `}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAnexos(){
+  const anexos = [];
+  state.fichas.forEach(f => {
+    f.seleccionadas.forEach(num => {
+      const p = f.paginas.find(x => x.num === num);
+      if(p) anexos.push({nombre: f.nombre, num, img: p.full});
+    });
+  });
+  document.getElementById('anexos').innerHTML = anexos.map((a,i) => `
+    <div class="sheet-anexo">
+      <div class="anexo-header">
+        <span>FICHA TÉCNICA — <b>${escapeHtml(a.nombre)}</b> (pág. ${a.num})</span>
+        <span>Anexo ${i+1} de ${anexos.length} — ${escapeHtml(state.codigo)}</span>
+      </div>
+      <img class="pagina" src="${a.img}" alt="${escapeAttr(a.nombre)} p${a.num}">
+    </div>
+  `).join('');
+}
+
+// ============= NOTAS / EXCLUSIONES =============
+function addItemTexto(tipo){ state[tipo].push({texto:''}); renderListaTextos(); render(); }
+function delItemTexto(tipo,i){ state[tipo].splice(i,1); renderListaTextos(); render(); }
+function updateItemTexto(tipo,i,val){ state[tipo][i].texto=val; render(); }
+function aplicarTextoCat(tipo,i,val){
+  if(val === '__custom__'){ state[tipo][i].texto=''; renderListaTextos(); return; }
+  const cat = tipo==='notas'?DB.catNotas:DB.catExclusiones;
+  const x = cat.get(val);
+  if(x){ state[tipo][i].texto = x.descripcion; renderListaTextos(); render(); }
+}
+function renderListaTextos(){
+  ['notas','excl'].forEach(tipo => {
+    const elId = tipo==='notas'?'lst-notas':'lst-excl';
+    const cat = tipo==='notas'?DB.catNotas:DB.catExclusiones;
+    const items = cat.list();
+    document.getElementById(elId).innerHTML = state[tipo].map((it,i) => {
+      const matched = items.find(x => x.descripcion === it.texto);
+      return `
+      <div class="simple-item">
+        <select onchange="aplicarTextoCat('${tipo}',${i},this.value)">
+          <option value="">— De catálogo —</option>
+          ${items.map(x => `<option value="${x.id}" ${matched&&matched.id===x.id?'selected':''}>${escapeHtml(x.descripcion.slice(0,80))}</option>`).join('')}
+          <option value="__custom__" ${!matched?'selected':''}>Personalizado...</option>
+        </select>
+        ${!matched ? `<input value="${escapeAttr(it.texto)}" placeholder="Escribir texto" oninput="updateItemTexto('${tipo}',${i},this.value)">` : ''}
+        <button class="del" onclick="delItemTexto('${tipo}',${i})">×</button>
+      </div>`;
+    }).join('');
+  });
+}
+
+// ============= CÁLCULOS =============
+function totales(){
+  const subtotal = state.items.filter(x=>x.tipo!=='cat').reduce((s,m) => s+((m.costoReal||0)*(m.ganancia||1)*(m.logistica||1))*(m.cantidad||0), 0);
+  const costoReal= state.items.filter(x=>x.tipo!=='cat').reduce((s,m) => s+((m.costoReal||0)*(m.cantidad||0)), 0);
+  const desc     = subtotal * (state.desc/100);
+  const base     = subtotal - desc;
+  const igv      = base * (state.igvIncluido/100);
+  const total    = base + igv;
+  const ganancia = base - costoReal; // ya con descuento aplicado
+  const pctGan = total>0 ? (ganancia/total)*100 : 0;
+  return {subtotal, desc, base, igv, total, costoReal, ganancia, pctGan};
+}
+
+function calcularMini(){
+  const t = totales();
+  document.getElementById('mini-totales').innerHTML = `
+    <div>Subtotal items (venta):</div><div>${fmtPEN(t.subtotal)}</div>
+    <div style="color:#888">- Costo real items:</div><div style="color:#888">${fmtPEN(t.costoReal)}</div>
+    <div>Descuento (${state.desc}%):</div><div>- ${fmtPEN(t.desc)}</div>
+    <div>Base imponible:</div><div>${fmtPEN(t.base)}</div>
+    <div>IGV (${state.igvIncluido}%):</div><div>${fmtPEN(t.igv)}</div>
+    <div class="line-tot">TOTAL ${state.igvIncluido>0?'(con IGV)':'(sin IGV)'}:</div><div class="line-tot">${fmtPEN(t.total)}</div>
+    <div class="gan">💰 GANANCIA:</div><div class="gan">${fmtPEN(t.ganancia)}</div>
+    <div style="font-size:10.5px;color:#388e3c">Margen sobre venta:</div><div style="font-size:10.5px;color:#388e3c">${t.pctGan.toFixed(1)}%</div>
+  `;
+}
+
+// ============= SYNC =============
+function syncEstadoDesdeForm(){
+  state.codigo = document.getElementById('f-codigo').value;
+  state.version = document.getElementById('f-version').value;
+  state.fecha = document.getElementById('f-fecha').value;
+  state.servicio = document.getElementById('f-servicio').value;
+  state.plazo = document.getElementById('f-plazo').value;
+  state.lugarEntrega = document.getElementById('f-lugarEntrega').value;
+  state.desc = parseFloat(document.getElementById('f-desc').value)||0;
+  state.igvIncluido = parseFloat(document.getElementById('f-igvIncluido').value)||0;
+  state.modalidad = document.getElementById('f-modalidad').value;
+  state.validez = document.getElementById('f-validez').value;
+  state.garantia = document.getElementById('f-garantia').value;
+  state.formaPago = document.getElementById('f-formaPago').value;
+  state.metodoPago = document.getElementById('f-metodoPago').value;
+}
+function syncFormDesdeEstado(){
+  document.getElementById('f-codigo').value = state.codigo;
+  document.getElementById('f-version').value = state.version;
+  document.getElementById('f-fecha').value = state.fecha;
+  document.getElementById('f-servicio').value = state.servicio;
+  document.getElementById('f-plazo').value = state.plazo;
+  document.getElementById('f-lugarEntrega').value = state.lugarEntrega;
+  document.getElementById('f-desc').value = state.desc;
+  document.getElementById('f-igvIncluido').value = state.igvIncluido;
+  document.getElementById('f-modalidad').value = state.modalidad;
+  document.getElementById('f-validez').value = state.validez;
+  document.getElementById('f-garantia').value = state.garantia;
+  document.getElementById('f-formaPago').value = state.formaPago;
+  document.getElementById('f-metodoPago').value = state.metodoPago;
+  document.getElementById('f-cliente').value = state.clienteId;
+  poblarLugaresYContactos();
+  document.getElementById('f-lugar').value = state.lugar;
+  document.getElementById('f-contactoCliente').value = state.contactoClienteId;
+  document.getElementById('f-contactoConsitec').value = state.contactoConsitecId;
+  actualizarPreviewContacto();
+}
+
+// ============= RENDER A4 =============
+function render(){
+  syncEstadoDesdeForm();
+  const t = totales();
+  const cfg = DB.getConfig();
+  const fechaFmt = state.fecha ? new Date(state.fecha+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+
+  const rowsItems = state.items.map((m,i) => {
+    if(m.tipo === 'cat'){
+      return `<tr class="cat"><td colspan="7">${escapeHtml(m.titulo)}</td></tr>`;
+    }
+    const pUnit = (m.costoReal||0)*(m.ganancia||1)*(m.logistica||1);
+    const total = pUnit*(m.cantidad||0);
+    const marcaModelo = [m.marca, m.modelo].filter(x=>x&&x.trim()).join(' / ');
+    return `<tr>
+      <td class="idx cen">${i+1}</td>
+      <td>${escapeHtml(m.descripcion)}</td>
+      <td>${escapeHtml(marcaModelo)}</td>
+      <td>${escapeHtml(m.fabricante||'')}</td>
+      <td class="cen">${escapeHtml(m.um||'')}</td>
+      <td class="num">${fmtNum(m.cantidad,2)}</td>
+      <td class="num">${fmtNum(pUnit,2)}</td>
+      <td class="num">${fmtNum(total,2)}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `
+    <div class="head">
+      <div class="logo-box"><img src="../assets/logo-consitec.png" alt="CONSITEC"></div>
+      <div class="titulo">
+        <h1>COTIZACIÓN DE SUMINISTRO</h1>
+        <div class="sub">Oferta Comercial</div>
+      </div>
+      <div class="logo-box right">${state.logoCliente?`<img src="${state.logoCliente}" alt="Cliente">`:''}</div>
+    </div>
+
+    <table class="info-tabla">
+      <tr>
+        <td class="k">Suministro</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.servicio)}</td>
+        <td class="k-right">Propuesta</td><td class="s">:</td><td class="v" style="width:130px">${escapeHtml(state.codigo)}</td>
+      </tr>
+      <tr>
+        <td class="k">Lugar / Área</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.lugar)}</td>
+        <td class="k-right">Versión</td><td class="s">:</td><td class="v">${escapeHtml(state.version)}</td>
+      </tr>
+      <tr>
+        <td class="k">Cliente</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.clienteRazon)}</td>
+        <td class="k-right">Fecha</td><td class="s">:</td><td class="v">${fechaFmt}</td>
+      </tr>
+      <tr>
+        <td class="k">Atención</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.atencion)}</td>
+        <td class="k-right">Plazo Entrega</td><td class="s">:</td><td class="v">${escapeHtml(state.plazo)}</td>
+      </tr>
+      <tr>
+        <td class="k">Cargo</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.cargo)}</td>
+        <td class="k-right">Lugar Entrega</td><td class="s">:</td><td class="v">${escapeHtml(state.lugarEntrega)}</td>
+      </tr>
+      <tr>
+        <td class="k">Contacto</td><td class="s">:</td><td class="v" colspan="2">${escapeHtml(state.contacto)}</td>
+        <td class="k-right">Contacto Consitec</td><td class="s">:</td><td class="v">${escapeHtml(state.contactoConsitec)}</td>
+      </tr>
+    </table>
+
+    <div class="sec-h">
+      <div class="t">Detalle de Suministro</div>
+      <div class="lbl">SUB TOTAL</div>
+      <div class="val">${fmtNum(t.subtotal,2)}</div>
+    </div>
+
+    <table class="prod">
+      <thead><tr>
+        <th class="cen" style="width:22px">#</th>
+        <th class="left">DESCRIPCIÓN</th>
+        <th class="left" style="width:95px">MARCA / MODELO</th>
+        <th class="left" style="width:95px">FABRICANTE</th>
+        <th class="cen" style="width:40px">UM</th>
+        <th style="width:50px">CANT.</th>
+        <th style="width:65px">P. UNIT.</th>
+        <th style="width:75px">TOTAL</th>
+      </tr></thead>
+      <tbody>${rowsItems || '<tr><td colspan="8" style="text-align:center;color:#999;padding:14px;font-style:italic">Sin productos</td></tr>'}</tbody>
+    </table>
+
+    <table class="resumen">
+      <tr><td class="lbl">Subtotal</td><td class="val">${fmtPEN(t.subtotal)}</td></tr>
+      ${state.desc>0 ? `<tr><td class="lbl">Descuento (${state.desc}%)</td><td class="val">- ${fmtPEN(t.desc)}</td></tr>`:''}
+      ${state.desc>0 ? `<tr><td class="lbl">Base imponible</td><td class="val">${fmtPEN(t.base)}</td></tr>`:''}
+      ${state.igvIncluido>0 ? `<tr><td class="lbl">IGV (${state.igvIncluido}%)</td><td class="val">${fmtPEN(t.igv)}</td></tr>`:''}
+      <tr class="tot"><td class="lbl">TOTAL (PEN) ${state.igvIncluido>0?'con IGV':'sin IGV'}</td><td class="val">${fmtPEN(t.total)}</td></tr>
+    </table>
+
+    <div class="son">SON: ${numEnLetras(t.total)}</div>
+
+    <div class="seccion-titulo">Condiciones comerciales</div>
+    <div class="cond-grid">
+      <div class="k">Modalidad:</div><div>${escapeHtml(state.modalidad)}</div>
+      <div class="k">Validez de oferta:</div><div>${escapeHtml(state.validez)}</div>
+      <div class="k">Plazo de entrega:</div><div>${escapeHtml(state.plazo)}</div>
+      <div class="k">Lugar de entrega:</div><div>${escapeHtml(state.lugarEntrega)}</div>
+      <div class="k">Forma de pago:</div><div>${escapeHtml(state.formaPago)}</div>
+      <div class="k">Método de pago:</div><div>${escapeHtml(state.metodoPago)}</div>
+      ${state.garantia ? `<div class="k">Garantía:</div><div>${escapeHtml(state.garantia)}</div>`:''}
+    </div>
+
+    ${state.notas.filter(n=>n.texto.trim()).length ? `
+      <div class="seccion-titulo">Notas</div>
+      <ul class="notas-list">${state.notas.filter(n=>n.texto.trim()).map(n=>`<li>${escapeHtml(n.texto)}</li>`).join('')}</ul>
+    `:''}
+
+    ${state.excl.filter(n=>n.texto.trim()).length ? `
+      <div class="seccion-titulo">Exclusiones</div>
+      <ol class="notas-list">${state.excl.filter(n=>n.texto.trim()).map(n=>`<li>${escapeHtml(n.texto)}</li>`).join('')}</ol>
+    `:''}
+
+    <div class="footer-emp">
+      <b>${escapeHtml(cfg.slogan)}</b><br>
+      <b>${escapeHtml(cfg.empresa)}</b><br>
+      RUC: ${escapeHtml(cfg.ruc)} &nbsp;|&nbsp; ${escapeHtml(cfg.telefono)}<br>
+      ${escapeHtml(cfg.email)}<br>
+      ${escapeHtml(cfg.direccion)}
+    </div>
+
+    <div class="validez">OFERTA VÁLIDA POR LA TOTALIDAD DEL SUMINISTRO</div>
+  `;
+  document.getElementById('sheet').innerHTML = html;
+  renderAnexos();
+  calcularMini();
+}
+
+// ============= GUARDAR / CARGAR =============
+function autoGuardarMateriales(){
+  state.items.filter(m => m.tipo !== 'cat').forEach(m => {
+    if(m.descripcion && m.descripcion.trim()){
+      const items = DB.materiales.list();
+      const exists = items.find(x => (x.descripcion||'').toLowerCase() === m.descripcion.toLowerCase());
+      if(!exists){
+        DB.materiales.save({descripcion:m.descripcion, marca:m.marca||'', modelo:m.modelo||'', fabricante:m.fabricante, um:m.um, costoReal:m.costoReal, ganancia:m.ganancia, logistica:m.logistica});
+      }
+    }
+  });
+  state.notas.forEach(n => { if(n.texto.trim()) DB.ensureCatItem(DB.catNotas, n.texto); });
+  state.excl.forEach(n  => { if(n.texto.trim()) DB.ensureCatItem(DB.catExclusiones, n.texto); });
+  if(state.clienteId && state.lugar) DB.clienteAddArea(state.clienteId, state.lugar);
+}
+
+function guardar(){
+  syncEstadoDesdeForm();
+  autoGuardarMateriales();
+  const t = totales();
+  const item = {
+    ...state,
+    id: state.id || undefined,
+    totales: {totalFinal: t.total, ganancia: t.ganancia, pctGanancia: t.pctGan, subtotal: t.subtotal, igv: t.igv},
+    estado: state.estado || 'borrador',
+  };
+  try {
+    const saved = DB.cotizaciones.save(item);
+    state.id = saved.id;
+    toast('Cotización guardada: ' + state.codigo, 'success');
+  } catch(err){
+    // Probablemente QuotaExceededError por fichas muy grandes
+    if(state.fichas && state.fichas.length > 0){
+      if(confirm('No se pudo guardar (probablemente las fichas técnicas son muy pesadas para el navegador). ¿Quieres guardar solo las páginas SELECCIONADAS de cada ficha y eliminar el resto?')){
+        // Reducir fichas a solo páginas seleccionadas
+        const itemReducido = {...item, fichas: state.fichas.map(f => ({
+          ...f,
+          paginas: f.paginas.filter(p => f.seleccionadas.includes(p.num)).map(p => ({num:p.num, thumb:p.thumb, full:p.full})),
+        }))};
+        try {
+          const saved = DB.cotizaciones.save(itemReducido);
+          state.id = saved.id;
+          state.fichas = itemReducido.fichas;
+          renderFichas();
+          toast('Guardado (solo páginas seleccionadas)', 'success');
+        } catch(err2){
+          toast('Aún no cabe. Reduce más fichas o usa menos páginas.', 'danger');
+        }
+      }
+    } else {
+      toast('Error al guardar: ' + err.message, 'danger');
+    }
+  }
+}
+function nuevaCot(){
+  if(!confirm('¿Iniciar nueva cotización? Se perderán cambios no guardados.')) return;
+  state = nuevoEstado();
+  init();
+}
+
+function aprobarYCrearProyecto(){
+  guardar();
+  if(!state.id){ toast('Guarda primero la cotización','danger'); return; }
+  const c = DB.cotizaciones.get(state.id); if(!c) return;
+  if(c.proyectoId){
+    if(confirm('Esta cotización ya tiene un proyecto vinculado. ¿Ir a Operaciones?')){
+      location.href = 'operaciones.html';
+    }
+    return;
+  }
+  if(!confirm(`¿Aprobar la cotización "${c.codigo}" y crear el proyecto en Operaciones?\n\n• Se marcará como APROBADA\n• Se creará el proyecto vinculado\n• Aparecerá en Operaciones para asignar al supervisor`)) return;
+  c.estado = 'aprobada';
+  DB.cotizaciones.save(c);
+  state.estado = 'aprobada';
+  const p = DB.crearProyectoDesdeCotizacion(state.id);
+  if(p){
+    toast(`✅ Aprobada. Proyecto ${p.codigo} creado.`,'success');
+    if(confirm(`Proyecto ${p.codigo} creado.\n\n¿Ir ahora a Operaciones para asignar al supervisor?`)){
+      location.href = 'operaciones.html';
+    }
+  }
+}
+function cargarLista(){
+  const items = DB.cotizaciones.list()
+    .filter(c => c.tipo === 'suministro')
+    .sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0));
+  const tbody = document.getElementById('tblLista');
+  tbody.innerHTML = items.length === 0
+    ? `<tr><td colspan="7" class="empty">No hay cotizaciones de suministro.</td></tr>`
+    : items.map(c => `
+      <tr>
+        <td><b>${escapeHtml(c.codigo)}</b></td>
+        <td>${escapeHtml(c.clienteRazon||'')}</td>
+        <td><small>${escapeHtml((c.servicio||'').slice(0,50))}...</small></td>
+        <td>${fmtDate(c.updatedAt)}</td>
+        <td class="num">${fmtPEN(c.totales?.totalFinal||0)}</td>
+        <td class="num text-success">${fmtPEN(c.totales?.ganancia||0)}</td>
+        <td class="actions">
+          <button class="sm ghost" onclick="cargarCot('${c.id}')">Abrir</button>
+          <button class="sm danger" onclick="eliminarCot('${c.id}')">×</button>
+        </td>
+      </tr>
+    `).join('');
+  document.getElementById('modalLista').classList.add('show');
+}
+function cargarCot(id){
+  const c = DB.cotizaciones.get(id); if(!c) return;
+  state = {...nuevoEstado(), ...c};
+  if(!Array.isArray(state.notas)) state.notas = [];
+  if(!Array.isArray(state.excl))  state.excl  = [];
+  if(!Array.isArray(state.fichas)) state.fichas = [];
+  syncFormDesdeEstado();
+  renderItems();
+  renderListaTextos();
+  renderFichas();
+  render();
+  document.getElementById('modalLista').classList.remove('show');
+  toast('Cotización cargada: '+state.codigo);
+}
+function eliminarCot(id){
+  if(!confirm('¿Eliminar esta cotización?')) return;
+  DB.cotizaciones.remove(id);
+  cargarLista();
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+document.addEventListener('input', e => {
+  if(e.target.closest('.editor') && !e.target.closest('.item-row') && !e.target.closest('.simple-item')) render();
+});
+
+init();
+</script>
+</body>
+</html>

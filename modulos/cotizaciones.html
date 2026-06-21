@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Historial de Cotizaciones — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.estado-pill{cursor:pointer;border:1px solid transparent;transition:all .15s}
+.estado-pill:hover{border-color:currentColor;opacity:.85}
+.estado-menu{position:absolute;background:#fff;border:1px solid var(--gray-mid);border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:50;padding:4px;min-width:140px}
+.estado-menu button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:5px 8px;font-size:12px;border:none;cursor:pointer;border-radius:2px}
+.estado-menu button:hover{background:var(--brand-soft)}
+.gan-cell{font-size:11.5px}
+.gan-cell .pct{font-size:10px;color:#666;display:block}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Historial de Cotizaciones — Listado y Seguimiento</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html" class="active">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>📋 Historial de Cotizaciones</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <a class="btn sm" href="cotizador.html" style="text-decoration:none">+ Servicio</a>
+      <a class="btn accent sm" href="cotizador-suministro.html" style="text-decoration:none">+ Suministro</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por código, servicio..." oninput="render()"></div>
+      <select id="fTipo" onchange="render()" style="max-width:150px">
+        <option value="">Todos los tipos</option>
+        <option value="servicios">📋 Servicios</option>
+        <option value="suministro">📦 Suministros</option>
+      </select>
+      <select id="fCliente" onchange="render()" style="max-width:240px">
+        <option value="">Todos los clientes</option>
+      </select>
+      <select id="fEstado" onchange="render()" style="max-width:160px">
+        <option value="">Todos los estados</option>
+        <option value="borrador">Borrador</option>
+        <option value="enviada">Enviada</option>
+        <option value="aprobada">Aprobada</option>
+        <option value="rechazada">Rechazada</option>
+        <option value="facturada">Facturada</option>
+        <option value="pagada">Pagada</option>
+      </select>
+      <select id="fOrden" onchange="render()" style="max-width:160px">
+        <option value="fecha_desc">Más recientes</option>
+        <option value="fecha_asc">Más antiguas</option>
+        <option value="total_desc">Mayor monto</option>
+        <option value="total_asc">Menor monto</option>
+        <option value="ganancia_desc">Mayor ganancia</option>
+      </select>
+      <span class="tag" id="counter"></span>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="data" id="tabla">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Servicio / Suministro</th>
+            <th>Lugar</th>
+            <th>Fecha</th>
+            <th class="num">Total (S/)</th>
+            <th class="num">Ganancia</th>
+            <th>Estado</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- menú flotante de estados -->
+<div id="estadoMenu" class="estado-menu" style="display:none"></div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+const ESTADOS = [
+  {k:'borrador',  l:'Borrador'},
+  {k:'enviada',   l:'Enviada'},
+  {k:'aprobada',  l:'Aprobada'},
+  {k:'rechazada', l:'Rechazada'},
+  {k:'facturada', l:'Facturada'},
+  {k:'pagada',    l:'Pagada'},
+];
+
+function poblarFiltros(){
+  const sel = document.getElementById('fCliente');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los clientes</option>' +
+    DB.clientes.list().map(c => `<option value="${c.id}">${escapeHtml(c.razonSocial)}</option>`).join('');
+  sel.value = cur;
+}
+
+function pintarKPIs(){
+  const cots = DB.cotizaciones.list();
+  const total = cots.reduce((s,c) => s + (c.totales?.totalFinal||0), 0);
+  const ganancia = cots.reduce((s,c) => s + (c.totales?.ganancia||0), 0);
+  const aprobadas = cots.filter(c => c.estado === 'aprobada' || c.estado === 'facturada' || c.estado === 'pagada');
+  const totalAprob = aprobadas.reduce((s,c) => s + (c.totales?.totalFinal||0), 0);
+  const ganAprob   = aprobadas.reduce((s,c) => s + (c.totales?.ganancia||0), 0);
+  const tasa = cots.length ? (aprobadas.length/cots.length)*100 : 0;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi">
+      <div class="label">Total cotizaciones</div>
+      <div class="value">${cots.length}</div>
+      <div class="sub">${aprobadas.length} aprobadas (${tasa.toFixed(0)}%)</div>
+    </div>
+    <div class="kpi accent">
+      <div class="label">Monto cotizado</div>
+      <div class="value" style="font-size:20px">${fmtPEN(total)}</div>
+      <div class="sub">Aprobado: ${fmtPEN(totalAprob)}</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">💰 Ganancia potencial</div>
+      <div class="value" style="font-size:20px">${fmtPEN(ganancia)}</div>
+      <div class="sub">Confirmada: ${fmtPEN(ganAprob)}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Promedio ganancia</div>
+      <div class="value" style="font-size:20px">${total>0?((ganancia/total)*100).toFixed(1)+'%':'—'}</div>
+      <div class="sub">Margen promedio</div>
+    </div>
+  `;
+}
+
+function render(){
+  pintarKPIs();
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const fTipo = document.getElementById('fTipo').value;
+  const fCli = document.getElementById('fCliente').value;
+  const fEst = document.getElementById('fEstado').value;
+  const fOrd = document.getElementById('fOrden').value;
+
+  let items = DB.cotizaciones.list().filter(c =>
+    (!q || (c.codigo||'').toLowerCase().includes(q) || (c.servicio||'').toLowerCase().includes(q) || (c.clienteRazon||'').toLowerCase().includes(q))
+    && (!fTipo || (c.tipo||'servicios') === fTipo)
+    && (!fCli || c.clienteId === fCli)
+    && (!fEst || (c.estado||'borrador') === fEst)
+  );
+
+  // Orden
+  items.sort((a,b) => {
+    if(fOrd === 'fecha_asc') return (a.updatedAt||0) - (b.updatedAt||0);
+    if(fOrd === 'total_desc') return (b.totales?.totalFinal||0) - (a.totales?.totalFinal||0);
+    if(fOrd === 'total_asc')  return (a.totales?.totalFinal||0) - (b.totales?.totalFinal||0);
+    if(fOrd === 'ganancia_desc') return (b.totales?.ganancia||0) - (a.totales?.ganancia||0);
+    return (b.updatedAt||0) - (a.updatedAt||0);
+  });
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay cotizaciones que coincidan.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(c => {
+      const tot = c.totales?.totalFinal || 0;
+      const gan = c.totales?.ganancia || 0;
+      const pct = c.totales?.pctGanancia != null ? c.totales.pctGanancia : (tot>0 ? (gan/tot)*100 : 0);
+      const est = c.estado || 'borrador';
+      const estLbl = (ESTADOS.find(e=>e.k===est)||{l:est}).l;
+      const tipo = c.tipo || 'servicios';
+      const tipoLbl = tipo === 'suministro' ? '📦 Suministro' : '📋 Servicio';
+      const tipoColor = tipo === 'suministro' ? '#7c2d12' : '#1e40af';
+      const tipoBg = tipo === 'suministro' ? '#fed7aa' : '#dbeafe';
+      const editor = tipo === 'suministro' ? 'cotizador-suministro.html' : 'cotizador.html';
+      const fechaFmt = c.fecha ? new Date(c.fecha+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : fmtDate(c.updatedAt);
+      return `
+      <tr>
+        <td><span class="badge" style="background:${tipoBg};color:${tipoColor}">${tipoLbl}</span></td>
+        <td><b>${escapeHtml(c.codigo||'')}</b></td>
+        <td><small>${escapeHtml(c.clienteRazon||'-')}</small></td>
+        <td><small>${escapeHtml((c.servicio||'').slice(0,60))}${(c.servicio||'').length>60?'...':''}</small></td>
+        <td><small>${escapeHtml(c.lugar||'-')}</small></td>
+        <td><small>${fechaFmt}</small></td>
+        <td class="num"><b>${fmtPEN(tot)}</b></td>
+        <td class="num gan-cell">
+          <span class="text-success fw-bold">${fmtPEN(gan)}</span>
+          <span class="pct">${pct.toFixed(1)}%</span>
+        </td>
+        <td>
+          <span class="badge ${est} estado-pill" onclick="abrirEstadoMenu(event,'${c.id}')">${estLbl}</span>
+          ${c.proyectoId ? `<br><small style="font-size:10px"><a href="operaciones.html" style="color:var(--success);text-decoration:none">🏗️ Proyecto creado</a></small>`
+            : (['aprobada','facturada','pagada'].includes(est) ? `<br><small style="font-size:10px"><a href="javascript:void(0)" onclick="crearProyectoManual('${c.id}')" style="color:var(--brand2)">+ Crear proyecto</a></small>` : '')}
+        </td>
+        <td class="actions">
+          <a class="btn sm ghost" href="${editor}?id=${c.id}" style="text-decoration:none">Abrir</a>
+          <button class="sm danger" onclick="eliminar('${c.id}')">×</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} cotización${items.length!==1?'es':''}`;
+}
+
+// ========== ESTADOS (cambiar inline) ==========
+let estadoMenuOpenFor = null;
+function abrirEstadoMenu(ev, id){
+  ev.stopPropagation();
+  const menu = document.getElementById('estadoMenu');
+  if(estadoMenuOpenFor === id){
+    menu.style.display = 'none';
+    estadoMenuOpenFor = null;
+    return;
+  }
+  menu.innerHTML = ESTADOS.map(e =>
+    `<button onclick="cambiarEstado('${id}','${e.k}')"><span class="badge ${e.k}" style="font-size:10px">${e.l}</span></button>`
+  ).join('');
+  const r = ev.target.getBoundingClientRect();
+  menu.style.left = (r.left + window.scrollX) + 'px';
+  menu.style.top  = (r.bottom + window.scrollY + 4) + 'px';
+  menu.style.display = 'block';
+  estadoMenuOpenFor = id;
+}
+document.addEventListener('click', () => {
+  document.getElementById('estadoMenu').style.display = 'none';
+  estadoMenuOpenFor = null;
+});
+
+function cambiarEstado(id, nuevoEstado){
+  const c = DB.cotizaciones.get(id); if(!c) return;
+  const estadoPrevio = c.estado || 'borrador';
+  c.estado = nuevoEstado;
+  DB.cotizaciones.save(c);
+  // Si pasa a aprobada y aún no tiene proyecto → ofrecer crearlo
+  if(nuevoEstado === 'aprobada' && !c.proyectoId && estadoPrevio !== 'aprobada'){
+    setTimeout(() => {
+      if(confirm('✅ Cotización aprobada.\n\n¿Crear automáticamente un proyecto vinculado para gestionarlo en Operaciones?\n\n(Podrás asignar al supervisor y registrar reportes diarios)')){
+        const p = DB.crearProyectoDesdeCotizacion(id);
+        if(p){
+          toast(`Proyecto ${p.codigo} creado. Ve a Operaciones para asignar al supervisor.`, 'success');
+          // Opción de ir directo a Operaciones
+          if(confirm('Proyecto creado. ¿Ir ahora a Operaciones para asignar al supervisor?')){
+            location.href = 'operaciones.html';
+            return;
+          }
+        }
+        render();
+      }
+    }, 100);
+  } else {
+    toast(`Estado: ${nuevoEstado}`, 'success');
+  }
+  render();
+}
+
+function crearProyectoManual(id){
+  const c = DB.cotizaciones.get(id); if(!c) return;
+  if(c.proyectoId){
+    if(confirm('Esta cotización ya tiene un proyecto vinculado. ¿Ir a verlo en Operaciones?')){
+      location.href = 'operaciones.html';
+    }
+    return;
+  }
+  if(!confirm(`¿Crear proyecto a partir de "${c.codigo}"?\n\nSe creará en estado "Planificado" y aparecerá en Operaciones para asignar al supervisor.`)) return;
+  const p = DB.crearProyectoDesdeCotizacion(id);
+  if(p){
+    toast(`Proyecto ${p.codigo} creado.`, 'success');
+    if(confirm('¿Ir ahora a Operaciones para asignar al supervisor?')){
+      location.href = 'operaciones.html';
+      return;
+    }
+    render();
+  }
+}
+
+function eliminar(id){
+  if(!confirm('¿Eliminar esta cotización?')) return;
+  DB.cotizaciones.remove(id);
+  toast('Cotización eliminada');
+  render();
+}
+
+function exportarCSV(){
+  const items = DB.cotizaciones.list();
+  const headers = ['Código','Cliente','Servicio','Lugar','Fecha','Total','Ganancia','Margen %','Estado'];
+  const rows = items.map(c => {
+    const tot = c.totales?.totalFinal||0, gan = c.totales?.ganancia||0;
+    const pct = tot>0 ? ((gan/tot)*100).toFixed(1)+'%' : '';
+    return [c.codigo, c.clienteRazon, (c.servicio||'').replace(/\n/g,' '), c.lugar, c.fecha, tot.toFixed(2), gan.toFixed(2), pct, c.estado||'borrador'];
+  });
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cotizaciones-${todayISO()}.csv`;
+  a.click();
+  toast('CSV exportado','success');
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+poblarFiltros();
+render();
+</script>
+</body>
+</html>

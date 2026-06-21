@@ -1,0 +1,25 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "rewrite": "/index.html"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/*",
+      "/css/*",
+      "/js/*",
+      "/modulos/*",
+      "/sharepoint/*",
+      "*.{png,jpg,jpeg,gif,svg,ico,css,js,pdf,woff,woff2,ttf}"
+    ]
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-cache"
+  }
+}

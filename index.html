@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" type="image/png" href="assets/logo-consitec.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Control, Sistemas y Tecnología · Cía. Minera Poderosa S.A.</div>
+    </div>
+    <img src="assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="index.html" class="active">Inicio</a>
+    <a href="modulos/cotizador.html">Servicios</a>
+    <a href="modulos/cotizador-suministro.html">Suministros</a>
+    <a href="modulos/cotizaciones.html">Historial</a>
+    <a href="modulos/ordenes-compra.html">OCs</a>
+    <a href="modulos/operaciones.html">Operaciones</a>
+    <a href="modulos/gantt.html">Gantt</a>
+    <a href="modulos/reportes.html">Reportes</a>
+    <a href="modulos/clientes.html">Clientes</a>
+    <a href="modulos/proveedores.html">Proveedores</a>
+    <a href="modulos/proyectos.html">Proyectos</a>
+    <a href="modulos/gestion.html">Gestión</a>
+    <a href="modulos/cargos.html">Cargos</a>
+    <a href="modulos/personal.html">Personal</a>
+    <a href="modulos/materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>Módulos del ERP</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="exportBackup()">⬇ Exportar Backup</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none" onchange="importBackup(event)">
+      <button class="ghost sm" onclick="document.getElementById('fileImport').click()">⬆ Importar Backup</button>
+      <button class="ghost sm" onclick="abrirConfig()">⚙ Configuración</button>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+
+    <a class="module-card" href="modulos/cotizador.html">
+      <div class="icon">📋</div>
+      <div class="title">Cotizador Servicios</div>
+      <div class="desc">Ofertas económicas con INICIO + EJECUCIÓN: mano de obra + materiales + GG + utilidad.</div>
+      <span class="badge" id="cnt-cot">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/cotizador-suministro.html">
+      <div class="icon">📦</div>
+      <div class="title">Cotizador Suministros</div>
+      <div class="desc">Cotizaciones de productos: lista directa con marca, modelo, P. unitario y total.</div>
+      <span class="badge" id="cnt-sum">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/cotizaciones.html">
+      <div class="icon">📊</div>
+      <div class="title">Historial de Cotizaciones</div>
+      <div class="desc">Listado, estados, ganancia y filtros por cliente. Seguimiento comercial.</div>
+      <span class="badge" id="cnt-cots">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/ordenes-compra.html">
+      <div class="icon">📑</div>
+      <div class="title">Órdenes de Compra</div>
+      <div class="desc">Emitir OCs con vencimiento, pagos parciales y saldo pendiente.</div>
+      <span class="badge" id="cnt-oc">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/operaciones.html">
+      <div class="icon">🔧</div>
+      <div class="title">Operaciones</div>
+      <div class="desc">Asignar personal a proyectos, reportes diarios con fotos e informes semanales.</div>
+      <span class="badge" id="cnt-rep">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/gantt.html">
+      <div class="icon">📊</div>
+      <div class="title">Gantt</div>
+      <div class="desc">Cronograma visual tipo MS Project: avance de proyectos y tareas en línea de tiempo.</div>
+      <span class="badge muted">📅</span>
+    </a>
+
+    <a class="module-card" href="modulos/reportes.html">
+      <div class="icon">📈</div>
+      <div class="title">Reportes</div>
+      <div class="desc">Ganancias por mes, OCs por vencer, ranking por cliente.</div>
+      <span class="badge muted">📊</span>
+    </a>
+
+    <a class="module-card" href="modulos/proveedores.html">
+      <div class="icon">🚚</div>
+      <div class="title">Proveedores</div>
+      <div class="desc">Cartera de proveedores con rubros, contactos y crédito.</div>
+      <span class="badge muted" id="cnt-prv">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/clientes.html">
+      <div class="icon">🏢</div>
+      <div class="title">Clientes</div>
+      <div class="desc">Cartera de clientes con RUC, contactos y datos de facturación.</div>
+      <span class="badge muted" id="cnt-cli">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/proyectos.html">
+      <div class="icon">🏗️</div>
+      <div class="title">Proyectos</div>
+      <div class="desc">Seguimiento de proyectos vinculados a cotizaciones y OCs.</div>
+      <span class="badge muted" id="cnt-pry">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/gestion.html">
+      <div class="icon">👥</div>
+      <div class="title">Gestión</div>
+      <div class="desc">Personal administrativo (nombre, apellidos, correo) que aparece como Gestor, Solicitante, Aprobador y Firma en las OCs.</div>
+      <span class="badge muted" id="cnt-ges">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/cargos.html">
+      <div class="icon">💼</div>
+      <div class="title">Cargos</div>
+      <div class="desc">Catálogo de tipos de cargo con tarifas HH (Soldador, Supervisor, etc.). Sin nombres — solo precios.</div>
+      <span class="badge muted" id="cnt-car">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/personal.html">
+      <div class="icon">👷</div>
+      <div class="title">Personal</div>
+      <div class="desc">Trabajadores reales con nombre, DNI y cargo asignado. Se asignan a proyectos en Operaciones.</div>
+      <span class="badge muted" id="cnt-per">0</span>
+    </a>
+
+    <a class="module-card" href="modulos/materiales.html">
+      <div class="icon">🔩</div>
+      <div class="title">Materiales</div>
+      <div class="desc">Catálogo de materiales con costo real y margen configurable.</div>
+      <span class="badge muted" id="cnt-mat">0</span>
+    </a>
+
+  </div>
+
+</main>
+
+<!-- Modal Configuración -->
+<div class="modal-overlay" id="modalConfig">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙ Configuración de la empresa</h3>
+      <button class="close" onclick="cerrarConfig()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div><label>Razón social</label><input id="cf-empresa"></div>
+        <div><label>RUC</label><input id="cf-ruc"></div>
+      </div>
+      <div class="row">
+        <div><label>Slogan</label><input id="cf-slogan"></div>
+        <div><label>Gerente</label><input id="cf-gerente"></div>
+      </div>
+      <label>Dirección</label><input id="cf-direccion">
+      <div class="row">
+        <div><label>Teléfono</label><input id="cf-telefono"></div>
+        <div><label>Email</label><input id="cf-email"></div>
+      </div>
+      <label>Cuenta bancaria</label><input id="cf-cuenta" placeholder="BCP Soles: 123-456789-0-12">
+
+      <h3 class="mt-3">Márgenes y condiciones por defecto</h3>
+      <div class="row4">
+        <div><label>Margen material</label><input id="cf-margenMat" type="number" step="0.01"></div>
+        <div><label>Margen grating</label><input id="cf-margenGr" type="number" step="0.01"></div>
+        <div><label>Gastos Generales (%)</label><input id="cf-gg" type="number" step="0.01"></div>
+        <div><label>Utilidad (%)</label><input id="cf-util" type="number" step="0.01"></div>
+      </div>
+      <div class="row3">
+        <div><label>Validez oferta</label><input id="cf-validez"></div>
+        <div><label>Forma de pago</label><input id="cf-formaPago"></div>
+        <div><label>Método de pago</label><input id="cf-metodoPago"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarConfig()">Cancelar</button>
+      <button class="success" onclick="guardarConfig()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (cargan solo si modo=sharepoint) ====== -->
+<script src="js/sharepoint-config.js"></script>
+<script src="js/lib/msal-browser.min.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sharepoint-adapter.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth-ui.js"></script>
+<script>
+// auth-ui.js llama a refrescarUI() al terminar de sincronizar con SharePoint
+window.refrescarUI = function(){ pintarKPIs(); };
+
+function pintarKPIs(){
+  const cots = DB.cotizaciones.list();
+  const ocs  = DB.ocs.list();
+  const totalCotizado = cots.reduce((a,c) => a + (c.totales?.totalFinal || 0), 0);
+  const gananciaTotal = cots.reduce((a,c) => a + (c.totales?.ganancia || 0), 0);
+  const ganadas = cots.filter(c => ['aprobada','facturada','pagada'].includes(c.estado));
+  const totalEmitOC = ocs.reduce((s,o)=>s+(o.totales?.total||0),0);
+  const totalPagadoOC = ocs.reduce((s,o)=>s+(o.pagos||[]).reduce((a,p)=>a+(p.monto||0),0),0);
+  const saldoOC = totalEmitOC - totalPagadoOC;
+  // Vencidas
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const vencidas = ocs.filter(o => {
+    const total = o.totales?.total||0;
+    const pagado = (o.pagos||[]).reduce((s,p)=>s+(p.monto||0),0);
+    const saldo = total - pagado;
+    if(saldo <= 0.01) return false;
+    if(!o.fechaVencimiento) return false;
+    return new Date(o.fechaVencimiento+'T00:00:00') < hoy;
+  });
+  const html = `
+    <div class="kpi">
+      <div class="label">Cotizaciones</div>
+      <div class="value">${cots.length}</div>
+      <div class="sub">${ganadas.length} ganadas</div>
+    </div>
+    <div class="kpi accent">
+      <div class="label">Total Cotizado</div>
+      <div class="value" style="font-size:20px">${fmtPEN(totalCotizado)}</div>
+      <div class="sub">Ganancia: ${fmtPEN(gananciaTotal)}</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">Órdenes de Compra</div>
+      <div class="value">${ocs.length}</div>
+      <div class="sub">Saldo: ${fmtPEN(saldoOC)}</div>
+    </div>
+    <div class="kpi" style="border-left-color:#dc3545">
+      <div class="label">⚠ OCs vencidas</div>
+      <div class="value" style="color:#dc3545">${vencidas.length}</div>
+      <div class="sub">${DB.clientes.list().length} clientes · ${DB.proveedores.list().length} proveedores</div>
+    </div>
+  `;
+  document.getElementById('kpis').innerHTML = html;
+
+  const cotsServ = cots.filter(c => (c.tipo||'servicios') === 'servicios').length;
+  const cotsSum  = cots.filter(c => c.tipo === 'suministro').length;
+  document.getElementById('cnt-cot').textContent = cotsServ;
+  const cntSum = document.getElementById('cnt-sum'); if(cntSum) cntSum.textContent = cotsSum;
+  document.getElementById('cnt-cots').textContent = cots.length;
+  document.getElementById('cnt-oc').textContent  = ocs.length;
+  const cntPrv = document.getElementById('cnt-prv'); if(cntPrv) cntPrv.textContent = DB.proveedores.list().length;
+  const cntGes = document.getElementById('cnt-ges'); if(cntGes) cntGes.textContent = DB.contactosConsitec.list().length;
+  const cntCar = document.getElementById('cnt-car'); if(cntCar) cntCar.textContent = DB.cargos.list().length;
+  const cntRep = document.getElementById('cnt-rep'); if(cntRep) cntRep.textContent = DB.reportesDiarios.list().length;
+  document.getElementById('cnt-cli').textContent = DB.clientes.list().length;
+  document.getElementById('cnt-pry').textContent = DB.proyectos.list().length;
+  document.getElementById('cnt-per').textContent = DB.personal.list().length;
+  document.getElementById('cnt-mat').textContent = DB.materiales.list().length;
+}
+
+function abrirConfig(){
+  const c = DB.getConfig();
+  document.getElementById('cf-empresa').value = c.empresa || '';
+  document.getElementById('cf-ruc').value = c.ruc || '';
+  document.getElementById('cf-slogan').value = c.slogan || '';
+  document.getElementById('cf-gerente').value = c.gerente || '';
+  document.getElementById('cf-direccion').value = c.direccion || '';
+  document.getElementById('cf-telefono').value = c.telefono || '';
+  document.getElementById('cf-email').value = c.email || '';
+  document.getElementById('cf-cuenta').value = c.cuentaBanco || '';
+  document.getElementById('cf-margenMat').value = c.margenMaterial || 1.3;
+  document.getElementById('cf-margenGr').value = c.margenGratting || 1.5;
+  document.getElementById('cf-gg').value = (c.gastosGenerales || 0.20) * 100;
+  document.getElementById('cf-util').value = (c.utilidad || 0.10) * 100;
+  document.getElementById('cf-validez').value = c.validezOferta || '';
+  document.getElementById('cf-formaPago').value = c.formaPago || '';
+  document.getElementById('cf-metodoPago').value = c.metodoPago || '';
+  document.getElementById('modalConfig').classList.add('show');
+}
+function cerrarConfig(){ document.getElementById('modalConfig').classList.remove('show'); }
+function guardarConfig(){
+  const c = DB.getConfig();
+  c.empresa = document.getElementById('cf-empresa').value;
+  c.ruc = document.getElementById('cf-ruc').value;
+  c.slogan = document.getElementById('cf-slogan').value;
+  c.gerente = document.getElementById('cf-gerente').value;
+  c.direccion = document.getElementById('cf-direccion').value;
+  c.telefono = document.getElementById('cf-telefono').value;
+  c.email = document.getElementById('cf-email').value;
+  c.cuentaBanco = document.getElementById('cf-cuenta').value;
+  c.margenMaterial = parseFloat(document.getElementById('cf-margenMat').value) || 1.3;
+  c.margenGratting = parseFloat(document.getElementById('cf-margenGr').value) || 1.5;
+  c.gastosGenerales = (parseFloat(document.getElementById('cf-gg').value) || 20) / 100;
+  c.utilidad = (parseFloat(document.getElementById('cf-util').value) || 10) / 100;
+  c.validezOferta = document.getElementById('cf-validez').value;
+  c.formaPago = document.getElementById('cf-formaPago').value;
+  c.metodoPago = document.getElementById('cf-metodoPago').value;
+  DB.setConfig(c);
+  toast('Configuración guardada', 'success');
+  cerrarConfig();
+}
+
+function exportBackup(){
+  const data = DB.exportAll();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `consitec-erp-backup-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup exportado', 'success');
+}
+function importBackup(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      if(!confirm('¿Reemplazar los datos actuales con el backup?')) return;
+      DB.importAll(JSON.parse(ev.target.result));
+      toast('Backup importado', 'success');
+      pintarKPIs();
+    } catch(err){ toast('Error al importar: ' + err.message, 'danger'); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+}
+
+pintarKPIs();
+</script>
+</body>
+</html>

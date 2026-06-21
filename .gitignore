@@ -1,0 +1,47 @@
+# Sistema operativo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node (por si en el futuro se agrega)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Backups y temporales del ERP
+*.backup
+backups/
+*.tmp
+*.bak
+
+# Archivos de logs
+*.log
+logs/
+
+# OneDrive metadata
+.tmp.driveupload/
+.tmp.drivedownload/
+
+# Datos sensibles (si alguno se agrega por error)
+.env
+.env.local
+secrets.json
+*.pem
+*.pfx
+*.key
+
+# Azure / SWA
+.azure/
+staticwebapp.config.local.json

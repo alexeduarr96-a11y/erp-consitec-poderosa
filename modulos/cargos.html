@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cargos — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.pill.cost{background:#f5f5f5;color:#555}
+.pill.venta{background:#e8f5e9;color:#1b5e20}
+.pill.gan{background:#fff3cd;color:#856404}
+.pct-good{color:#1b5e20;font-weight:700}
+.pct-warn{color:#b06200;font-weight:700}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Cargos — Catálogo de tarifas HH</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html" class="active">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>💼 Cargos — Catálogo de tarifas HH</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Cargo</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por cargo o categoría..." oninput="render()"></div>
+      <select id="fCategoria" onchange="render()" style="max-width:200px">
+        <option value="">Todas las categorías</option>
+        <option value="Supervisión">Supervisión</option>
+        <option value="Ingeniería">Ingeniería</option>
+        <option value="Técnico">Técnico</option>
+        <option value="Operario">Operario</option>
+        <option value="Seguridad">Seguridad</option>
+        <option value="Administrativo">Administrativo</option>
+      </select>
+      <span class="tag" id="counter"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+        💡 Estos cargos aparecen como tarifas en el cotizador. Personas reales con nombre/DNI van en <a href="personal.html" style="color:var(--brand);font-weight:600">Personal</a>.
+      </span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data" id="tabla">
+        <thead>
+          <tr>
+            <th>Cargo / Puesto</th>
+            <th>Categoría</th>
+            <th class="num">Costo Real HH</th>
+            <th class="num" title="Multiplicador">Ganan. ×</th>
+            <th class="num">P. Venta HH</th>
+            <th class="num">Ganancia/h</th>
+            <th class="num">Margen</th>
+            <th class="num">Trabajadores</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Cargo</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+      <div class="row">
+        <div>
+          <label>Cargo / Puesto *</label>
+          <input id="f-cargo" placeholder="Ej: Soldador, Supervisor de Campo">
+        </div>
+        <div>
+          <label>Categoría</label>
+          <select id="f-categoria">
+            <option value="">— Sin categoría —</option>
+            <option value="Supervisión">Supervisión</option>
+            <option value="Ingeniería">Ingeniería</option>
+            <option value="Técnico">Técnico</option>
+            <option value="Operario">Operario</option>
+            <option value="Seguridad">Seguridad</option>
+            <option value="Administrativo">Administrativo</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Tarifa Hora-Hombre</h3>
+      <div class="row">
+        <div>
+          <label>Costo Real HH (S/) *</label>
+          <input id="f-costo" type="number" step="0.01" oninput="recalc()" placeholder="0.00">
+        </div>
+        <div>
+          <label title="Multiplicador interno">Ganancia ×</label>
+          <input id="f-gan" type="number" step="0.01" value="1.3" oninput="recalc()" style="background:#fff3cd">
+        </div>
+      </div>
+
+      <div style="background:#f7f8f9;padding:10px;border-radius:4px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:13px">
+        <div>
+          <div class="text-muted" style="font-size:10.5px">P. Venta HH</div>
+          <div class="fw-bold text-brand" style="font-size:20px" id="pv-calc">S/ 0.00</div>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:10.5px">Ganancia por hora</div>
+          <div class="fw-bold text-success" style="font-size:20px" id="gan-calc">S/ 0.00</div>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:10.5px">Margen %</div>
+          <div class="fw-bold" style="font-size:20px" id="mar-calc">0%</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Aplicación en cotizaciones
+        <small class="text-muted" style="font-weight:normal;font-size:10.5px">— Qué items adicionales se cobran por este cargo</small>
+      </h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px;background:#f7f8f9;border-radius:4px;font-size:12px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-usaHerr" style="width:auto"> 🔧 Usa Herramientas
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-usaSoft" style="width:auto"> 💻 Usa Software
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-usaEq" style="width:auto" checked> 🛠️ Usa Equipos
+        </label>
+      </div>
+
+      <label class="mt-2">Notas</label>
+      <textarea id="f-notas" rows="2" placeholder="Información del cargo, beneficios incluidos, etc."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+function aplicarDefaultsCategoria(){
+  const cat = document.getElementById('f-categoria').value;
+  const usaHerr = document.getElementById('f-usaHerr');
+  const usaSoft = document.getElementById('f-usaSoft');
+  const usaEq = document.getElementById('f-usaEq');
+  if(['Supervisión','Ingeniería','Administrativo'].includes(cat)){
+    usaHerr.checked = false; usaSoft.checked = true; usaEq.checked = true;
+  } else if(['Técnico','Operario','Seguridad'].includes(cat)){
+    usaHerr.checked = true; usaSoft.checked = false; usaEq.checked = true;
+  }
+}
+
+function render(){
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const fCat = document.getElementById('fCategoria').value;
+  const trabajadores = DB.personal.list();
+  const items = DB.cargos.list()
+    .filter(c => (!q || (c.cargo||'').toLowerCase().includes(q) || (c.categoria||'').toLowerCase().includes(q))
+              && (!fCat || c.categoria === fCat))
+    .sort((a,b) => (a.cargo||'').localeCompare(b.cargo||''));
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">No hay cargos registrados.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(c => {
+      const ganMul = c.ganancia || 1.3;
+      const costoReal = c.costoRealHH || (c.precioHH ? c.precioHH/ganMul : 0);
+      const pVenta = costoReal * ganMul;
+      const ganHora = pVenta - costoReal;
+      const margen = costoReal > 0 ? (ganHora/costoReal)*100 : 0;
+      const nTrabajadores = trabajadores.filter(t => t.cargoId === c.id).length;
+      return `
+      <tr>
+        <td><b>${escapeHtml(c.cargo||'')}</b></td>
+        <td>${c.categoria?`<span class="tag">${escapeHtml(c.categoria)}</span>`:'<small class="text-muted">—</small>'}</td>
+        <td class="num"><span class="pill cost">${fmtNum(costoReal,2)}</span></td>
+        <td class="num"><small>${fmtNum(ganMul,2)}</small></td>
+        <td class="num"><span class="pill venta">${fmtNum(pVenta,2)}</span></td>
+        <td class="num"><span class="pill gan">${fmtNum(ganHora,2)}</span></td>
+        <td class="num"><span class="${margen>=25?'pct-good':'pct-warn'}">${margen.toFixed(0)}%</span></td>
+        <td class="num"><b>${nTrabajadores}</b></td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${c.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} cargo${items.length!==1?'s':''}`;
+}
+
+function recalc(){
+  const costo = parseFloat(document.getElementById('f-costo').value) || 0;
+  const gan = parseFloat(document.getElementById('f-gan').value) || 1;
+  const pv = costo * gan;
+  const ganHora = pv - costo;
+  const margen = costo > 0 ? (ganHora/costo)*100 : 0;
+  document.getElementById('pv-calc').textContent = 'S/ ' + pv.toFixed(2);
+  document.getElementById('gan-calc').textContent = 'S/ ' + ganHora.toFixed(2);
+  const mar = document.getElementById('mar-calc');
+  mar.textContent = margen.toFixed(0) + '%';
+  mar.className = 'fw-bold ' + (margen >= 25 ? 'text-success' : 'text-danger');
+}
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Cargo';
+  ['f-id','f-cargo','f-categoria','f-costo','f-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-gan').value = '1.3';
+  document.getElementById('f-usaHerr').checked = false;
+  document.getElementById('f-usaSoft').checked = false;
+  document.getElementById('f-usaEq').checked = true;
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+  recalc();
+}
+function editar(id){
+  const c = DB.cargos.get(id); if(!c) return;
+  document.getElementById('modalTitle').textContent = 'Editar — ' + (c.cargo||'');
+  document.getElementById('f-id').value = c.id;
+  document.getElementById('f-cargo').value = c.cargo||'';
+  document.getElementById('f-categoria').value = c.categoria||'';
+  const gan = c.ganancia || 1.3;
+  const costo = c.costoRealHH != null && c.costoRealHH !== 0
+    ? c.costoRealHH : (c.precioHH ? c.precioHH/gan : 0);
+  document.getElementById('f-costo').value = costo.toFixed(2);
+  document.getElementById('f-gan').value = gan;
+  document.getElementById('f-notas').value = c.notas||'';
+  // Defaults por categoría si nunca se guardó
+  if(c.usaHerramientas !== undefined){
+    document.getElementById('f-usaHerr').checked = !!c.usaHerramientas;
+    document.getElementById('f-usaSoft').checked = !!c.usaSoftware;
+    document.getElementById('f-usaEq').checked = c.usaEquipos !== false;
+  } else {
+    const cat = c.categoria||'';
+    document.getElementById('f-usaHerr').checked = ['Técnico','Operario','Seguridad'].includes(cat);
+    document.getElementById('f-usaSoft').checked = ['Supervisión','Ingeniería','Administrativo'].includes(cat);
+    document.getElementById('f-usaEq').checked = true;
+  }
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+  recalc();
+}
+function guardar(){
+  const cargo = document.getElementById('f-cargo').value.trim();
+  const costo = parseFloat(document.getElementById('f-costo').value);
+  const gan = parseFloat(document.getElementById('f-gan').value)||1.3;
+  if(!cargo){ toast('El cargo es obligatorio','danger'); return; }
+  if(isNaN(costo) || costo < 0){ toast('Costo inválido','danger'); return; }
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.cargos.get(id) : {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    cargo,
+    categoria: document.getElementById('f-categoria').value,
+    costoRealHH: costo,
+    ganancia: gan,
+    precioHH: costo * gan,
+    notas: document.getElementById('f-notas').value.trim(),
+    usaHerramientas: document.getElementById('f-usaHerr').checked,
+    usaSoftware:     document.getElementById('f-usaSoft').checked,
+    usaEquipos:      document.getElementById('f-usaEq').checked,
+  };
+  DB.cargos.save(item);
+  toast('Cargo guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  const trabajadores = DB.personal.list().filter(p => p.cargoId === id);
+  if(trabajadores.length > 0){
+    if(!confirm(`Este cargo tiene ${trabajadores.length} trabajador(es) asignado(s). ¿Eliminar igualmente? Los trabajadores quedarán sin cargo.`)) return;
+  } else {
+    if(!confirm('¿Eliminar este cargo?')) return;
+  }
+  DB.cargos.remove(id);
+  toast('Cargo eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+document.getElementById('f-categoria').addEventListener('change', aplicarDefaultsCategoria);
+
+render();
+</script>
+</body>
+</html>

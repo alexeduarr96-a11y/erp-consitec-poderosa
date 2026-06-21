@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte Diario — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.cot-layout{display:grid;grid-template-columns:440px 1fr;gap:14px}
+@media (max-width:1200px){.cot-layout{grid-template-columns:1fr}}
+.editor{max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.editor .panel{padding:12px}
+.editor label{font-size:10.5px;margin:6px 0 2px}
+.editor input,.editor textarea,.editor select{font-size:12px;padding:5px 7px}
+
+#preview-wrap{background:#8a8a8a;padding:18px;border-radius:5px;overflow:auto;max-height:calc(100vh - 120px)}
+
+/* HOJA A4 INFORME DIARIO */
+.sheet{
+  background:#fff;width:210mm;min-height:297mm;margin:0 auto 14px;
+  padding:12mm 14mm 14mm;box-shadow:0 4px 18px rgba(0,0,0,.25);
+  color:#1a1a1a;font-family:'Arial Narrow','Arial',sans-serif;font-size:9.5pt;line-height:1.4;
+}
+.sheet .head{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:14px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #54585e;position:relative}
+.sheet .head::after{content:'';position:absolute;left:0;bottom:-2px;width:100px;height:2px;background:#c8102e}
+.sheet .head .logo img{max-height:58px;max-width:180px;object-fit:contain}
+.sheet .head .titulo{text-align:center}
+.sheet .head .titulo h1{margin:0;color:#1a1a1a;font-family:'Calibri','Arial',sans-serif;font-weight:700;font-size:14pt;letter-spacing:1px}
+.sheet .head .titulo .sub{font-size:8.5pt;color:#666;margin-top:3px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.sheet .head .titulo .fecha{font-size:10pt;color:#333;margin-top:5px;font-weight:600}
+
+.sheet .info-tabla{width:100%;border-collapse:collapse;margin:2px 0 12px;font-size:9pt}
+.sheet .info-tabla td{border:none;border-bottom:0.5px solid #bbb;padding:3px 6px;font-style:italic}
+.sheet .info-tabla td.k{color:#333;font-weight:700;width:110px;text-align:right;font-style:normal;font-size:9pt}
+.sheet .info-tabla td.s{width:8px;text-align:center;color:#333;font-style:normal}
+
+.sheet .seccion{margin-top:14px}
+.sheet .seccion h3{background:#e8e8e8;color:#3a3d42;font-weight:700;font-size:9pt;margin:0 0 6px;padding:4px 8px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #888}
+.sheet .seccion .body{padding:0 4px;font-size:9pt}
+.sheet .seccion ul{margin:4px 0 0;padding-left:22px;font-style:italic;font-size:9pt;color:#222}
+
+.sheet .avance-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.sheet .kpi-box{background:#f8f9fa;border:1px solid #ddd;padding:8px 10px;border-radius:3px}
+.sheet .kpi-box .l{font-size:8pt;color:#666;text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.sheet .kpi-box .v{font-size:14pt;font-weight:700;color:#333;margin-top:2px}
+.sheet .kpi-box .b{margin-top:6px;height:6px;background:#e6e8eb;border-radius:3px;overflow:hidden}
+.sheet .kpi-box .b .f{height:100%;background:#1d3557;border-radius:3px}
+
+.sheet .personal-tabla{width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:6px}
+.sheet .personal-tabla th{background:transparent;color:#333;font-weight:700;padding:3px 6px;border:none;border-bottom:1px solid #555;font-size:7.5pt;text-transform:uppercase;letter-spacing:.3px;text-align:left}
+.sheet .personal-tabla th.num{text-align:right}
+.sheet .personal-tabla td{border:none;border-bottom:0.5px solid #ddd;padding:3px 6px;font-style:italic;color:#222}
+.sheet .personal-tabla td.num{text-align:right}
+
+.sheet .fotos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+.sheet .foto-card{border:1px solid #ccc;border-radius:3px;overflow:hidden;background:#fafafa;break-inside:avoid;page-break-inside:avoid}
+.sheet .foto-card img{width:100%;height:auto;display:block;max-height:90mm;object-fit:cover}
+.sheet .foto-card .cap{padding:4px 8px;font-size:8.5pt;font-style:italic;color:#333;border-top:0.5px solid #ccc;background:#fff}
+
+.sheet .firmas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:36px;font-size:8.5pt;text-align:center;color:#333}
+.sheet .firmas div{border-top:0.75px solid #555;padding-top:4px;line-height:1.3}
+
+/* Mini Gantt en informe diario */
+.sheet .gantt-mini{margin-top:6px;background:#fff;border:0.5px solid #999;border-radius:3px;padding:4px}
+.sheet .gantt-mini .gh{display:flex;border-bottom:1px solid #888;padding-bottom:2px;margin-bottom:3px;font-size:7pt;color:#666;font-weight:700}
+.sheet .gantt-mini .gh .gc{flex:1;text-align:center;border-right:0.5px dashed #ccc;padding:1px 0}
+.sheet .gantt-mini .gh .gc:last-child{border-right:none}
+.sheet .gantt-mini .grow{display:grid;grid-template-columns:130px 1fr;gap:4px;margin-top:2px;align-items:center;font-size:7.5pt}
+.sheet .gantt-mini .grow .tname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;font-style:italic;padding-right:4px}
+.sheet .gantt-mini .grow .tbar{position:relative;height:10px;background:#f1f5f9;border-radius:3px}
+.sheet .gantt-mini .grow .tbar .seg{position:absolute;top:0;bottom:0;background:#1d3557;border-radius:3px;display:flex;align-items:center;padding-left:3px;color:#fff;font-size:6.5pt;font-weight:600;overflow:hidden;white-space:nowrap}
+.sheet .gantt-mini .grow .tbar .seg.done{background:#198754}
+.sheet .gantt-mini .grow .tbar .seg.warn{background:#f59e0b}
+.sheet .gantt-mini .grow .tbar .seg.late{background:#dc3545}
+.sheet .gantt-mini .grow .tbar .seg .av{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.22);border-radius:3px 0 0 3px}
+.sheet .gantt-mini .hoy{position:absolute;top:0;bottom:0;width:1.5px;background:#dc3545;z-index:5}
+
+.sheet .footer-emp{margin-top:14px;color:#333;padding:6px 0 0;font-size:7.5pt;line-height:1.45;border-top:1px solid #999;text-align:center}
+.sheet .footer-emp b{font-size:8pt;letter-spacing:.3px;color:#000}
+
+/* Editor */
+.add-btn{background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:5px;margin-top:5px;font-size:11.5px;font-weight:500;cursor:pointer;border-radius:3px}
+.add-btn:hover{background:var(--brand-soft)}
+
+.simple-item{background:#fafafa;border-left:3px solid var(--brand);padding:5px 8px;margin-top:4px;display:flex;gap:6px;align-items:center;border-radius:0 3px 3px 0;font-size:11.5px}
+.simple-item input{flex:1;font-size:11.5px;padding:4px 6px}
+.simple-item .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+
+.foto-row{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;padding:6px;margin-top:5px}
+.foto-row .top{display:flex;align-items:flex-start;gap:8px}
+.foto-row .top img{width:90px;height:70px;object-fit:cover;border-radius:3px;border:1px solid var(--gray-line)}
+.foto-row .top .data{flex:1;display:flex;flex-direction:column;gap:3px}
+.foto-row .top .data textarea{font-size:11.5px;padding:4px 6px;min-height:34px;resize:vertical}
+.foto-row .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer;align-self:flex-start}
+
+.persona-chip{display:inline-flex;align-items:center;gap:5px;background:var(--brand-soft);border:1px solid var(--brand);border-radius:14px;padding:3px 10px;font-size:11px;margin:2px 3px 2px 0;cursor:pointer}
+.persona-chip.active{background:var(--brand);color:#fff}
+.persona-chip .h{font-size:9.5px;opacity:.85}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Reporte Diario de Obra</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="reporte-diario.html" class="active">Reporte Diario</a>
+    <a href="reporte-semanal.html">Informe Semanal</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="personal.html">Personal</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2 id="pageTitle">📝 Nuevo Reporte Diario</h2>
+    <div class="actions">
+      <a class="btn ghost sm" href="operaciones.html" style="text-decoration:none">← Volver a Operaciones</a>
+      <button class="ghost sm" onclick="nuevo()">+ Nuevo</button>
+      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="success sm" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+
+  <div class="cot-layout">
+
+    <!-- EDITOR -->
+    <div class="editor no-print">
+
+      <div class="panel">
+        <h3>Datos del reporte</h3>
+        <div class="row">
+          <div><label>Proyecto *</label>
+            <select id="f-proyecto" onchange="aplicarProyecto()"></select>
+          </div>
+          <div><label>Fecha *</label><input id="f-fecha" type="date" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div><label>Clima</label>
+            <select id="f-clima" oninput="render()">
+              <option value="">—</option>
+              <option>☀ Soleado</option>
+              <option>⛅ Parcialmente nublado</option>
+              <option>☁ Nublado</option>
+              <option>🌧 Lluvia ligera</option>
+              <option>⛈ Lluvia intensa</option>
+              <option>🌬 Ventoso</option>
+              <option>❄ Frío extremo</option>
+            </select>
+          </div>
+          <div><label>Turno</label>
+            <select id="f-turno" oninput="render()">
+              <option>Día</option>
+              <option>Noche</option>
+              <option>Doble turno</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>Hora inicio</label><input id="f-horaIni" type="time" value="07:00" oninput="render()"></div>
+          <div><label>Hora fin</label><input id="f-horaFin" type="time" value="17:00" oninput="render()"></div>
+        </div>
+        <label>Responsable de obra</label>
+        <select id="f-responsable" oninput="render()"></select>
+      </div>
+
+      <div class="panel">
+        <h3>👥 Personal presente</h3>
+        <small class="text-muted" style="font-size:10.5px;display:block;margin-bottom:6px">
+          Click para marcar/desmarcar. Las horas se cargan del personal asignado al proyecto.
+        </small>
+        <div id="lst-personal"></div>
+      </div>
+
+      <div class="panel">
+        <h3>📋 Actividades realizadas</h3>
+        <div id="lst-actividades"></div>
+        <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
+
+        <label class="mt-3">Avance acumulado del proyecto (%)</label>
+        <input id="f-avance" type="number" min="0" max="100" step="1" placeholder="0-100" oninput="render()">
+
+        <label>Observaciones generales</label>
+        <textarea id="f-observaciones" rows="3" placeholder="Comentarios sobre el día..." oninput="render()"></textarea>
+      </div>
+
+      <div class="panel">
+        <h3>⚠ Incidencias / Imprevistos</h3>
+        <textarea id="f-incidencias" rows="3" placeholder="Incidentes de seguridad, problemas técnicos, retrasos..." oninput="render()"></textarea>
+
+        <label>Recursos requeridos para mañana</label>
+        <textarea id="f-recursos" rows="2" placeholder="Materiales por traer, equipos faltantes..." oninput="render()"></textarea>
+      </div>
+
+      <div class="panel">
+        <h3>📸 Fotos del día</h3>
+        <input type="file" id="f-foto" accept="image/*" multiple onchange="cargarFotos(event)" style="font-size:11px;width:100%">
+        <small class="text-muted" style="font-size:10.5px;display:block;margin-top:3px">
+          💡 Sube las fotos del día. Se redimensionan automáticamente. Agrega una descripción a cada una.
+        </small>
+        <div id="lst-fotos" style="margin-top:8px"></div>
+      </div>
+
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let state = nuevoEstado();
+
+function nuevoEstado(){
+  return {
+    id: null,
+    proyectoId: '',
+    proyectoNombre: '',
+    proyectoCodigo: '',
+    clienteRazon: '',
+    lugar: '',
+    fecha: todayISO(),
+    clima: '',
+    turno: 'Día',
+    horaIni: '07:00',
+    horaFin: '17:00',
+    responsableId: '',
+    personalPresente: [], // [{personalId, horas}]
+    actividades: [], // [{texto, avance(%)}]
+    avance: 0,
+    observaciones: '',
+    incidencias: '',
+    recursos: '',
+    fotos: [], // [{base64, thumb, descripcion}]
+  };
+}
+
+function init(){
+  poblarSelects();
+  const params = new URLSearchParams(location.search);
+  const idParam = params.get('id');
+  if(idParam){
+    const r = DB.reportesDiarios.get(idParam);
+    if(r){
+      state = {...nuevoEstado(), ...r};
+      syncFormDesdeEstado();
+      renderActividades();
+      renderPersonal();
+      renderFotos();
+      render();
+      toast('Reporte cargado: ' + formatearFecha(r.fecha));
+      return;
+    }
+  }
+  const proyectoIdParam = params.get('proyectoId');
+  if(proyectoIdParam){
+    state.proyectoId = proyectoIdParam;
+    aplicarProyecto();
+  }
+  // Cargar actividades vacías por defecto
+  if(state.actividades.length === 0) addActividad();
+  syncFormDesdeEstado();
+  renderActividades();
+  renderPersonal();
+  renderFotos();
+  render();
+}
+
+function poblarSelects(){
+  const selP = document.getElementById('f-proyecto');
+  selP.innerHTML = '<option value="">— Selecciona proyecto —</option>' +
+    DB.proyectos.list()
+      .sort((a,b) => (a.estado==='en_curso'?-1:1))
+      .map(p => `<option value="${p.id}">${escapeHtml(p.codigo||'')} — ${escapeHtml(p.nombre||'')}${p.estado!=='en_curso'?' ('+p.estado+')':''}</option>`).join('');
+
+  const selR = document.getElementById('f-responsable');
+  selR.innerHTML = '<option value="">— Selecciona —</option>' +
+    DB.personal.list().filter(p => p.activo !== false)
+      .map(p => `<option value="${p.id}">${escapeHtml(personalLabel(p))}</option>`).join('');
+}
+
+function aplicarProyecto(){
+  const id = document.getElementById('f-proyecto').value || state.proyectoId;
+  if(!id) return;
+  state.proyectoId = id;
+  const p = DB.proyectos.get(id);
+  if(p){
+    state.proyectoCodigo = p.codigo || '';
+    state.proyectoNombre = p.nombre || '';
+    state.clienteRazon   = p.clienteRazon || '';
+    state.lugar          = p.lugar || '';
+    // Si no se ha modificado avance, tomar el del proyecto
+    if(!state.avance) state.avance = p.avance || 0;
+    // Cargar personal asignado al proyecto si no hay registrados
+    if(state.personalPresente.length === 0){
+      const asign = DB.asignaciones.list().find(a => a.proyectoId === id);
+      if(asign){
+        state.personalPresente = (asign.personas||[]).map(pe => ({personalId: pe.personalId, horas: 8, presente: false}));
+        if(asign.responsable && !state.responsableId) state.responsableId = asign.responsable;
+      }
+    }
+  }
+  document.getElementById('f-proyecto').value = id;
+  document.getElementById('f-responsable').value = state.responsableId;
+  document.getElementById('f-avance').value = state.avance;
+  renderPersonal();
+  render();
+}
+
+// ===== PERSONAL =====
+function togglePersona(personalId){
+  const i = state.personalPresente.findIndex(p => p.personalId === personalId);
+  if(i >= 0){
+    state.personalPresente[i].presente = !state.personalPresente[i].presente;
+  } else {
+    state.personalPresente.push({personalId, horas: 8, presente: true});
+  }
+  renderPersonal();
+  render();
+}
+function updHorasPersona(personalId, horas){
+  const p = state.personalPresente.find(p => p.personalId === personalId);
+  if(p){ p.horas = parseFloat(horas)||0; render(); }
+}
+function renderPersonal(){
+  const cont = document.getElementById('lst-personal');
+  const personalDB = DB.personal.list();
+  // Buscar asignación del proyecto
+  const asign = state.proyectoId ? DB.asignaciones.list().find(a => a.proyectoId === state.proyectoId) : null;
+  const asignados = (asign?.personas||[]).map(p => p.personalId);
+  // Mostrar primero los asignados al proyecto + presentes
+  const personalUsado = [...new Set([...asignados, ...state.personalPresente.map(p => p.personalId)])];
+  const todoIds = [...new Set([...personalUsado, ...personalDB.map(p => p.id)])];
+
+  cont.innerHTML = todoIds.map(id => {
+    const per = personalDB.find(x => x.id === id);
+    if(!per || per.activo === false) return '';
+    const reg = state.personalPresente.find(p => p.personalId === id);
+    const presente = reg?.presente;
+    const horas = reg?.horas || 8;
+    const esAsign = asignados.includes(id);
+    return `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span class="persona-chip ${presente?'active':''}" onclick="togglePersona('${id}')" style="flex:1" title="${escapeAttr(per.cargo||'')}">
+          ${presente?'✓ ':''}${esAsign?'⭐ ':''}${escapeHtml(personalNombre(per))}${per.cargo?` <span style="opacity:.7;font-size:10px">· ${escapeHtml(per.cargo)}</span>`:''}
+        </span>
+        ${presente ? `<input type="number" step="0.5" min="0" max="24" value="${horas}" oninput="updHorasPersona('${id}',this.value)" style="width:60px;font-size:11px;padding:3px 5px" title="Horas trabajadas"> <span style="font-size:10.5px;color:var(--muted)">h</span>`:''}
+      </div>`;
+  }).join('');
+}
+
+// ===== ACTIVIDADES =====
+function addActividad(){ state.actividades.push({texto:'', avance:0}); renderActividades(); render(); }
+function delActividad(i){ state.actividades.splice(i,1); renderActividades(); render(); }
+function updActividad(i, campo, val){
+  state.actividades[i][campo] = campo === 'avance' ? (parseFloat(val)||0) : val;
+  render();
+}
+function renderActividades(){
+  document.getElementById('lst-actividades').innerHTML = state.actividades.map((a,i) => `
+    <div class="simple-item">
+      <input value="${escapeAttr(a.texto)}" oninput="updActividad(${i},'texto',this.value)" placeholder="Ej: Habilitación de columnas metálicas">
+      <input type="number" step="1" min="0" max="100" value="${a.avance||0}" oninput="updActividad(${i},'avance',this.value)" style="max-width:55px" title="Avance % de esta actividad">
+      <span style="font-size:10.5px;color:var(--muted)">%</span>
+      <button class="del" onclick="delActividad(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+// ===== FOTOS =====
+function cargarFotos(e){
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  files.forEach(f => procesarFoto(f));
+}
+function procesarFoto(file){
+  const r = new FileReader();
+  r.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      // Redimensionar (max 1200px) y comprimir a JPEG
+      const maxDim = 1200;
+      let w = img.width, h = img.height;
+      if(w > maxDim || h > maxDim){
+        const r = Math.min(maxDim/w, maxDim/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const fullBase64 = c.toDataURL('image/jpeg', 0.78);
+      // Thumb 200px
+      const tw = 200, th = Math.round(h * (tw/w));
+      const ct = document.createElement('canvas');
+      ct.width = tw; ct.height = th;
+      ct.getContext('2d').drawImage(img, 0, 0, tw, th);
+      const thumb = ct.toDataURL('image/jpeg', 0.7);
+
+      state.fotos.push({base64: fullBase64, thumb, descripcion:''});
+      renderFotos();
+      render();
+    };
+    img.src = ev.target.result;
+  };
+  r.readAsDataURL(file);
+}
+function delFoto(i){ state.fotos.splice(i,1); renderFotos(); render(); }
+function updFotoDesc(i, val){ state.fotos[i].descripcion = val; render(); }
+function renderFotos(){
+  const cont = document.getElementById('lst-fotos');
+  if(state.fotos.length === 0){
+    cont.innerHTML = '<small class="text-muted" style="font-style:italic">Sin fotos. Sube algunas arriba.</small>';
+    return;
+  }
+  cont.innerHTML = state.fotos.map((f,i) => `
+    <div class="foto-row">
+      <div class="top">
+        <img src="${f.thumb || f.base64}" alt="foto ${i+1}">
+        <div class="data">
+          <small style="font-size:10px;color:var(--muted)">Foto ${i+1}</small>
+          <textarea oninput="updFotoDesc(${i},this.value)" placeholder="Descripción de la foto...">${escapeHtml(f.descripcion||'')}</textarea>
+        </div>
+        <button class="del" onclick="delFoto(${i})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== SYNC =====
+function syncFormDesdeEstado(){
+  document.getElementById('f-proyecto').value = state.proyectoId;
+  document.getElementById('f-fecha').value = state.fecha;
+  document.getElementById('f-clima').value = state.clima;
+  document.getElementById('f-turno').value = state.turno;
+  document.getElementById('f-horaIni').value = state.horaIni;
+  document.getElementById('f-horaFin').value = state.horaFin;
+  document.getElementById('f-responsable').value = state.responsableId;
+  document.getElementById('f-avance').value = state.avance;
+  document.getElementById('f-observaciones').value = state.observaciones;
+  document.getElementById('f-incidencias').value = state.incidencias;
+  document.getElementById('f-recursos').value = state.recursos;
+}
+function syncEstadoDesdeForm(){
+  state.proyectoId = document.getElementById('f-proyecto').value;
+  state.fecha = document.getElementById('f-fecha').value;
+  state.clima = document.getElementById('f-clima').value;
+  state.turno = document.getElementById('f-turno').value;
+  state.horaIni = document.getElementById('f-horaIni').value;
+  state.horaFin = document.getElementById('f-horaFin').value;
+  state.responsableId = document.getElementById('f-responsable').value;
+  state.avance = parseFloat(document.getElementById('f-avance').value)||0;
+  state.observaciones = document.getElementById('f-observaciones').value;
+  state.incidencias = document.getElementById('f-incidencias').value;
+  state.recursos = document.getElementById('f-recursos').value;
+}
+
+// ===== RENDER A4 =====
+function render(){
+  syncEstadoDesdeForm();
+  const cfg = DB.getConfig();
+  const fechaFmt = state.fecha ? new Date(state.fecha+'T00:00:00').toLocaleDateString('es-PE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : '';
+  const personalDB = DB.personal.list();
+  const proy = state.proyectoId ? DB.proyectos.get(state.proyectoId) : null;
+  const resp = state.responsableId ? personalDB.find(p => p.id === state.responsableId) : null;
+  const presentes = state.personalPresente.filter(p => p.presente);
+  const totalHoras = presentes.reduce((s,p) => s + (p.horas||0), 0);
+
+  const personalHTML = presentes.length === 0
+    ? '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic;padding:8px">Sin personal registrado</td></tr>'
+    : presentes.map((p,i) => {
+        const per = personalDB.find(x => x.id === p.personalId);
+        return `<tr><td>${i+1}</td><td>${escapeHtml(personalNombre(per))}</td><td>${escapeHtml(per?.cargo||'')}</td><td class="num">${p.horas||0}h</td></tr>`;
+      }).join('');
+
+  const actHTML = state.actividades.filter(a => a.texto.trim()).map(a =>
+    `<li>${escapeHtml(a.texto)} ${a.avance ? `<b style="color:#1d3557">(${a.avance}%)</b>` : ''}</li>`
+  ).join('');
+
+  const fotosHTML = state.fotos.map((f,i) => `
+    <div class="foto-card">
+      <img src="${f.base64}" alt="foto ${i+1}">
+      <div class="cap"><b>Foto ${i+1}.</b> ${escapeHtml(f.descripcion||'')}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('sheet').innerHTML = `
+    <div class="head">
+      <div class="logo"><img src="../assets/logo-consitec.png" alt="CONSITEC"></div>
+      <div class="titulo">
+        <h1>REPORTE DIARIO DE OBRA</h1>
+        <div class="sub">${escapeHtml(cfg.empresa)}</div>
+        <div class="fecha">${fechaFmt}</div>
+      </div>
+      <div></div>
+    </div>
+
+    <table class="info-tabla">
+      <tr>
+        <td class="k">Proyecto</td><td class="s">:</td><td colspan="3">${escapeHtml(proy?.codigo||'')} — ${escapeHtml(proy?.nombre||'')}</td>
+      </tr>
+      <tr>
+        <td class="k">Cliente</td><td class="s">:</td><td colspan="3">${escapeHtml(state.clienteRazon)}</td>
+      </tr>
+      <tr>
+        <td class="k">Lugar</td><td class="s">:</td><td>${escapeHtml(state.lugar)}</td>
+        <td class="k">Turno</td><td class="s">:</td><td>${escapeHtml(state.turno)} (${state.horaIni}–${state.horaFin})</td>
+      </tr>
+      <tr>
+        <td class="k">Responsable</td><td class="s">:</td><td>${resp?escapeHtml(personalLabel(resp)):'—'}</td>
+        <td class="k">Clima</td><td class="s">:</td><td>${escapeHtml(state.clima||'—')}</td>
+      </tr>
+    </table>
+
+    <div class="seccion avance-grid">
+      <div class="kpi-box">
+        <div class="l">Avance acumulado</div>
+        <div class="v">${state.avance}%</div>
+        <div class="b"><div class="f" style="width:${state.avance}%"></div></div>
+      </div>
+      <div class="kpi-box">
+        <div class="l">Personal · Hora-hombre</div>
+        <div class="v">${presentes.length} pers. · ${totalHoras}h</div>
+        <div style="font-size:8.5pt;color:#666;margin-top:8px;font-style:italic">Total HH del día</div>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <h3>1. Actividades realizadas</h3>
+      <div class="body">
+        ${actHTML ? `<ul>${actHTML}</ul>` : '<p style="color:#999;font-style:italic">Sin actividades registradas.</p>'}
+      </div>
+    </div>
+
+    ${proy && (proy.tareas||[]).length > 0 ? `
+      <div class="seccion">
+        <h3>2. Cronograma del proyecto</h3>
+        ${generarGanttMini(proy)}
+      </div>
+    `:''}
+
+    <div class="seccion">
+      <h3>${proy && (proy.tareas||[]).length > 0 ? '3' : '2'}. Personal presente</h3>
+      <table class="personal-tabla">
+        <thead><tr><th style="width:30px">#</th><th>Nombre</th><th>Cargo</th><th class="num" style="width:60px">Horas</th></tr></thead>
+        <tbody>${personalHTML}</tbody>
+      </table>
+    </div>
+
+    ${state.observaciones.trim() ? `
+      <div class="seccion">
+        <h3>3. Observaciones generales</h3>
+        <div class="body" style="font-style:italic;white-space:pre-line;color:#222">${escapeHtml(state.observaciones)}</div>
+      </div>
+    `:''}
+
+    ${state.incidencias.trim() ? `
+      <div class="seccion">
+        <h3 style="background:#fee2e2;color:#991b1b;border-bottom-color:#dc3545">⚠ Incidencias / Imprevistos</h3>
+        <div class="body" style="font-style:italic;white-space:pre-line;color:#991b1b">${escapeHtml(state.incidencias)}</div>
+      </div>
+    `:''}
+
+    ${state.recursos.trim() ? `
+      <div class="seccion">
+        <h3>4. Recursos requeridos para el siguiente día</h3>
+        <div class="body" style="font-style:italic;white-space:pre-line;color:#222">${escapeHtml(state.recursos)}</div>
+      </div>
+    `:''}
+
+    ${state.fotos.length > 0 ? `
+      <div class="seccion">
+        <h3>📸 Registro fotográfico</h3>
+        <div class="fotos-grid">${fotosHTML}</div>
+      </div>
+    `:''}
+
+    <div class="firmas">
+      <div>Responsable de Obra<br><small>${resp?escapeHtml(personalLabel(resp)):''}</small></div>
+      <div>Supervisor SSOMA</div>
+      <div>V°B° Cliente / Supervisor</div>
+    </div>
+
+    <div class="footer-emp">
+      <b>${escapeHtml(cfg.empresa)}</b> · RUC ${escapeHtml(cfg.ruc)} · ${escapeHtml(cfg.telefono)} · ${escapeHtml(cfg.email)}<br>
+      ${escapeHtml(cfg.direccion)}
+    </div>
+  `;
+}
+
+// ===== GUARDAR / NUEVO =====
+function guardar(){
+  syncEstadoDesdeForm();
+  if(!state.proyectoId){ toast('Selecciona un proyecto','danger'); return; }
+  if(!state.fecha){ toast('Selecciona una fecha','danger'); return; }
+  const item = {...state, id: state.id || undefined};
+  try {
+    const saved = DB.reportesDiarios.save(item);
+    state.id = saved.id;
+    // Actualizar avance del proyecto
+    const proy = DB.proyectos.get(state.proyectoId);
+    if(proy && state.avance > (proy.avance||0)){
+      proy.avance = state.avance;
+      DB.proyectos.save(proy);
+    }
+    toast('Reporte guardado: ' + formatearFecha(state.fecha), 'success');
+  } catch(err){
+    if(state.fotos.length > 0 && confirm('No se pudo guardar (las fotos podrían ser muy pesadas). ¿Comprimir más y reintentar?')){
+      // Recomprimir fotos a calidad más baja
+      Promise.all(state.fotos.map(f => recomprimir(f.base64, 0.55, 900))).then(nuevas => {
+        state.fotos = state.fotos.map((f,i) => ({...f, base64: nuevas[i]}));
+        try {
+          const saved = DB.reportesDiarios.save({...state, id: state.id||undefined});
+          state.id = saved.id;
+          toast('Guardado con fotos comprimidas','success');
+        } catch(err2){
+          toast('Aún no cabe. Reduce el número de fotos.','danger');
+        }
+      });
+    } else {
+      toast('Error al guardar: ' + err.message, 'danger');
+    }
+  }
+}
+function generarGanttMini(proy){
+  if(!proy) return '';
+  const tareas = (proy.tareas||[]).filter(t => t.fechaIni && t.fechaFin && t.nombre);
+  if(tareas.length === 0) return '';
+  const fIni = tareas.map(t => new Date(t.fechaIni+'T00:00:00'));
+  const fFin = tareas.map(t => new Date(t.fechaFin+'T00:00:00'));
+  const minF = new Date(Math.min(...fIni.map(d=>d.getTime())));
+  const maxF = new Date(Math.max(...fFin.map(d=>d.getTime())));
+  const totalDias = Math.max(1, Math.round((maxF - minF)/86400000) + 1);
+  const numSemanas = Math.ceil(totalDias / 7);
+  const cabezas = [];
+  let d = new Date(minF);
+  for(let i = 0; i < numSemanas; i++){
+    cabezas.push(d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace(/\./g,''));
+    d.setDate(d.getDate()+7);
+  }
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const hoyOffset = hoy >= minF && hoy <= maxF ? ((hoy - minF)/86400000) / totalDias * 100 : null;
+  const ghHTML = `<div class="gh">${cabezas.map(c => `<div class="gc">${c}</div>`).join('')}</div>`;
+  const rowsHTML = tareas.map(t => {
+    const ti = new Date(t.fechaIni+'T00:00:00');
+    const tf = new Date(t.fechaFin+'T00:00:00');
+    const left = ((ti - minF)/86400000) / totalDias * 100;
+    const dur = (tf - ti)/86400000 + 1;
+    const width = (dur/totalDias) * 100;
+    const av = Math.min(100, Math.max(0, t.avance||0));
+    const cls = av === 100 ? 'done' : (tf < hoy && av < 100) ? 'late' : av < 30 ? 'warn' : '';
+    return `
+      <div class="grow">
+        <div class="tname">${escapeHtml(t.nombre)}</div>
+        <div class="tbar">
+          <div class="seg ${cls}" style="left:${left}%;width:${width}%">
+            <div class="av" style="width:${av}%"></div>
+            <span style="position:relative;z-index:2">${av>0?av+'%':''}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  const hoyHTML = hoyOffset !== null ? `<div class="hoy" style="left:calc(134px + (100% - 134px) * ${hoyOffset}/100)"></div>` : '';
+  return `<div class="gantt-mini">${ghHTML}${rowsHTML}${hoyHTML}</div>`;
+}
+
+function recomprimir(base64, calidad, maxDim){
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if(w > maxDim || h > maxDim){
+        const r = Math.min(maxDim/w, maxDim/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', calidad));
+    };
+    img.src = base64;
+  });
+}
+function nuevo(){
+  if(!confirm('¿Iniciar nuevo reporte? Se perderán cambios no guardados.')) return;
+  state = nuevoEstado();
+  init();
+}
+
+function formatearFecha(iso){
+  if(!iso) return '—';
+  return new Date(iso+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'2-digit'});
+}
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Personal — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.estado-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;vertical-align:middle}
+.estado-dot.baja{background:#94a3b8}
+.cargo-tag{display:inline-block;background:var(--brand-soft);color:var(--brand3);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Personal — Trabajadores reales</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html" class="active">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>👷 Personal — Trabajadores reales</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Trabajador</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por nombre, DNI, cargo..." oninput="render()"></div>
+      <select id="fCargo" onchange="render()" style="max-width:220px"><option value="">Todos los cargos</option></select>
+      <select id="fEstado" onchange="render()" style="max-width:150px">
+        <option value="">Activos y de baja</option>
+        <option value="activo" selected>Solo activos</option>
+        <option value="baja">Solo de baja</option>
+      </select>
+      <span class="tag" id="counter"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+        💡 Personas reales que se asignan a proyectos en Operaciones. Cargos y tarifas en <a href="cargos.html" style="color:var(--brand);font-weight:600">Cargos</a>.
+      </span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data" id="tabla">
+        <thead>
+          <tr>
+            <th>Nombre completo</th>
+            <th>DNI</th>
+            <th>Cargo</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Especialidad</th>
+            <th>Ingreso</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Trabajador</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:0 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Datos personales</h3>
+      <div class="row">
+        <div>
+          <label>Nombres *</label>
+          <input id="f-nombre" placeholder="Ej: Juan Carlos">
+        </div>
+        <div>
+          <label>Apellidos *</label>
+          <input id="f-apellidos" placeholder="Ej: Pérez Mendoza">
+        </div>
+      </div>
+      <div class="row3">
+        <div>
+          <label>DNI</label>
+          <input id="f-dni" maxlength="12" placeholder="12345678">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input id="f-telefono" placeholder="+51 9...">
+        </div>
+        <div>
+          <label>Email</label>
+          <input id="f-email" type="email" placeholder="correo@...">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Fecha de ingreso</label>
+          <input id="f-fechaIngreso" type="date">
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="f-activo">
+            <option value="true">Activo</option>
+            <option value="false">De baja</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Datos laborales
+        <small class="text-muted" style="font-weight:normal;font-size:10.5px">— Asigna un cargo del catálogo</small>
+      </h3>
+      <div class="row">
+        <div>
+          <label>Cargo *</label>
+          <div style="display:flex;gap:5px">
+            <select id="f-cargoId" style="flex:1"></select>
+            <a class="btn ghost" href="cargos.html" target="_blank" title="Gestionar cargos" style="text-decoration:none;padding:4px 8px;font-size:11px">⚙</a>
+          </div>
+        </div>
+        <div>
+          <label>Especialidad / Certificaciones</label>
+          <input id="f-especialidad" placeholder="6G, IPERC, alturas...">
+        </div>
+      </div>
+
+      <label class="mt-2">Notas</label>
+      <textarea id="f-notas" rows="2" placeholder="Información adicional, observaciones..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+function nombreCompleto(p){
+  if(!p) return '';
+  const parts = [];
+  if(p.nombre) parts.push(p.nombre);
+  if(p.apellidos) parts.push(p.apellidos);
+  if(parts.length === 0) return '(sin nombre)';
+  return parts.join(' ');
+}
+
+function poblarFiltroCargo(){
+  const cargosLista = DB.cargos.list();
+  const sel = document.getElementById('fCargo');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los cargos</option>' +
+    cargosLista.map(c => `<option value="${c.id}">${escapeHtml(c.cargo)}</option>`).join('');
+  sel.value = cur;
+}
+
+function poblarSelectCargo(){
+  const cargosLista = DB.cargos.list();
+  const sel = document.getElementById('f-cargoId');
+  sel.innerHTML = '<option value="">— Selecciona cargo —</option>' +
+    cargosLista.map(c => `<option value="${c.id}">${escapeHtml(c.cargo)} (S/${c.precioHH||0}/h)</option>`).join('');
+}
+
+function render(){
+  poblarFiltroCargo();
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const fCargo = document.getElementById('fCargo').value;
+  const fEstado = document.getElementById('fEstado').value;
+  const cargosMap = {};
+  DB.cargos.list().forEach(c => cargosMap[c.id] = c);
+  // Filtrar solo trabajadores reales (con nombre)
+  const items = DB.personal.list()
+    .filter(p => p.nombre || p.apellidos) // solo personas con nombre real
+    .filter(p => {
+      const activo = p.activo !== false;
+      if(fEstado === 'activo' && !activo) return false;
+      if(fEstado === 'baja' && activo) return false;
+      if(fCargo && p.cargoId !== fCargo) return false;
+      if(q){
+        const t = (p.nombre||'') + ' ' + (p.apellidos||'') + ' ' + (p.dni||'') + ' ' + (cargosMap[p.cargoId]?.cargo||'');
+        if(!t.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    })
+    .sort((a,b) => nombreCompleto(a).localeCompare(nombreCompleto(b)));
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">No hay trabajadores que coincidan. Agrega el primero.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(p => {
+      const activo = p.activo !== false;
+      const cargo = cargosMap[p.cargoId];
+      const fechaFmt = p.fechaIngreso ? new Date(p.fechaIngreso+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      return `
+      <tr style="${!activo?'opacity:.6':''}">
+        <td>
+          <span class="estado-dot ${!activo?'baja':''}" title="${activo?'Activo':'De baja'}"></span>
+          <b>${escapeHtml(nombreCompleto(p))}</b>
+        </td>
+        <td><small>${escapeHtml(p.dni||'—')}</small></td>
+        <td>${cargo?`<span class="cargo-tag">${escapeHtml(cargo.cargo)}</span>`:'<small class="text-muted">— Sin cargo —</small>'}</td>
+        <td><small>${escapeHtml(p.telefono||'')}</small></td>
+        <td><small>${escapeHtml(p.email||'')}</small></td>
+        <td><small>${escapeHtml(p.especialidad||'')}</small></td>
+        <td><small>${fechaFmt}</small></td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${p.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} trabajador${items.length!==1?'es':''}`;
+}
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Trabajador';
+  poblarSelectCargo();
+  ['f-id','f-nombre','f-apellidos','f-dni','f-telefono','f-email','f-fechaIngreso','f-cargoId','f-especialidad','f-notas']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-activo').value = 'true';
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+}
+function editar(id){
+  const p = DB.personal.get(id); if(!p) return;
+  poblarSelectCargo();
+  document.getElementById('modalTitle').textContent = 'Editar — ' + nombreCompleto(p);
+  document.getElementById('f-id').value = p.id;
+  document.getElementById('f-nombre').value = p.nombre||'';
+  document.getElementById('f-apellidos').value = p.apellidos||'';
+  document.getElementById('f-dni').value = p.dni||'';
+  document.getElementById('f-telefono').value = p.telefono||'';
+  document.getElementById('f-email').value = p.email||'';
+  document.getElementById('f-fechaIngreso').value = p.fechaIngreso||'';
+  document.getElementById('f-cargoId').value = p.cargoId||'';
+  document.getElementById('f-especialidad').value = p.especialidad||'';
+  document.getElementById('f-activo').value = (p.activo !== false) ? 'true' : 'false';
+  document.getElementById('f-notas').value = p.notas||'';
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+}
+function guardar(){
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const apellidos = document.getElementById('f-apellidos').value.trim();
+  const cargoId = document.getElementById('f-cargoId').value;
+  if(!nombre){ toast('El nombre es obligatorio','danger'); return; }
+  if(!apellidos){ toast('Los apellidos son obligatorios','danger'); return; }
+  if(!cargoId){ toast('Debes asignar un cargo','danger'); return; }
+  const cargo = DB.cargos.get(cargoId);
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.personal.get(id) : {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    nombre, apellidos,
+    dni: document.getElementById('f-dni').value.trim(),
+    telefono: document.getElementById('f-telefono').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    cargoId,
+    // Snapshot del cargo (para que aparezca en reportes incluso si cambia el cargo)
+    cargo: cargo?.cargo || '',
+    precioHH: cargo?.precioHH || 0,
+    costoRealHH: cargo?.costoRealHH || 0,
+    ganancia: cargo?.ganancia || 1.3,
+    categoria: cargo?.categoria || '',
+    fechaIngreso: document.getElementById('f-fechaIngreso').value,
+    especialidad: document.getElementById('f-especialidad').value.trim(),
+    activo: document.getElementById('f-activo').value === 'true',
+    notas: document.getElementById('f-notas').value.trim(),
+  };
+  DB.personal.save(item);
+  toast('Trabajador guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  if(!confirm('¿Eliminar este trabajador? Las asignaciones y reportes existentes se conservarán pero perderán la referencia.')) return;
+  DB.personal.remove(id);
+  toast('Trabajador eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+render();
+</script>
+</body>
+</html>

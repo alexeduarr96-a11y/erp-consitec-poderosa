@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe Semanal — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.cot-layout{display:grid;grid-template-columns:340px 1fr;gap:14px}
+@media (max-width:1200px){.cot-layout{grid-template-columns:1fr}}
+.editor{max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.editor .panel{padding:12px}
+.editor label{font-size:10.5px;margin:6px 0 2px}
+.editor input,.editor textarea,.editor select{font-size:12px;padding:5px 7px}
+
+#preview-wrap{background:#8a8a8a;padding:18px;border-radius:5px;overflow:auto;max-height:calc(100vh - 120px)}
+
+/* HOJA A4 INFORME SEMANAL */
+.sheet{
+  background:#fff;width:210mm;min-height:297mm;margin:0 auto 14px;
+  padding:12mm 14mm 14mm;box-shadow:0 4px 18px rgba(0,0,0,.25);
+  color:#1a1a1a;font-family:'Arial Narrow','Arial',sans-serif;font-size:9.5pt;line-height:1.4;
+}
+.sheet .head{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:14px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #54585e;position:relative}
+.sheet .head::after{content:'';position:absolute;left:0;bottom:-2px;width:120px;height:2px;background:#1d3557}
+.sheet .head .logo img{max-height:58px;max-width:180px;object-fit:contain}
+.sheet .head .titulo{text-align:center}
+.sheet .head .titulo h1{margin:0;color:#1a1a1a;font-family:'Calibri','Arial',sans-serif;font-weight:700;font-size:14pt;letter-spacing:1px}
+.sheet .head .titulo .sub{font-size:8.5pt;color:#666;margin-top:3px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.sheet .head .titulo .fecha{font-size:10pt;color:#333;margin-top:5px;font-weight:600}
+
+.sheet .info-tabla{width:100%;border-collapse:collapse;margin:2px 0 12px;font-size:9pt}
+.sheet .info-tabla td{border:none;border-bottom:0.5px solid #bbb;padding:3px 6px;font-style:italic}
+.sheet .info-tabla td.k{color:#333;font-weight:700;width:110px;text-align:right;font-style:normal;font-size:9pt}
+.sheet .info-tabla td.s{width:8px;text-align:center;color:#333;font-style:normal}
+
+.sheet .seccion{margin-top:12px}
+.sheet .seccion h3{background:#1d3557;color:#fff;font-weight:700;font-size:9.5pt;margin:0 0 6px;padding:5px 10px;text-transform:uppercase;letter-spacing:.4px}
+.sheet .seccion .body{padding:0 2px;font-size:9pt}
+
+/* Tabla resumen días */
+.sheet .tabla-sem{width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:4px}
+.sheet .tabla-sem th{background:#e8e8e8;color:#3a3d42;padding:4px 6px;border:0.5px solid #999;font-size:7.5pt;text-transform:uppercase;font-weight:700;text-align:left}
+.sheet .tabla-sem th.num{text-align:right}
+.sheet .tabla-sem th.cen{text-align:center}
+.sheet .tabla-sem td{border:0.5px solid #aaa;padding:3px 6px;vertical-align:top;font-style:italic;color:#222}
+.sheet .tabla-sem td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sheet .tabla-sem td.cen{text-align:center}
+.sheet .tabla-sem td.dia{font-style:normal;font-weight:700;color:#333;font-size:8pt;text-transform:uppercase;background:#f7f8f9}
+.sheet .tabla-sem tr.total td{background:#1d3557;color:#fff;font-weight:700;font-style:normal;font-size:9pt}
+.sheet .tabla-sem .sin{color:#999;font-style:italic;font-size:8pt}
+
+/* KPIs semana */
+.sheet .kpis-sem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.sheet .kpi-sem{background:#f8f9fa;border:1px solid #ddd;padding:8px;border-radius:3px;text-align:center}
+.sheet .kpi-sem .l{font-size:7.5pt;color:#666;text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.sheet .kpi-sem .v{font-size:13pt;font-weight:700;color:#1d3557;margin-top:3px}
+.sheet .kpi-sem.warn .v{color:#dc3545}
+
+/* Avance bar grande */
+.sheet .avance-grande{margin-top:10px}
+.sheet .avance-grande .lbl{display:flex;justify-content:space-between;font-size:9pt;font-weight:600;margin-bottom:3px}
+.sheet .avance-grande .bar{height:18px;background:#e6e8eb;border-radius:9px;overflow:hidden;position:relative}
+.sheet .avance-grande .bar .f{height:100%;background:linear-gradient(90deg,#1d3557,#0353a4);border-radius:9px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:8.5pt;font-weight:700}
+.sheet .avance-grande .sub{display:flex;justify-content:space-between;font-size:8pt;color:#666;margin-top:3px}
+
+/* Actividades destacadas y problemas */
+.sheet ul.lista{margin:4px 0;padding-left:22px;font-style:italic;font-size:9pt;color:#222}
+.sheet ul.lista li{margin-bottom:2px}
+
+.sheet .incidencias-box{background:#fef2f2;border-left:3px solid #dc3545;padding:6px 10px;font-size:9pt;color:#7f1d1d;margin-top:4px}
+.sheet .incidencias-box b{color:#991b1b;display:block;margin-bottom:2px;font-size:8.5pt}
+
+/* Fotos destacadas */
+.sheet .fotos-sem{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.sheet .foto-card{border:1px solid #ccc;border-radius:3px;overflow:hidden;background:#fafafa;break-inside:avoid;page-break-inside:avoid}
+.sheet .foto-card img{width:100%;height:auto;display:block;max-height:55mm;object-fit:cover}
+.sheet .foto-card .cap{padding:3px 6px;font-size:7.5pt;font-style:italic;color:#333;border-top:0.5px solid #ccc;background:#fff;line-height:1.2}
+
+.sheet .firmas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:36px;font-size:8.5pt;text-align:center;color:#333}
+.sheet .firmas div{border-top:0.75px solid #555;padding-top:4px;line-height:1.3}
+
+.sheet .footer-emp{margin-top:14px;color:#333;padding:6px 0 0;font-size:7.5pt;line-height:1.45;border-top:1px solid #999;text-align:center}
+.sheet .footer-emp b{font-size:8pt;letter-spacing:.3px;color:#000}
+
+.empty-sem{padding:30px;text-align:center;color:#999;font-style:italic;background:#f8f9fa;border-radius:5px}
+
+/* Mini Gantt en informe */
+.sheet .gantt-mini{margin-top:6px;background:#fff;border:0.5px solid #999;border-radius:3px;padding:4px}
+.sheet .gantt-mini .gh{display:flex;border-bottom:1px solid #888;padding-bottom:2px;margin-bottom:3px;font-size:7.5pt;color:#666;font-weight:700}
+.sheet .gantt-mini .gh .gc{flex:1;text-align:center;border-right:0.5px dashed #ccc;padding:1px 0}
+.sheet .gantt-mini .gh .gc:last-child{border-right:none}
+.sheet .gantt-mini .grow{display:grid;grid-template-columns:140px 1fr;gap:4px;margin-top:2px;align-items:center;font-size:8pt}
+.sheet .gantt-mini .grow .tname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;font-style:italic;padding-right:4px}
+.sheet .gantt-mini .grow .tbar{position:relative;height:11px;background:#f1f5f9;border-radius:3px}
+.sheet .gantt-mini .grow .tbar .seg{position:absolute;top:0;bottom:0;background:#1d3557;border-radius:3px;display:flex;align-items:center;padding-left:3px;color:#fff;font-size:7pt;font-weight:600;overflow:hidden;white-space:nowrap}
+.sheet .gantt-mini .grow .tbar .seg.done{background:#198754}
+.sheet .gantt-mini .grow .tbar .seg.warn{background:#f59e0b}
+.sheet .gantt-mini .grow .tbar .seg.late{background:#dc3545}
+.sheet .gantt-mini .grow .tbar .seg .av{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.22);border-radius:3px 0 0 3px}
+.sheet .gantt-mini .hoy{position:absolute;top:0;bottom:0;width:1.5px;background:#dc3545;z-index:5}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Informe Semanal de Obra</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="reporte-diario.html">Reporte Diario</a>
+    <a href="reporte-semanal.html" class="active">Informe Semanal</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="personal.html">Personal</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>📊 Informe Semanal Consolidado</h2>
+    <div class="actions">
+      <a class="btn ghost sm" href="operaciones.html" style="text-decoration:none">← Operaciones</a>
+      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+    </div>
+  </div>
+
+  <div class="cot-layout">
+
+    <!-- EDITOR -->
+    <div class="editor no-print">
+
+      <div class="panel">
+        <h3>Parámetros del informe</h3>
+        <label>Proyecto *</label>
+        <select id="f-proyecto" onchange="render()"></select>
+
+        <label>Semana</label>
+        <div style="display:flex;gap:5px">
+          <input id="f-semana" type="week" oninput="render()" style="flex:1">
+          <button class="ghost sm" onclick="semanaActual()" title="Esta semana">📅</button>
+        </div>
+        <small class="text-muted" style="font-size:10.5px;display:block;margin-top:3px">
+          💡 Selecciona la semana. Se cargan automáticamente todos los reportes diarios del proyecto en esa semana (Lun–Dom).
+        </small>
+
+        <label>Resumen ejecutivo (opcional)</label>
+        <textarea id="f-resumen" rows="5" placeholder="Breve resumen ejecutivo de la semana (se mostrará al inicio del informe)..." oninput="render()"></textarea>
+
+        <label>Plan para próxima semana</label>
+        <textarea id="f-plan" rows="4" placeholder="Actividades planificadas para la siguiente semana..." oninput="render()"></textarea>
+
+        <label>Elaborado por</label>
+        <select id="f-elaborador" oninput="render()"></select>
+
+        <div style="margin-top:14px;padding:8px;background:var(--brand-soft);border-radius:4px;font-size:11px">
+          <b>ℹ Resumen detectado:</b>
+          <div id="stats-info" style="margin-top:4px"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let state = {
+  proyectoId: '',
+  semanaISO: '', // 2026-W20
+  resumen: '',
+  plan: '',
+  elaboradorId: '',
+};
+
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+function init(){
+  poblarSelects();
+  // Por defecto: semana actual
+  semanaActual();
+  // Si viene con ?proyectoId
+  const params = new URLSearchParams(location.search);
+  const pid = params.get('proyectoId');
+  if(pid){
+    state.proyectoId = pid;
+    document.getElementById('f-proyecto').value = pid;
+  }
+  render();
+}
+
+function poblarSelects(){
+  const selP = document.getElementById('f-proyecto');
+  selP.innerHTML = '<option value="">— Selecciona proyecto —</option>' +
+    DB.proyectos.list().map(p => `<option value="${p.id}">${escapeHtml(p.codigo||'')} — ${escapeHtml(p.nombre||'')}</option>`).join('');
+  const selE = document.getElementById('f-elaborador');
+  selE.innerHTML = '<option value="">— Selecciona —</option>' +
+    DB.personal.list().filter(p => p.activo !== false)
+      .map(p => `<option value="${p.id}">${escapeHtml(personalLabel(p))}</option>`).join('');
+}
+
+function semanaActual(){
+  const d = new Date();
+  const week = getISOWeek(d);
+  const year = d.getFullYear();
+  state.semanaISO = `${year}-W${String(week).padStart(2,'0')}`;
+  document.getElementById('f-semana').value = state.semanaISO;
+  render();
+}
+function getISOWeek(d){
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+}
+function fechasDeSemanaISO(iso){
+  // "2026-W20" → [Lun, Mar, ..., Dom]
+  if(!iso) return [];
+  const [yStr, wStr] = iso.split('-W');
+  const year = parseInt(yStr); const week = parseInt(wStr);
+  // Lunes de la semana ISO
+  const simple = new Date(year, 0, 1 + (week-1)*7);
+  const dow = simple.getDay(); // 0=dom, 1=lun, etc
+  const lunes = new Date(simple);
+  if(dow <= 4) lunes.setDate(simple.getDate() - simple.getDay() + 1);
+  else lunes.setDate(simple.getDate() + 8 - simple.getDay());
+  const fechas = [];
+  for(let i = 0; i < 7; i++){
+    const f = new Date(lunes);
+    f.setDate(lunes.getDate()+i);
+    fechas.push(f);
+  }
+  return fechas;
+}
+function isoDate(d){ return d.toISOString().slice(0,10); }
+
+function render(){
+  state.proyectoId = document.getElementById('f-proyecto').value;
+  state.semanaISO  = document.getElementById('f-semana').value;
+  state.resumen    = document.getElementById('f-resumen').value;
+  state.plan       = document.getElementById('f-plan').value;
+  state.elaboradorId = document.getElementById('f-elaborador').value;
+
+  const cfg = DB.getConfig();
+  const proy = state.proyectoId ? DB.proyectos.get(state.proyectoId) : null;
+  const elab = state.elaboradorId ? DB.personal.get(state.elaboradorId) : null;
+  const personalDB = DB.personal.list();
+  const personalMap = Object.fromEntries(personalDB.map(p => [p.id, p]));
+
+  const fechas = fechasDeSemanaISO(state.semanaISO);
+  const fechaIni = fechas[0]; const fechaFin = fechas[6];
+  const rangoFmt = fechaIni && fechaFin
+    ? `Del ${fechaIni.toLocaleDateString('es-PE',{day:'2-digit',month:'long'})} al ${fechaFin.toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'})}`
+    : '—';
+
+  // Filtrar reportes de la semana del proyecto
+  const reportes = !state.proyectoId ? [] : DB.reportesDiarios.list()
+    .filter(r => r.proyectoId === state.proyectoId)
+    .filter(r => {
+      if(!r.fecha) return false;
+      const f = new Date(r.fecha+'T00:00:00');
+      return f >= fechaIni && f <= new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate(), 23, 59);
+    })
+    .sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+
+  // Agrupar por día
+  const reportePorFecha = Object.fromEntries(reportes.map(r => [r.fecha, r]));
+
+  // KPIs semana
+  const diasConReporte = reportes.length;
+  const totalPersonasUnicas = new Set();
+  let totalHH = 0; let avanceMax = 0; let totalIncidencias = 0;
+  const todasFotos = [];
+  const todasActividades = [];
+  reportes.forEach(r => {
+    (r.personalPresente||[]).filter(p => p.presente).forEach(p => {
+      totalPersonasUnicas.add(p.personalId);
+      totalHH += (p.horas||0);
+    });
+    if((r.avance||0) > avanceMax) avanceMax = r.avance||0;
+    if((r.incidencias||'').trim()) totalIncidencias++;
+    (r.fotos||[]).forEach(f => todasFotos.push({...f, fecha: r.fecha}));
+    (r.actividades||[]).filter(a => a.texto.trim()).forEach(a => todasActividades.push({...a, fecha: r.fecha}));
+  });
+
+  // Actualizar stats info en el editor
+  document.getElementById('stats-info').innerHTML = `
+    ${diasConReporte} días con reporte · ${totalPersonasUnicas.size} personas · ${totalHH} HH<br>
+    ${todasActividades.length} actividades · ${todasFotos.length} fotos · ${totalIncidencias} incidencias
+  `;
+
+  // Tabla de días
+  const rowsDias = fechas.map((f,i) => {
+    const iso = isoDate(f);
+    const r = reportePorFecha[iso];
+    const fechaCorta = f.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit'});
+    if(!r){
+      return `<tr>
+        <td class="dia">${DIAS[i]}</td>
+        <td>${fechaCorta}</td>
+        <td colspan="5" class="sin">— Sin reporte registrado —</td>
+      </tr>`;
+    }
+    const presentes = (r.personalPresente||[]).filter(p => p.presente);
+    const hh = presentes.reduce((s,p) => s + (p.horas||0), 0);
+    const actsTxt = (r.actividades||[]).filter(a => a.texto.trim()).map(a => a.texto).join('; ');
+    return `<tr>
+      <td class="dia">${DIAS[i]}</td>
+      <td>${fechaCorta}</td>
+      <td class="cen">${r.clima||'—'}</td>
+      <td class="cen">${presentes.length}</td>
+      <td class="num">${hh}h</td>
+      <td class="num">${r.avance||0}%</td>
+      <td><small>${escapeHtml(actsTxt.slice(0,80))}${actsTxt.length>80?'...':''}</small></td>
+    </tr>`;
+  }).join('');
+
+  // Total fila
+  const rowTotal = `<tr class="total">
+    <td colspan="3">TOTAL SEMANA</td>
+    <td class="cen">${totalPersonasUnicas.size}</td>
+    <td class="num">${totalHH}h</td>
+    <td class="num">${avanceMax}%</td>
+    <td>${diasConReporte}/7 días reportados</td>
+  </tr>`;
+
+  // Actividades destacadas (top 8 únicas)
+  const actUnicas = [...new Map(todasActividades.map(a => [a.texto.toLowerCase(), a])).values()].slice(0,10);
+  const actHTML = actUnicas.length === 0 ? '<p style="color:#999;font-style:italic">Sin actividades registradas en la semana.</p>'
+    : '<ul class="lista">' + actUnicas.map(a => `<li>${escapeHtml(a.texto)}${a.avance?` <b style="color:#1d3557">(${a.avance}%)</b>`:''}</li>`).join('') + '</ul>';
+
+  // Incidencias agrupadas
+  const incidencias = reportes.filter(r => (r.incidencias||'').trim()).map(r =>
+    `<b>${new Date(r.fecha+'T00:00:00').toLocaleDateString('es-PE',{weekday:'long',day:'2-digit'})}:</b> ${escapeHtml(r.incidencias)}`
+  ).join('<br>');
+
+  // Personal acumulado
+  const personalAcum = {};
+  reportes.forEach(r => {
+    (r.personalPresente||[]).filter(p => p.presente).forEach(p => {
+      if(!personalAcum[p.personalId]) personalAcum[p.personalId] = {dias:0, horas:0};
+      personalAcum[p.personalId].dias++;
+      personalAcum[p.personalId].horas += (p.horas||0);
+    });
+  });
+  const personalRows = Object.entries(personalAcum)
+    .sort((a,b) => b[1].horas - a[1].horas)
+    .map(([id, st], i) => {
+      const per = personalMap[id];
+      return `<tr><td>${i+1}</td><td>${escapeHtml(personalNombre(per))}</td><td>${escapeHtml(per?.cargo||'')}</td><td class="cen">${st.dias}</td><td class="num">${st.horas}h</td></tr>`;
+    }).join('');
+
+  // Fotos destacadas (las primeras 9)
+  const fotosDestacadas = todasFotos.slice(0,9);
+  const fotosHTML = fotosDestacadas.map(f => `
+    <div class="foto-card">
+      <img src="${f.base64}" alt="">
+      <div class="cap"><b>${new Date(f.fecha+'T00:00:00').toLocaleDateString('es-PE',{weekday:'short',day:'2-digit'})}.</b> ${escapeHtml(f.descripcion||'')}</div>
+    </div>
+  `).join('');
+
+  // Construir HTML
+  if(!state.proyectoId){
+    document.getElementById('sheet').innerHTML = `
+      <div class="empty-sem">
+        <h3>Selecciona un proyecto y una semana para generar el informe</h3>
+        <p>El informe se construye automáticamente con los reportes diarios registrados.</p>
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('sheet').innerHTML = `
+    <div class="head">
+      <div class="logo"><img src="../assets/logo-consitec.png" alt="CONSITEC"></div>
+      <div class="titulo">
+        <h1>INFORME SEMANAL DE OBRA</h1>
+        <div class="sub">${escapeHtml(cfg.empresa)}</div>
+        <div class="fecha">${rangoFmt}</div>
+      </div>
+      <div></div>
+    </div>
+
+    <table class="info-tabla">
+      <tr><td class="k">Proyecto</td><td class="s">:</td><td colspan="3">${escapeHtml(proy?.codigo||'')} — ${escapeHtml(proy?.nombre||'')}</td></tr>
+      <tr><td class="k">Cliente</td><td class="s">:</td><td colspan="3">${escapeHtml(proy?.clienteRazon||'')}</td></tr>
+      <tr>
+        <td class="k">Lugar</td><td class="s">:</td><td>${escapeHtml(proy?.lugar||'—')}</td>
+        <td class="k" style="width:90px">Semana</td><td class="s">:</td><td>${state.semanaISO||'—'}</td>
+      </tr>
+      <tr>
+        <td class="k">Elaborado por</td><td class="s">:</td><td>${elab?escapeHtml(personalLabel(elab)):'—'}</td>
+        <td class="k">Estado</td><td class="s">:</td><td>${labelEstado(proy?.estado)}</td>
+      </tr>
+    </table>
+
+    <div class="kpis-sem">
+      <div class="kpi-sem">
+        <div class="l">Días reportados</div>
+        <div class="v">${diasConReporte}/7</div>
+      </div>
+      <div class="kpi-sem">
+        <div class="l">Personal acumulado</div>
+        <div class="v">${totalPersonasUnicas.size}</div>
+      </div>
+      <div class="kpi-sem">
+        <div class="l">Horas-hombre</div>
+        <div class="v">${totalHH}h</div>
+      </div>
+      <div class="kpi-sem ${totalIncidencias>0?'warn':''}">
+        <div class="l">Incidencias</div>
+        <div class="v">${totalIncidencias}</div>
+      </div>
+    </div>
+
+    <div class="avance-grande">
+      <div class="lbl"><span>AVANCE ACUMULADO DEL PROYECTO</span><span>${avanceMax}%</span></div>
+      <div class="bar"><div class="f" style="width:${avanceMax}%">${avanceMax>15?avanceMax+'%':''}</div></div>
+      <div class="sub"><span>Inicio del proyecto</span><span>Meta 100%</span></div>
+    </div>
+
+    ${state.resumen.trim() ? `
+      <div class="seccion">
+        <h3>Resumen Ejecutivo</h3>
+        <div class="body" style="font-style:italic;white-space:pre-line;color:#222;padding:4px 2px">${escapeHtml(state.resumen)}</div>
+      </div>
+    `:''}
+
+    <div class="seccion">
+      <h3>1. Resumen por día</h3>
+      <table class="tabla-sem">
+        <thead><tr>
+          <th style="width:75px">Día</th>
+          <th style="width:55px">Fecha</th>
+          <th class="cen" style="width:55px">Clima</th>
+          <th class="cen" style="width:50px">Pers.</th>
+          <th class="num" style="width:50px">HH</th>
+          <th class="num" style="width:50px">Avance</th>
+          <th>Actividades principales</th>
+        </tr></thead>
+        <tbody>${rowsDias}${rowTotal}</tbody>
+      </table>
+    </div>
+
+    ${proy && (proy.tareas||[]).length > 0 ? `
+      <div class="seccion">
+        <h3>2. Cronograma del proyecto (Gantt)</h3>
+        ${generarGanttMini(proy)}
+      </div>
+    `:''}
+
+    <div class="seccion">
+      <h3>${proy && (proy.tareas||[]).length > 0 ? '3' : '2'}. Actividades destacadas de la semana</h3>
+      <div class="body">${actHTML}</div>
+    </div>
+
+    <div class="seccion">
+      <h3>3. Personal acumulado</h3>
+      <table class="tabla-sem">
+        <thead><tr>
+          <th style="width:30px">#</th>
+          <th>Nombre</th>
+          <th>Cargo</th>
+          <th class="cen" style="width:60px">Días</th>
+          <th class="num" style="width:70px">Horas</th>
+        </tr></thead>
+        <tbody>${personalRows || '<tr><td colspan="5" class="sin">Sin personal registrado.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    ${incidencias ? `
+      <div class="seccion">
+        <h3 style="background:#dc3545">⚠ 4. Incidencias e imprevistos</h3>
+        <div class="incidencias-box">${incidencias}</div>
+      </div>
+    `:''}
+
+    ${state.plan.trim() ? `
+      <div class="seccion">
+        <h3>${incidencias?'5':'4'}. Plan para la próxima semana</h3>
+        <div class="body" style="font-style:italic;white-space:pre-line;color:#222;padding:4px 2px">${escapeHtml(state.plan)}</div>
+      </div>
+    `:''}
+
+    ${fotosDestacadas.length > 0 ? `
+      <div class="seccion">
+        <h3>📸 Registro fotográfico de la semana</h3>
+        <div class="fotos-sem">${fotosHTML}</div>
+      </div>
+    `:''}
+
+    <div class="firmas">
+      <div>Elaborado por<br><small>${elab?escapeHtml(personalLabel(elab)):''}</small></div>
+      <div>Revisado por<br><small>Supervisor de Obra</small></div>
+      <div>V°B° Cliente</div>
+    </div>
+
+    <div class="footer-emp">
+      <b>${escapeHtml(cfg.empresa)}</b> · RUC ${escapeHtml(cfg.ruc)} · ${escapeHtml(cfg.telefono)} · ${escapeHtml(cfg.email)}<br>
+      ${escapeHtml(cfg.direccion)}
+    </div>
+  `;
+}
+
+function generarGanttMini(proy){
+  if(!proy) return '';
+  const tareas = (proy.tareas||[]).filter(t => t.fechaIni && t.fechaFin && t.nombre);
+  if(tareas.length === 0) return '';
+  // Rango
+  const fIni = tareas.map(t => new Date(t.fechaIni+'T00:00:00'));
+  const fFin = tareas.map(t => new Date(t.fechaFin+'T00:00:00'));
+  const minF = new Date(Math.min(...fIni.map(d=>d.getTime())));
+  const maxF = new Date(Math.max(...fFin.map(d=>d.getTime())));
+  const totalDias = Math.max(1, Math.round((maxF - minF)/86400000) + 1);
+  // Cabecera por semanas
+  const numSemanas = Math.ceil(totalDias / 7);
+  const cabezas = [];
+  let d = new Date(minF);
+  for(let i = 0; i < numSemanas; i++){
+    cabezas.push(d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace(/\./g,''));
+    d.setDate(d.getDate()+7);
+  }
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const hoyOffset = hoy >= minF && hoy <= maxF ? ((hoy - minF)/86400000) / totalDias * 100 : null;
+  const ghHTML = `<div class="gh">${cabezas.map(c => `<div class="gc">${c}</div>`).join('')}</div>`;
+  const rowsHTML = tareas.map(t => {
+    const ti = new Date(t.fechaIni+'T00:00:00');
+    const tf = new Date(t.fechaFin+'T00:00:00');
+    const left = ((ti - minF)/86400000) / totalDias * 100;
+    const dur = (tf - ti)/86400000 + 1;
+    const width = (dur/totalDias) * 100;
+    const av = Math.min(100, Math.max(0, t.avance||0));
+    const cls = av === 100 ? 'done' : (tf < hoy && av < 100) ? 'late' : av < 30 ? 'warn' : '';
+    return `
+      <div class="grow">
+        <div class="tname">${escapeHtml(t.nombre)}</div>
+        <div class="tbar">
+          <div class="seg ${cls}" style="left:${left}%;width:${width}%">
+            <div class="av" style="width:${av}%"></div>
+            <span style="position:relative;z-index:2">${av>0?av+'%':''}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  const hoyHTML = hoyOffset !== null ? `<div class="hoy" style="left:calc(144px + (100% - 144px) * ${hoyOffset}/100)"></div>` : '';
+  return `<div class="gantt-mini">${ghHTML}${rowsHTML}${hoyHTML}</div>`;
+}
+
+function labelEstado(e){
+  return {planificado:'Planificado', en_curso:'En curso', completado:'Completado', pausado:'Pausado', cancelado:'Cancelado'}[e] || '—';
+}
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+init();
+</script>
+</body>
+</html>

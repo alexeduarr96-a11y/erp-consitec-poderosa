@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Materiales — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.pill.cost{background:#f5f5f5;color:#555}
+.pill.venta{background:#e8f5e9;color:#1b5e20}
+.pill.gan{background:#fff3cd;color:#856404}
+.pct-good{color:#1b5e20;font-weight:700}
+.pct-warn{color:#b06200;font-weight:700}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Materiales — Catálogo con Costo Real</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html" class="active">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>🔩 Catálogo de Materiales</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Material</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por descripción, fabricante..." oninput="render()"></div>
+      <span class="tag" id="counter"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+        💡 P. Venta = Costo Real × Ganancia × Logística (ganancia y logística son internas)
+      </span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data" id="tabla">
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Marca / Modelo</th>
+            <th>Fabricante</th>
+            <th>UM</th>
+            <th class="num">Costo Real</th>
+            <th class="num" title="Multiplicador de ganancia interna">Ganan. ×</th>
+            <th class="num" title="Multiplicador de logística interna">Logís. ×</th>
+            <th class="num">P. Venta</th>
+            <th class="num">Margen %</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal Material -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Material</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+      <label>Descripción *</label>
+      <textarea id="f-desc" rows="2" placeholder="Ej: CANAL U A-36 X 6 MT - 3' X 1.41' X 4.10 LBS/PIE"></textarea>
+      <div class="row3">
+        <div><label>Marca</label><input id="f-marca" placeholder="Ej: 3M, Bosch, ACEROS AREQUIPA"></div>
+        <div><label>Modelo / Referencia</label><input id="f-modelo" placeholder="Ej: GWS 7-115, A36-3X1.41"></div>
+        <div>
+          <label>Unidad de Medida</label>
+          <select id="f-um">
+            <option value="UND.">UND. (Unidad)</option>
+            <option value="KG.">KG. (Kilogramo)</option>
+            <option value="MTS.">MTS. (Metros)</option>
+            <option value="GAL.">GAL. (Galón)</option>
+            <option value="L.">L. (Litro)</option>
+            <option value="JGO.">JGO. (Juego)</option>
+            <option value="GLB.">GLB. (Global)</option>
+            <option value="ROLLO">ROLLO</option>
+          </select>
+        </div>
+      </div>
+      <label>Fabricante / Proveedor</label>
+      <input id="f-fab" placeholder="Ej: DL SUPPLY & LOGISTIC SAC">
+      <div class="row3">
+        <div>
+          <label>Costo Real (S/) *</label>
+          <input id="f-costo" type="number" step="0.01" oninput="recalc()">
+        </div>
+        <div>
+          <label title="Ganancia interna (no se muestra al cliente)">Ganancia × (interno)</label>
+          <input id="f-gan" type="number" step="0.01" value="1.3" oninput="recalc()" style="background:#fff3cd">
+        </div>
+        <div>
+          <label title="Logística interna (no se muestra al cliente)">Logística × (interno)</label>
+          <input id="f-log" type="number" step="0.01" value="1.0" oninput="recalc()" style="background:#fff3cd">
+        </div>
+      </div>
+      <div style="background:#f7f8f9;padding:10px;border-radius:4px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:13px">
+        <div>
+          <div class="text-muted" style="font-size:10.5px">P. Venta calculado</div>
+          <div class="fw-bold text-brand" style="font-size:18px" id="pv-calc">S/ 0.00</div>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:10.5px">Ganancia por unidad</div>
+          <div class="fw-bold text-success" style="font-size:18px" id="gan-calc">S/ 0.00</div>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:10.5px">Margen %</div>
+          <div class="fw-bold" style="font-size:18px" id="mar-calc">0%</div>
+        </div>
+      </div>
+
+      <label class="mt-2">Categoría</label>
+      <select id="f-categoria">
+        <option value="">— Sin categoría —</option>
+        <option value="Estructura metálica">Estructura metálica</option>
+        <option value="Soldadura">Soldadura</option>
+        <option value="Pintura">Pintura</option>
+        <option value="Tubería">Tubería</option>
+        <option value="Cobertura">Cobertura</option>
+        <option value="Eléctrico">Eléctrico</option>
+        <option value="Tornillería">Tornillería</option>
+        <option value="Herramientas">Herramientas</option>
+        <option value="EPP">EPP</option>
+        <option value="Otros">Otros</option>
+      </select>
+
+      <label>Notas</label>
+      <textarea id="f-notas" rows="2" placeholder="Stock mínimo, observaciones de compra..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+function render(){
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const items = DB.materiales.list()
+    .filter(m => !q || (m.descripcion||'').toLowerCase().includes(q) || (m.fabricante||'').toLowerCase().includes(q))
+    .sort((a,b) => (a.descripcion||'').localeCompare(b.descripcion||''));
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay materiales registrados.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(m => {
+      // Compatibilidad: algunos items antiguos pueden tener "margen" en vez de ganancia/logistica
+      const gan = m.ganancia || m.margen || 1.3;
+      const log = m.logistica || 1.0;
+      const pv = (m.costoReal||0) * gan * log;
+      const ganancia = pv - (m.costoReal||0);
+      const margen = (m.costoReal||0) > 0 ? ((pv - m.costoReal)/m.costoReal)*100 : 0;
+      const marcaModelo = [m.marca, m.modelo].filter(x => x && x.trim()).join(' / ');
+      return `
+      <tr>
+        <td><b>${escapeHtml((m.descripcion||'').slice(0,70))}</b>${m.categoria?`<br><small><span class="tag">${escapeHtml(m.categoria)}</span></small>`:''}</td>
+        <td>${marcaModelo?`<small>${escapeHtml(marcaModelo)}</small>`:'<small class="text-muted">—</small>'}</td>
+        <td><small>${escapeHtml(m.fabricante||'')}</small></td>
+        <td><small>${escapeHtml(m.um||'-')}</small></td>
+        <td class="num"><span class="pill cost">${fmtNum(m.costoReal||0,2)}</span></td>
+        <td class="num"><small>${fmtNum(gan,2)}</small></td>
+        <td class="num"><small>${fmtNum(log,2)}</small></td>
+        <td class="num"><span class="pill venta">${fmtNum(pv,2)}</span></td>
+        <td class="num"><span class="${margen>=30?'pct-good':'pct-warn'}">${margen.toFixed(0)}%</span></td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${m.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} material${items.length!==1?'es':''}`;
+}
+
+function recalc(){
+  const costo = parseFloat(document.getElementById('f-costo').value) || 0;
+  const gan = parseFloat(document.getElementById('f-gan').value) || 1;
+  const log = parseFloat(document.getElementById('f-log').value) || 1;
+  const pv = costo * gan * log;
+  const ganancia = pv - costo;
+  const margen = costo > 0 ? ((pv - costo)/costo)*100 : 0;
+  document.getElementById('pv-calc').textContent = 'S/ ' + pv.toFixed(2);
+  document.getElementById('gan-calc').textContent = 'S/ ' + ganancia.toFixed(2);
+  const mar = document.getElementById('mar-calc');
+  mar.textContent = margen.toFixed(0) + '%';
+  mar.className = 'fw-bold ' + (margen >= 30 ? 'text-success' : 'text-danger');
+}
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Material';
+  ['f-id','f-desc','f-marca','f-modelo','f-fab','f-costo','f-categoria','f-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-um').value = 'UND.';
+  document.getElementById('f-gan').value = '1.3';
+  document.getElementById('f-log').value = '1.0';
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+  recalc();
+}
+function editar(id){
+  const m = DB.materiales.get(id); if(!m) return;
+  document.getElementById('modalTitle').textContent = 'Editar Material';
+  document.getElementById('f-id').value = m.id;
+  document.getElementById('f-desc').value = m.descripcion||'';
+  document.getElementById('f-marca').value = m.marca||'';
+  document.getElementById('f-modelo').value = m.modelo||'';
+  document.getElementById('f-fab').value = m.fabricante||'';
+  document.getElementById('f-um').value = m.um||'UND.';
+  document.getElementById('f-costo').value = m.costoReal||0;
+  document.getElementById('f-gan').value = m.ganancia || m.margen || 1.3;
+  document.getElementById('f-log').value = m.logistica || 1.0;
+  document.getElementById('f-categoria').value = m.categoria||'';
+  document.getElementById('f-notas').value = m.notas||'';
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+  recalc();
+}
+function guardar(){
+  const desc = document.getElementById('f-desc').value.trim();
+  if(!desc){ toast('La descripción es obligatoria','danger'); return; }
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.materiales.get(id) : {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    descripcion: desc,
+    marca: document.getElementById('f-marca').value.trim(),
+    modelo: document.getElementById('f-modelo').value.trim(),
+    fabricante: document.getElementById('f-fab').value.trim(),
+    um: document.getElementById('f-um').value,
+    costoReal: parseFloat(document.getElementById('f-costo').value)||0,
+    ganancia: parseFloat(document.getElementById('f-gan').value)||1.3,
+    logistica: parseFloat(document.getElementById('f-log').value)||1.0,
+    categoria: document.getElementById('f-categoria').value,
+    notas: document.getElementById('f-notas').value.trim(),
+  };
+  delete item.margen; // limpiar campo antiguo si existía
+  DB.materiales.save(item);
+  toast('Material guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  if(!confirm('¿Eliminar este material?')) return;
+  DB.materiales.remove(id);
+  toast('Material eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+
+function exportarCSV(){
+  const items = DB.materiales.list();
+  const headers = ['Descripción','Marca','Modelo','Fabricante','UM','Costo Real','Ganancia','Logística','P.Venta','Margen %','Categoría'];
+  const rows = items.map(m => {
+    const gan = m.ganancia||m.margen||1.3, log = m.logistica||1.0;
+    const pv = (m.costoReal||0)*gan*log;
+    const mar = (m.costoReal||0)>0 ? ((pv-m.costoReal)/m.costoReal)*100 : 0;
+    return [m.descripcion, m.marca||'', m.modelo||'', m.fabricante, m.um, m.costoReal, gan, log, pv.toFixed(2), mar.toFixed(1)+'%', m.categoria||''];
+  });
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `materiales-consitec-${todayISO()}.csv`;
+  a.click();
+  toast('CSV exportado','success');
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+render();
+</script>
+</body>
+</html>

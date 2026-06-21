@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gestión — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.area-tag{display:inline-block;background:var(--brand);color:#fff;font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:.2px}
+.rol-pill{display:inline-block;background:#e7f0f9;color:var(--brand3);font-size:10.5px;padding:2px 7px;border-radius:8px;font-weight:600;margin-right:3px;margin-top:2px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Gestión — Personal Administrativo</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html" class="active">Gestión</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>👥 Gestión — Personal Administrativo</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nueva Persona</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por nombre, apellidos, email, cargo..." oninput="render()"></div>
+      <select id="fArea" onchange="render()" style="max-width:200px">
+        <option value="">Todas las áreas</option>
+        <option value="Gerencia">Gerencia</option>
+        <option value="Logística">Logística</option>
+        <option value="Comercial">Comercial</option>
+        <option value="Administración">Administración</option>
+        <option value="Operaciones">Operaciones</option>
+        <option value="Ingeniería">Ingeniería</option>
+      </select>
+      <span class="tag" id="counter"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+        💡 Estas personas aparecen como Gestor / Solicitante / Aprobador en las Órdenes de Compra
+      </span>
+    </div>
+    <table class="data" id="tabla">
+      <thead>
+        <tr>
+          <th>Nombre y apellidos</th>
+          <th>Cargo</th>
+          <th>Área</th>
+          <th>Email</th>
+          <th>Teléfono</th>
+          <th>Roles en OC</th>
+          <th class="actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nueva Persona</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:0 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Datos personales</h3>
+      <div class="row">
+        <div>
+          <label>Nombres *</label>
+          <input id="f-nombre" placeholder="Ej: María Elena">
+        </div>
+        <div>
+          <label>Apellidos *</label>
+          <input id="f-apellidos" placeholder="Ej: García Pérez">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Email *</label>
+          <input id="f-email" type="email" placeholder="correo@consitecing.com">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input id="f-telefono" placeholder="+51 9...">
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Cargo</h3>
+      <div class="row">
+        <div>
+          <label>Cargo / Puesto *</label>
+          <input id="f-cargo" placeholder="Ej: Gerente General, Gestor de Compras, Comercial">
+        </div>
+        <div>
+          <label>Área</label>
+          <select id="f-area">
+            <option value="">— Sin área —</option>
+            <option value="Gerencia">Gerencia</option>
+            <option value="Logística">Logística</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Administración">Administración</option>
+            <option value="Operaciones">Operaciones</option>
+            <option value="Ingeniería">Ingeniería</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;color:var(--brand3);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Roles habilitados en Órdenes de Compra
+        <small class="text-muted" style="font-weight:normal;font-size:10.5px">— Aparecerá como opción en estos campos</small>
+      </h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:8px;background:#f7f8f9;border-radius:4px;font-size:12px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-rolGestor" style="width:auto"> 📦 Gestor de Compra
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-rolSolicitante" style="width:auto"> ✍ Solicitante
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-rolAprobador" style="width:auto"> ✅ Aprobador
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="f-rolFirma" style="width:auto"> ✒ Firma (Gerente)
+        </label>
+      </div>
+
+      <label class="mt-2">Notas</label>
+      <textarea id="f-notas" rows="2"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+function nombreCompleto(p){
+  if(!p) return '';
+  const parts = [];
+  if(p.nombre) parts.push(p.nombre);
+  if(p.apellidos) parts.push(p.apellidos);
+  if(parts.length === 0) return '(sin nombre)';
+  return parts.join(' ');
+}
+
+function render(){
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const fArea = document.getElementById('fArea').value;
+  const items = DB.contactosConsitec.list()
+    .filter(p => (!q ||
+      nombreCompleto(p).toLowerCase().includes(q) ||
+      (p.email||'').toLowerCase().includes(q) ||
+      (p.cargo||'').toLowerCase().includes(q))
+      && (!fArea || p.area === fArea))
+    .sort((a,b) => nombreCompleto(a).localeCompare(nombreCompleto(b)));
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay personal de gestión registrado.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(p => {
+      const roles = [];
+      if(p.rolGestor)      roles.push('<span class="rol-pill">📦 Gestor</span>');
+      if(p.rolSolicitante) roles.push('<span class="rol-pill">✍ Solicitante</span>');
+      if(p.rolAprobador)   roles.push('<span class="rol-pill">✅ Aprobador</span>');
+      if(p.rolFirma)       roles.push('<span class="rol-pill">✒ Firma</span>');
+      return `
+      <tr>
+        <td><b>${escapeHtml(nombreCompleto(p))}</b></td>
+        <td>${escapeHtml(p.cargo||'-')}</td>
+        <td>${p.area?`<span class="area-tag">${escapeHtml(p.area)}</span>`:'<small class="text-muted">—</small>'}</td>
+        <td><a href="mailto:${escapeAttr(p.email||'')}" style="color:var(--brand);font-size:12px">${escapeHtml(p.email||'')}</a></td>
+        <td><small>${escapeHtml(p.telefono||'')}</small></td>
+        <td>${roles.length?roles.join(' '):'<small class="text-muted">—</small>'}</td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${p.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} persona${items.length!==1?'s':''}`;
+}
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nueva Persona';
+  ['f-id','f-nombre','f-apellidos','f-email','f-telefono','f-cargo','f-area','f-notas']
+    .forEach(id => document.getElementById(id).value = '');
+  ['f-rolGestor','f-rolSolicitante','f-rolAprobador','f-rolFirma']
+    .forEach(id => document.getElementById(id).checked = false);
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+}
+function editar(id){
+  const p = DB.contactosConsitec.get(id); if(!p) return;
+  document.getElementById('modalTitle').textContent = 'Editar — ' + nombreCompleto(p);
+  document.getElementById('f-id').value = p.id;
+  document.getElementById('f-nombre').value = p.nombre||'';
+  document.getElementById('f-apellidos').value = p.apellidos||'';
+  document.getElementById('f-email').value = p.email||'';
+  document.getElementById('f-telefono').value = p.telefono||'';
+  document.getElementById('f-cargo').value = p.cargo||'';
+  document.getElementById('f-area').value = p.area||'';
+  document.getElementById('f-notas').value = p.notas||'';
+  document.getElementById('f-rolGestor').checked      = !!p.rolGestor;
+  document.getElementById('f-rolSolicitante').checked = !!p.rolSolicitante;
+  document.getElementById('f-rolAprobador').checked   = !!p.rolAprobador;
+  document.getElementById('f-rolFirma').checked       = !!p.rolFirma;
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+}
+function guardar(){
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const apellidos = document.getElementById('f-apellidos').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  if(!nombre){ toast('El nombre es obligatorio','danger'); return; }
+  if(!apellidos){ toast('Los apellidos son obligatorios','danger'); return; }
+  if(!email){ toast('El email es obligatorio','danger'); return; }
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.contactosConsitec.get(id) : {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    nombre, apellidos, email,
+    telefono: document.getElementById('f-telefono').value.trim(),
+    cargo: document.getElementById('f-cargo').value.trim(),
+    area: document.getElementById('f-area').value,
+    notas: document.getElementById('f-notas').value.trim(),
+    rolGestor:      document.getElementById('f-rolGestor').checked,
+    rolSolicitante: document.getElementById('f-rolSolicitante').checked,
+    rolAprobador:   document.getElementById('f-rolAprobador').checked,
+    rolFirma:       document.getElementById('f-rolFirma').checked,
+  };
+  DB.contactosConsitec.save(item);
+  toast('Persona guardada','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  if(!confirm('¿Eliminar esta persona?')) return;
+  DB.contactosConsitec.remove(id);
+  toast('Persona eliminada');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+render();
+</script>
+</body>
+</html>

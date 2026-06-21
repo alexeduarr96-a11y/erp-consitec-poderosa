@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.contact-card{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;padding:8px 10px;margin-top:6px;position:relative}
+.contact-card .area-tag{display:inline-block;background:var(--brand);color:#fff;font-size:10.5px;padding:1px 8px;border-radius:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.contact-card .del{position:absolute;top:6px;right:6px;background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.contact-card .grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:4px}
+.contact-card label{margin:2px 0 0;font-size:10px}
+.contact-card input{font-size:11.5px;padding:3px 6px}
+.area-pill{display:inline-block;background:var(--gray-soft);border:1px solid var(--gray-line);padding:3px 9px;border-radius:12px;font-size:11px;margin:3px 4px 0 0;color:#444}
+.area-pill .x{margin-left:6px;cursor:pointer;color:#dc3545;font-weight:bold}
+.area-pill .x:hover{color:#7a0016}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Módulo Clientes</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html" class="active">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>🏢 Cartera de Clientes</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Cliente</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por razón social, RUC o contacto..." oninput="render()"></div>
+      <span class="tag" id="counter"></span>
+    </div>
+    <table class="data" id="tabla">
+      <thead>
+        <tr>
+          <th>Razón social</th>
+          <th>Corto</th>
+          <th>RUC</th>
+          <th>Contactos</th>
+          <th>Áreas</th>
+          <th class="num">Cotizaciones</th>
+          <th class="actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Modal Cliente -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="max-width:1000px">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Cliente</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <h3 style="font-size:13px;color:var(--brand);margin:0 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Datos generales</h3>
+      <div class="row">
+        <div>
+          <label>Razón social *</label>
+          <input id="f-razon" placeholder="Compañía Minera Poderosa S.A.">
+        </div>
+        <div>
+          <label>RUC</label>
+          <input id="f-ruc" maxlength="11">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Código corto (para nº cotización)</label>
+          <input id="f-corto" placeholder="Ej: CMP" maxlength="6" style="text-transform:uppercase">
+        </div>
+        <div>
+          <label>Sector / Rubro</label>
+          <input id="f-sector" placeholder="Minería, Industria, ...">
+        </div>
+      </div>
+      <label>Dirección</label>
+      <input id="f-direccion">
+
+      <!-- ÁREAS / SEDES -->
+      <h3 style="font-size:13px;color:var(--brand);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Áreas / Sedes <small class="text-muted" style="font-weight:normal">(usadas en cotizaciones)</small>
+      </h3>
+      <div id="lst-areas" style="min-height:30px;padding:6px;background:#fafafa;border-radius:3px;border:1px solid var(--gray-line)"></div>
+      <div style="display:flex;gap:5px;margin-top:5px">
+        <input id="f-areaNew" placeholder="Ej: Zona de Transportes, Planta Chaparrosa..." onkeypress="if(event.key==='Enter') addArea()" style="flex:1">
+        <button class="sm ghost" onclick="addArea()">+ Agregar área</button>
+      </div>
+
+      <!-- CONTACTOS MÚLTIPLES -->
+      <h3 style="font-size:13px;color:var(--brand);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Contactos / Encargados <small class="text-muted" style="font-weight:normal">(uno por área o responsable)</small>
+      </h3>
+      <div id="lst-contactos"></div>
+      <button class="add-btn" onclick="addContacto()" style="background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:6px;margin-top:6px;border-radius:3px;font-size:12px;font-weight:500;cursor:pointer">
+        + Agregar contacto / encargado
+      </button>
+
+      <label class="mt-3">Notas internas</label>
+      <textarea id="f-notas" rows="2"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let formAreas = [];
+let formContactos = [];
+
+function render(){
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const items = DB.clientes.list().filter(c =>
+    !q || (c.razonSocial||'').toLowerCase().includes(q)
+       || (c.ruc||'').includes(q)
+       || (c.contactos||[]).some(co => (co.nombre||'').toLowerCase().includes(q))
+       || (c.corto||'').toLowerCase().includes(q)
+  );
+  const cots = DB.cotizaciones.list();
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay clientes. Agrega el primero.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(c => {
+      const numCots = cots.filter(co => co.clienteId === c.id).length;
+      const contactosArr = (c.contactos||[]).map(co => `<small>• <b>${escapeHtml(co.nombre||'-')}</b>${co.area?` <span class="tag">${escapeHtml(co.area)}</span>`:''}</small>`).join('<br>');
+      const areasArr = (c.areas||[]).map(a => `<span class="tag">${escapeHtml(a)}</span>`).join(' ');
+      return `
+      <tr>
+        <td><b>${escapeHtml(c.razonSocial||'')}</b><br><small class="text-muted">${escapeHtml(c.sector||'')}</small></td>
+        <td><span class="tag">${escapeHtml(c.corto||'-')}</span></td>
+        <td>${escapeHtml(c.ruc||'-')}</td>
+        <td>${contactosArr || '<small class="text-muted">Sin contactos</small>'}</td>
+        <td>${areasArr || '<small class="text-muted">—</small>'}</td>
+        <td class="num"><b>${numCots}</b></td>
+        <td class="actions">
+          <button class="sm ghost" onclick="editar('${c.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} cliente${items.length!==1?'s':''}`;
+}
+
+// ========== ÁREAS ==========
+function renderAreas(){
+  const div = document.getElementById('lst-areas');
+  if(formAreas.length === 0){
+    div.innerHTML = '<small class="text-muted">Sin áreas. Agrega abajo.</small>';
+  } else {
+    div.innerHTML = formAreas.map((a,i) => `<span class="area-pill">${escapeHtml(a)} <span class="x" onclick="delArea(${i})">×</span></span>`).join('');
+  }
+}
+function addArea(){
+  const inp = document.getElementById('f-areaNew');
+  const v = inp.value.trim();
+  if(!v) return;
+  if(formAreas.find(a => a.toLowerCase() === v.toLowerCase())){
+    toast('Esa área ya existe','danger'); return;
+  }
+  formAreas.push(v);
+  inp.value = '';
+  renderAreas();
+  // refrescar selects de áreas en contactos
+  renderContactos();
+}
+function delArea(i){ formAreas.splice(i,1); renderAreas(); renderContactos(); }
+
+// ========== CONTACTOS ==========
+function renderContactos(){
+  const div = document.getElementById('lst-contactos');
+  if(formContactos.length === 0){
+    div.innerHTML = '<small class="text-muted">Sin contactos. Agrega uno abajo.</small>';
+    return;
+  }
+  div.innerHTML = formContactos.map((co,i) => `
+    <div class="contact-card">
+      <button class="del" onclick="delContacto(${i})">×</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="margin:0">Área:</label>
+        <select onchange="updContacto(${i},'area',this.value)" style="font-size:11.5px;padding:3px 6px;width:auto;min-width:140px">
+          <option value="">— Sin área —</option>
+          ${formAreas.map(a => `<option value="${escapeAttr(a)}" ${co.area===a?'selected':''}>${escapeHtml(a)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="grid">
+        <div>
+          <label>Nombre *</label>
+          <input value="${escapeAttr(co.nombre||'')}" oninput="updContacto(${i},'nombre',this.value)" placeholder="Ing. Miguel Herrera">
+        </div>
+        <div>
+          <label>Cargo</label>
+          <input value="${escapeAttr(co.cargo||'')}" oninput="updContacto(${i},'cargo',this.value)" placeholder="Jefe de Instrumentación...">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input value="${escapeAttr(co.telefono||'')}" oninput="updContacto(${i},'telefono',this.value)" placeholder="+51 ...">
+        </div>
+        <div>
+          <label>Email</label>
+          <input value="${escapeAttr(co.email||'')}" oninput="updContacto(${i},'email',this.value)" placeholder="correo@cliente.com">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function addContacto(){
+  formContactos.push({id: DB.uid('co'), nombre:'', cargo:'', telefono:'', email:'', area:''});
+  renderContactos();
+}
+function delContacto(i){ formContactos.splice(i,1); renderContactos(); }
+function updContacto(i, campo, val){ formContactos[i][campo] = val; }
+
+// ========== ABRIR / EDITAR / GUARDAR ==========
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Cliente';
+  ['f-id','f-razon','f-ruc','f-corto','f-sector','f-direccion','f-notas','f-areaNew'].forEach(id => document.getElementById(id).value = '');
+  formAreas = [];
+  formContactos = [];
+  renderAreas();
+  renderContactos();
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+}
+function editar(id){
+  const c = DB.clientes.get(id); if(!c) return;
+  document.getElementById('modalTitle').textContent = 'Editar Cliente — ' + (c.razonSocial||'');
+  document.getElementById('f-id').value = c.id;
+  document.getElementById('f-razon').value = c.razonSocial||'';
+  document.getElementById('f-ruc').value = c.ruc||'';
+  document.getElementById('f-corto').value = c.corto||'';
+  document.getElementById('f-sector').value = c.sector||'';
+  document.getElementById('f-direccion').value = c.direccion||'';
+  document.getElementById('f-notas').value = c.notas||'';
+  formAreas = [...(c.areas||[])];
+  formContactos = (c.contactos||[]).map(co => ({...co}));
+  // Migración: si tenía contacto flat antiguo
+  if(formContactos.length === 0 && c.contacto){
+    formContactos.push({id: DB.uid('co'), nombre:c.contacto, cargo:c.cargo||'', telefono:c.telefono||'', email:c.email||'', area:''});
+  }
+  renderAreas();
+  renderContactos();
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+}
+function guardar(){
+  const razon = document.getElementById('f-razon').value.trim();
+  if(!razon){ toast('La razón social es obligatoria', 'danger'); return; }
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.clientes.get(id) : {};
+  // Limpiar contactos sin nombre
+  const contactosLimpios = formContactos.filter(co => (co.nombre||'').trim());
+  const item = {
+    ...existing,
+    id: id || undefined,
+    razonSocial: razon,
+    ruc: document.getElementById('f-ruc').value.trim(),
+    corto: document.getElementById('f-corto').value.trim().toUpperCase(),
+    sector: document.getElementById('f-sector').value.trim(),
+    direccion: document.getElementById('f-direccion').value.trim(),
+    notas: document.getElementById('f-notas').value.trim(),
+    areas: formAreas,
+    contactos: contactosLimpios,
+  };
+  // Limpiar campos planos obsoletos
+  delete item.contacto; delete item.cargo; delete item.telefono; delete item.email;
+  DB.clientes.save(item);
+  toast('Cliente guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  if(!confirm('¿Eliminar este cliente? Las cotizaciones que ya estén guardadas no se eliminan.')) return;
+  DB.clientes.remove(id);
+  toast('Cliente eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+render();
+</script>
+</body>
+</html>

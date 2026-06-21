@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Órdenes de Compra — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.oc-layout{display:grid;grid-template-columns:560px 1fr;gap:14px}
+@media (max-width:1300px){.oc-layout{grid-template-columns:500px 1fr}}
+@media (max-width:1100px){.oc-layout{grid-template-columns:1fr}}
+.editor{max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.editor .panel{padding:12px}
+.editor label{font-size:10.5px;margin:6px 0 2px}
+.editor input,.editor textarea,.editor select{font-size:12px;padding:5px 7px}
+.input-with-add{display:flex;gap:4px}
+.input-with-add select,.input-with-add input{flex:1}
+.input-with-add button{padding:4px 8px;font-size:11px}
+
+#preview-wrap{background:#8a8a8a;padding:18px;border-radius:5px;overflow:auto;max-height:calc(100vh - 120px)}
+
+/* ===== HOJA A4 OC (formato CONSITEC exacto) ===== */
+.sheet{
+  background:#fff;width:210mm;min-height:297mm;margin:0 auto 14px;
+  padding:12mm 14mm 12mm;box-shadow:0 4px 18px rgba(0,0,0,.25);
+  color:#000;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.35;
+}
+
+/* Encabezado */
+.sheet .head{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:flex-start;padding-bottom:8px;border-bottom:1px solid #333}
+.sheet .head .logo img{max-width:120px;max-height:70px}
+.sheet .head .empresa-info{font-size:9pt;color:#000;line-height:1.5}
+.sheet .head .empresa-info .row-info{display:grid;grid-template-columns:90px 1fr;gap:4px}
+.sheet .head .empresa-info b{font-weight:700;color:#000}
+
+/* Título */
+.sheet .titulo-oc{text-align:center;font-size:16pt;font-weight:700;margin:12px 0 10px;color:#000;letter-spacing:.4px}
+
+/* Bloque info */
+.sheet .info-block{display:grid;grid-template-columns:140px 1fr;gap:3px 14px;font-size:9pt;margin-bottom:10px}
+.sheet .info-block .k{font-weight:700;color:#000}
+.sheet .info-block .v{color:#000}
+.sheet .info-block .v-mail{color:#000;display:inline-block;margin-left:8px}
+
+.sheet hr.sep{border:none;border-top:1px solid #999;margin:8px 0}
+
+/* Bloque proveedor */
+.sheet .prov-block{display:grid;grid-template-columns:140px 1fr 80px 1fr;gap:3px 10px;font-size:9pt;margin-bottom:10px}
+.sheet .prov-block .k{font-weight:700;color:#000}
+.sheet .prov-block .v{color:#000}
+
+/* Tabla items */
+.sheet table.items{width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:6px}
+.sheet table.items th{
+  background:#fff;color:#000;padding:5px 4px;text-align:left;font-size:8.5pt;font-weight:700;
+  border-top:1px solid #555;border-bottom:1px solid #555;
+}
+.sheet table.items th.num{text-align:right}
+.sheet table.items th.cen{text-align:center}
+.sheet table.items td{padding:4px;vertical-align:top;border-bottom:0.5px solid #ddd}
+.sheet table.items td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sheet table.items td.cen{text-align:center}
+.sheet table.items td.codigo{font-family:'Consolas','Courier New',monospace;font-size:8pt}
+
+/* Totales */
+.sheet .totales{width:35%;margin-left:auto;margin-top:8px;font-size:9.5pt}
+.sheet .totales .line{display:flex;justify-content:space-between;padding:2px 4px}
+.sheet .totales .line.tot{font-weight:700;font-size:10.5pt;border-top:1px solid #000;border-bottom:1px solid #000;padding:5px 4px;margin-top:3px}
+
+.sheet .son{margin-top:10px;font-size:9pt}
+.sheet .son b{font-weight:700}
+
+.sheet .observacion-block{margin-top:6px;font-size:9pt;font-weight:700}
+.sheet .observacion-block-text{font-size:8.5pt;font-style:italic;color:#222}
+
+/* Firma */
+.sheet .firma{text-align:center;margin-top:32px;padding-top:6px}
+.sheet .firma img.firma-img{max-width:300px;max-height:120px;display:block;margin:0 auto;object-fit:contain}
+.sheet .firma .linea{border-top:0.75px solid #000;width:280px;margin:0 auto;padding-top:4px}
+.sheet .firma .nombre{font-weight:700;font-size:10pt}
+.sheet .firma .cargo{font-weight:700;font-size:9.5pt;color:#000}
+.sheet .firma .empresa{font-size:9pt;color:#000;margin-top:2px}
+.sheet .firma .ruc{font-size:9pt;color:#000}
+
+/* Facturar a */
+.sheet .facturar-block{margin-top:18px;display:grid;grid-template-columns:1fr auto;gap:8px;font-size:9pt;padding-top:6px}
+.sheet .facturar-block .izq b{font-weight:700;color:#000}
+.sheet .facturar-block .izq .dir{font-size:9pt;color:#000}
+.sheet .facturar-block .der{text-align:right;font-weight:700;color:#000}
+
+/* Observaciones legales */
+.sheet .obs-legales{margin-top:14px;font-size:8pt;line-height:1.4}
+.sheet .obs-legales h4{margin:0 0 4px;font-size:9pt;font-weight:700;color:#000}
+.sheet .obs-legales ol{margin:0;padding-left:18px}
+.sheet .obs-legales ol li{margin-bottom:3px;color:#000}
+
+/* Editor items */
+.item-row{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;padding:8px 10px;margin-top:8px;font-size:11.5px}
+.item-row .top{display:flex;gap:5px;align-items:center;margin-bottom:4px}
+.item-row .top .num{background:var(--brand);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600}
+.item-row .top .del{margin-left:auto;background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.item-row .grid-it{display:grid;grid-template-columns:90px 65px 55px 75px 75px;gap:3px;margin-top:3px}
+.item-row label{margin:0;font-size:9.5px;color:var(--muted)}
+.item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
+.item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
+
+.add-btn{background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:5px;margin-top:5px;font-size:11.5px;font-weight:500}
+.add-btn:hover{background:var(--brand-soft)}
+
+.totales-mini{font-size:11px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 10px;background:var(--brand-soft);border-radius:3px;margin-top:8px}
+.totales-mini .line-tot{font-weight:700;color:var(--brand);font-size:13px;border-top:1px solid var(--brand);padding-top:3px;margin-top:3px}
+.totales-mini .line-saldo{font-weight:700;color:#b45309;font-size:12.5px;border-top:1px dashed #f59e0b;padding-top:3px;margin-top:3px}
+
+/* Pagos */
+.pago-row{background:#f0fdf4;border:1px solid #86efac;border-radius:4px;padding:6px 8px;margin-top:4px;font-size:11.5px;display:flex;align-items:center;gap:8px}
+.pago-row .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;margin-left:auto;cursor:pointer}
+.pago-row input,.pago-row select{font-size:11px;padding:3px 5px}
+.estado-display{padding:4px 8px;border-radius:4px;font-size:11.5px;font-weight:600;margin-top:4px;text-align:center}
+.estado-display.pendiente{background:#dbeafe;color:#1e40af}
+.estado-display.pagada_parcial{background:#fef3c7;color:#92400e}
+.estado-display.pagada{background:#d1fae5;color:#065f46}
+.estado-display.vencida{background:#fee2e2;color:#991b1b}
+
+.preview-mail{font-size:10.5px;color:var(--muted);margin-top:3px;padding:4px 6px;background:#f7f8f9;border-radius:3px;font-style:italic}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Órdenes de Compra</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html" class="active">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2 id="pageTitle">📑 Nueva Orden de Compra</h2>
+    <div class="actions">
+      <button class="ghost sm" onclick="cargarLista()">📂 Abrir guardadas</button>
+      <button class="ghost sm" onclick="nuevaOC()">+ Nueva</button>
+      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="success sm" onclick="guardarOC()">💾 Guardar</button>
+    </div>
+  </div>
+
+  <div class="oc-layout">
+
+    <!-- EDITOR -->
+    <div class="editor no-print">
+
+      <div class="panel">
+        <h3>Datos de la OC</h3>
+        <label>Número de OC</label>
+        <div class="input-with-add">
+          <input id="f-codigo" placeholder="202622042">
+          <button class="ghost" onclick="generarCodigo()" title="Regenerar">↻</button>
+        </div>
+        <div class="row3">
+          <div><label>Emisión</label><input id="f-fecha" type="date" oninput="render()"></div>
+          <div><label>Entrega</label><input id="f-fechaEntrega" type="date" oninput="render()"></div>
+          <div><label>Vencimiento</label><input id="f-fechaVencimiento" type="date" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div><label>Centro de Compra</label><input id="f-centroCompra" value="LOGISTICA" oninput="render()"></div>
+          <div><label>Almacén</label><input id="f-almacen" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div><label>Nº de Pedido</label><input id="f-pedido" oninput="render()"></div>
+          <div><label>Nº de Cotización</label><input id="f-nroCotizacion" oninput="render()"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>👥 Personal de gestión (de OC)</h3>
+        <label>Gestor de Compra</label>
+        <select id="f-gestor" onchange="aplicarGestor()"></select>
+        <div class="preview-mail" id="prev-gestor">—</div>
+
+        <label>Solicitante</label>
+        <select id="f-solicitante" onchange="aplicarSolicitante()"></select>
+        <div class="preview-mail" id="prev-solicitante">—</div>
+
+        <label>Aprobado por</label>
+        <select id="f-aprobador" onchange="aplicarAprobador()"></select>
+        <div class="preview-mail" id="prev-aprobador">—</div>
+
+        <div style="font-size:10.5px;color:var(--muted);margin-top:6px">
+          💡 La firma del Gerente sale automática en el PDF · Configura personas en <a href="gestion.html" style="color:var(--brand)">Gestión</a>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Proveedor y proyecto</h3>
+        <label>Proveedor</label>
+        <div class="input-with-add">
+          <select id="f-proveedor" onchange="aplicarProveedor()"></select>
+          <a class="btn ghost" href="proveedores.html" target="_blank" title="Gestionar proveedores" style="text-decoration:none;padding:4px 8px;font-size:11px">⚙</a>
+        </div>
+
+        <label>Tratado con</label>
+        <input id="f-tratadoCon" placeholder="Nombre del contacto en el proveedor" oninput="render()">
+
+        <label>Proyecto vinculado (opcional)</label>
+        <select id="f-proyecto" onchange="aplicarProyecto()">
+          <option value="">— Sin vincular —</option>
+        </select>
+        <label>Proyecto (texto libre)</label>
+        <input id="f-proyectoTexto" placeholder="Ej: AUTOMATIZACIÓN DE TANQUE PULMON..." oninput="render()">
+
+        <div class="row">
+          <div><label>Forma de pago</label>
+            <select id="f-formaPago" oninput="aplicarFormaPago()">
+              <option>Al contado</option>
+              <option>Crédito 15 días</option>
+              <option>Crédito 30 días</option>
+              <option>Crédito 45 días</option>
+              <option>Crédito 60 días</option>
+              <option>50% adelanto, 50% contra entrega</option>
+            </select>
+          </div>
+          <div><label>Moneda</label>
+            <select id="f-moneda" oninput="render()">
+              <option value="PEN">PEN — Soles</option>
+              <option value="USD">USD — Dólares</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Fecha de entrega (texto)</label>
+        <input id="f-fechaEntregaText" placeholder="Indicado en cada item" oninput="render()">
+
+        <label>Lugar de entrega</label>
+        <textarea id="f-lugarEntrega" rows="2" oninput="render()"></textarea>
+
+        <label>Observación</label>
+        <textarea id="f-notas" rows="2" placeholder="Observaciones especiales..." oninput="render()"></textarea>
+      </div>
+
+      <div class="panel">
+        <h3>Items de la Orden</h3>
+        <div id="lst-items"></div>
+        <button class="add-btn" onclick="addItem()">+ Agregar item</button>
+
+        <div class="row mt-2">
+          <div><label>IGV (%)</label><input id="f-igv" type="number" step="0.01" value="18" oninput="render()"></div>
+          <div><label>Descuento (%)</label><input id="f-desc" type="number" step="0.01" value="0" oninput="render()"></div>
+        </div>
+
+        <div class="totales-mini" id="mini-totales"></div>
+      </div>
+
+      <!-- PANEL DE PAGOS -->
+      <div class="panel">
+        <h3>💰 Pagos registrados</h3>
+        <div id="lst-pagos"></div>
+        <button class="add-btn" onclick="addPago()">+ Registrar pago</button>
+        <div class="estado-display" id="estado-display"></div>
+      </div>
+
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Modal lista OCs -->
+<div class="modal-overlay no-print" id="modalLista">
+  <div class="modal" style="max-width:1100px">
+    <div class="modal-header">
+      <h3>Órdenes de Compra guardadas</h3>
+      <button class="close" onclick="document.getElementById('modalLista').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <table class="data">
+        <thead><tr><th>Número</th><th>Proveedor</th><th>Proyecto</th><th>Emisión</th><th>Vence</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Saldo</th><th>Estado</th><th class="actions">Acción</th></tr></thead>
+        <tbody id="tblLista"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let state = nuevoEstado();
+function nuevoEstado(){
+  return {
+    id:null, codigo:'',
+    fecha: todayISO(), fechaEntrega:'', fechaVencimiento:'',
+    centroCompra: 'LOGISTICA',
+    gestorId:'', gestorNombre:'', gestorEmail:'',
+    solicitanteId:'', solicitanteNombre:'', solicitanteEmail:'',
+    aprobadorId:'', aprobadorNombre:'', aprobadorEmail:'',
+    firmaId:'', firmaNombre:'', firmaCargo:'GERENTE GENERAL',
+    proveedorId:'', proveedorRazon:'', proveedorRuc:'', proveedorDir:'', proveedorContacto:'', proveedorTel:'', proveedorEmail:'',
+    proyectoId:'', proyectoNombre:'', proyectoCliente:'', proyectoTexto:'',
+    almacen: '', pedido: '', nroCotizacion: '',
+    tratadoCon:'',
+    fechaEntregaText:'Indicado en cada item',
+    lugarEntrega:'',
+    formaPago:'Al contado', moneda:'PEN',
+    items:[],
+    igv: 18, desc: 0,
+    notas: '',
+    pagos: [],
+    estado:'pendiente',
+  };
+}
+
+function init(){
+  poblarSelects();
+  const params = new URLSearchParams(location.search);
+  const idParam = params.get('id');
+  if(idParam){
+    const o = DB.ocs.get(idParam);
+    if(o){
+      state = {...nuevoEstado(), ...o};
+      syncFormDesdeEstado();
+      renderItems();
+      renderPagos();
+      render();
+      toast('OC cargada: '+state.codigo);
+      return;
+    }
+  }
+  // Asegurar valores por defecto en state
+  if(!state.fecha) state.fecha = todayISO();
+  if(state.items.length === 0) addItem();
+  // IMPORTANTE: poblar el formulario ANTES de generar código o renderizar
+  syncFormDesdeEstado();
+  generarCodigo();
+  renderItems();
+  renderPagos();
+  render();
+}
+
+function poblarSelects(){
+  const sel = document.getElementById('f-proveedor');
+  sel.innerHTML = '<option value="">— Selecciona proveedor —</option>' +
+    DB.proveedores.list().map(p => `<option value="${p.id}">${escapeHtml(p.razonSocial)}</option>`).join('');
+  const selP = document.getElementById('f-proyecto');
+  selP.innerHTML = '<option value="">— Sin vincular —</option>' +
+    DB.proyectos.list().map(p => `<option value="${p.id}">${escapeHtml(p.codigo||'')} — ${escapeHtml(p.nombre||'')}</option>`).join('');
+
+  // Personas de gestión filtradas por rol
+  const personas = DB.contactosConsitec.list();
+  const nombreFull = (p) => [p.nombre, p.apellidos].filter(Boolean).join(' ') || (p.cargo||'');
+  const fillSelect = (id, rolFlag) => {
+    const sel = document.getElementById(id);
+    const filtrados = personas.filter(p => p[rolFlag] || personas.filter(x => x[rolFlag]).length === 0);
+    sel.innerHTML = '<option value="">— Selecciona —</option>' +
+      filtrados.map(p => `<option value="${p.id}">${escapeHtml(nombreFull(p))} (${escapeHtml(p.email||'sin email')})</option>`).join('');
+  };
+  fillSelect('f-gestor', 'rolGestor');
+  fillSelect('f-solicitante', 'rolSolicitante');
+  fillSelect('f-aprobador', 'rolAprobador');
+}
+
+function aplicarPersonaA(rol, id){
+  const c = DB.contactosConsitec.get(id);
+  if(!c){
+    state[rol+'Id'] = ''; state[rol+'Nombre'] = ''; state[rol+'Email'] = '';
+    if(rol === 'firma') state.firmaCargo = '';
+  } else {
+    const nombreFull = [c.nombre, c.apellidos].filter(Boolean).join(' ');
+    state[rol+'Id'] = id;
+    state[rol+'Nombre'] = nombreFull;
+    state[rol+'Email'] = c.email || '';
+    if(rol === 'firma'){
+      state.firmaCargo = (c.cargo || 'GERENTE GENERAL').toUpperCase();
+    }
+  }
+}
+
+function aplicarGestor(){      aplicarPersonaA('gestor',      document.getElementById('f-gestor').value);      actualizarPreviewMail(); render(); }
+function aplicarSolicitante(){ aplicarPersonaA('solicitante', document.getElementById('f-solicitante').value); actualizarPreviewMail(); render(); }
+function aplicarAprobador(){   aplicarPersonaA('aprobador',   document.getElementById('f-aprobador').value);   actualizarPreviewMail(); render(); }
+
+function actualizarPreviewMail(){
+  document.getElementById('prev-gestor').textContent      = state.gestorEmail      ? `📧 ${state.gestorEmail}`      : '—';
+  document.getElementById('prev-solicitante').textContent = state.solicitanteEmail ? `📧 ${state.solicitanteEmail}` : '—';
+  document.getElementById('prev-aprobador').textContent   = state.aprobadorEmail   ? `📧 ${state.aprobadorEmail}`   : '—';
+}
+
+function aplicarProveedor(){
+  const id = document.getElementById('f-proveedor').value;
+  state.proveedorId = id;
+  if(!id){
+    state.proveedorRazon=''; state.proveedorRuc=''; state.proveedorDir='';
+    state.proveedorContacto=''; state.proveedorTel=''; state.proveedorEmail='';
+    render(); return;
+  }
+  const p = DB.proveedores.get(id); if(!p) return;
+
+  // 1️⃣ Auto-llenar todos los datos del proveedor
+  state.proveedorRazon = p.razonSocial||'';
+  state.proveedorRuc = p.ruc||'';
+  state.proveedorDir = p.direccion||'';
+  state.proveedorContacto = p.contacto||'';
+  state.proveedorTel = p.telefono||'';
+  state.proveedorEmail = p.email||'';
+  // Auto-llenar "Tratado con" si está vacío (usar el contacto del proveedor)
+  if(!state.tratadoCon && p.contacto){
+    state.tratadoCon = p.contacto;
+    document.getElementById('f-tratadoCon').value = p.contacto;
+  }
+
+  // 2️⃣ Auto-asignar forma de pago default del proveedor
+  if(p.formaPagoDefault){
+    state.formaPago = p.formaPagoDefault;
+    document.getElementById('f-formaPago').value = p.formaPagoDefault;
+    // Si la opción no existe en el select, agregarla
+    const sel = document.getElementById('f-formaPago');
+    if(![...sel.options].some(o => o.value === p.formaPagoDefault)){
+      const opt = document.createElement('option');
+      opt.value = p.formaPagoDefault; opt.textContent = p.formaPagoDefault;
+      sel.appendChild(opt);
+      sel.value = p.formaPagoDefault;
+    }
+  }
+
+  // 3️⃣ Auto-calcular fecha de vencimiento según días de crédito del proveedor
+  if(state.fecha){
+    const dias = parseInt(p.diasCredito)||0;
+    const d = new Date(state.fecha+'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    state.fechaVencimiento = d.toISOString().slice(0,10);
+    document.getElementById('f-fechaVencimiento').value = state.fechaVencimiento;
+  }
+
+  // Toast con feedback
+  const partes = [];
+  if(p.formaPagoDefault) partes.push(p.formaPagoDefault);
+  if(p.diasCredito > 0) partes.push(`vence en ${p.diasCredito} días`);
+  if(partes.length) toast(`Proveedor cargado · ${partes.join(' · ')}`, 'success');
+
+  render();
+}
+
+function aplicarProyecto(){
+  const id = document.getElementById('f-proyecto').value;
+  state.proyectoId = id;
+  if(!id){ state.proyectoNombre=''; state.proyectoCliente=''; render(); return; }
+  const p = DB.proyectos.get(id); if(!p) return;
+  state.proyectoNombre = p.nombre||'';
+  state.proyectoCliente = p.clienteRazon||'';
+  if(!state.proyectoTexto){
+    state.proyectoTexto = (p.nombre||'').toUpperCase();
+    document.getElementById('f-proyectoTexto').value = state.proyectoTexto;
+  }
+  render();
+}
+
+function aplicarFormaPago(){
+  const fp = document.getElementById('f-formaPago').value;
+  state.formaPago = fp;
+  const m = fp.match(/(\d+)\s*d[ií]as/i);
+  if(m && state.fecha){
+    const dias = parseInt(m[1]);
+    const d = new Date(state.fecha+'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    state.fechaVencimiento = d.toISOString().slice(0,10);
+    document.getElementById('f-fechaVencimiento').value = state.fechaVencimiento;
+  } else if(/contado/i.test(fp)){
+    state.fechaVencimiento = state.fecha;
+    document.getElementById('f-fechaVencimiento').value = state.fecha;
+  }
+  render();
+}
+
+function generarCodigo(){
+  // Formato CONSITEC: número largo tipo 202622042
+  const year = new Date().getFullYear().toString();
+  const n = DB.ocs.list().length + 1;
+  state.codigo = `${year.slice(0,4)}${String(n).padStart(5,'0')}`;
+  document.getElementById('f-codigo').value = state.codigo;
+  render();
+}
+
+// ===== ITEMS =====
+function addItem(){
+  state.items.push({codigo:'', descripcion:'', um:'Und.', cantidad:1, tEntrega:'Stock', precio:0, materialId:''});
+  renderItems(); render();
+}
+function delItem(i){ state.items.splice(i,1); renderItems(); render(); }
+function updateItem(i, campo, val){
+  state.items[i][campo] = (['cantidad','precio'].includes(campo)) ? (parseFloat(val)||0) : val;
+  render();
+  const it = state.items[i];
+  const el = document.querySelector(`[data-tot-it="${i}"]`);
+  if(el) el.textContent = (it.cantidad*it.precio).toFixed(2);
+}
+function aplicarMaterial(i, id){
+  if(!id) return;
+  const m = DB.materiales.get(id); if(!m) return;
+  state.items[i].descripcion = m.descripcion;
+  state.items[i].codigo = m.modelo || m.marca || '';
+  state.items[i].um = m.um || 'Und.';
+  state.items[i].precio = m.costoReal || 0;
+  state.items[i].materialId = id;
+  renderItems(); render();
+}
+function renderItems(){
+  const mats = DB.materiales.list();
+  const monSym = state.moneda==='USD'?'US$':'S/';
+  document.getElementById('lst-items').innerHTML = state.items.map((it,i) => `
+    <div class="item-row">
+      <div class="top">
+        <span class="num">${i+1}</span>
+        <select onchange="aplicarMaterial(${i},this.value)" style="flex:1">
+          <option value="">— Catálogo —</option>
+          ${mats.map(m => `<option value="${m.id}" ${m.id===it.materialId?'selected':''}>${escapeHtml(m.descripcion.slice(0,60))}</option>`).join('')}
+        </select>
+        <button class="del" onclick="delItem(${i})">×</button>
+      </div>
+      <input value="${escapeAttr(it.codigo||'')}" oninput="updateItem(${i},'codigo',this.value)" placeholder="Código/Modelo (ej: 032U7505)" style="margin-top:3px">
+      <textarea rows="2" oninput="updateItem(${i},'descripcion',this.value)" placeholder="Descripción completa del producto" style="width:100%;margin-top:3px">${escapeHtml(it.descripcion)}</textarea>
+      <div class="grid-it">
+        <div><label>T. Entrega</label><input value="${escapeAttr(it.tEntrega||'Stock')}" oninput="updateItem(${i},'tEntrega',this.value)"></div>
+        <div><label>Unid.</label><input value="${escapeAttr(it.um||'Und.')}" oninput="updateItem(${i},'um',this.value)"></div>
+        <div><label>Cant.</label><input type="number" step="0.01" value="${it.cantidad}" oninput="updateItem(${i},'cantidad',this.value)"></div>
+        <div><label>P. Unit. (${monSym})</label><input type="number" step="0.01" value="${it.precio}" oninput="updateItem(${i},'precio',this.value)"></div>
+        <div style="align-self:end;text-align:right"><span class="calc"><span data-tot-it="${i}">${(it.cantidad*it.precio).toFixed(2)}</span></span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== PAGOS =====
+function addPago(){
+  const t = totales();
+  const pagado = (state.pagos||[]).reduce((s,p) => s + (p.monto||0), 0);
+  const saldo = t.total - pagado;
+  state.pagos = state.pagos || [];
+  state.pagos.push({fecha: todayISO(), monto: saldo>0?parseFloat(saldo.toFixed(2)):0, metodo:'Transferencia', referencia:''});
+  renderPagos(); render();
+}
+function delPago(i){ state.pagos.splice(i,1); renderPagos(); render(); }
+function updPago(i, campo, val){
+  state.pagos[i][campo] = campo==='monto' ? (parseFloat(val)||0) : val;
+  render();
+}
+function renderPagos(){
+  const monSym = state.moneda==='USD'?'US$':'S/';
+  const pagos = state.pagos || [];
+  document.getElementById('lst-pagos').innerHTML = pagos.length === 0
+    ? '<small class="text-muted" style="font-style:italic">Sin pagos aún.</small>'
+    : pagos.map((p,i) => `
+    <div class="pago-row">
+      <span style="font-weight:600">${i+1}.</span>
+      <div style="display:grid;grid-template-columns:90px 1fr 90px 1fr;gap:4px;flex:1">
+        <input type="date" value="${p.fecha||''}" oninput="updPago(${i},'fecha',this.value)">
+        <select onchange="updPago(${i},'metodo',this.value)">
+          <option ${p.metodo==='Transferencia'?'selected':''}>Transferencia</option>
+          <option ${p.metodo==='Cheque'?'selected':''}>Cheque</option>
+          <option ${p.metodo==='Efectivo'?'selected':''}>Efectivo</option>
+          <option ${p.metodo==='Yape/Plin'?'selected':''}>Yape/Plin</option>
+          <option ${p.metodo==='Tarjeta'?'selected':''}>Tarjeta</option>
+        </select>
+        <input type="number" step="0.01" value="${p.monto||0}" oninput="updPago(${i},'monto',this.value)" title="Monto ${monSym}">
+        <input value="${escapeAttr(p.referencia||'')}" oninput="updPago(${i},'referencia',this.value)" placeholder="Ref/Op #">
+      </div>
+      <button class="del" onclick="delPago(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+// ===== CÁLCULOS =====
+function totales(){
+  const subtotal = state.items.reduce((s,it) => s + (it.cantidad*it.precio), 0);
+  const descuento = subtotal * (state.desc/100);
+  const base = subtotal - descuento;
+  const igv = base * (state.igv/100);
+  const total = base + igv;
+  const pagado = (state.pagos||[]).reduce((s,p) => s + (p.monto||0), 0);
+  const saldo = total - pagado;
+  return {subtotal, descuento, base, igv, total, pagado, saldo};
+}
+function calcularEstado(){
+  const t = totales();
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const vence = state.fechaVencimiento ? new Date(state.fechaVencimiento+'T00:00:00') : null;
+  let estado = 'pendiente';
+  if(t.saldo <= 0.01) estado = 'pagada';
+  else if(t.pagado > 0) estado = 'pagada_parcial';
+  if(estado !== 'pagada' && vence && vence < hoy) estado = 'vencida';
+  return estado;
+}
+function lblEstado(e){
+  return {pendiente:'⌛ Pendiente de pago', pagada_parcial:'◐ Pago parcial', pagada:'✓ Pagada', vencida:'⚠ Vencida'}[e]||e;
+}
+function calcularMini(){
+  const t = totales();
+  const est = calcularEstado();
+  state.estado = est;
+  const monSym = state.moneda==='USD'?'US$':'S/';
+  document.getElementById('mini-totales').innerHTML = `
+    <div>Subtotal items:</div><div>${monSym} ${fmtNum(t.subtotal,2)}</div>
+    <div>Descuento (${state.desc}%):</div><div>- ${monSym} ${fmtNum(t.descuento,2)}</div>
+    <div>Base imponible:</div><div>${monSym} ${fmtNum(t.base,2)}</div>
+    <div>IGV (${state.igv}%):</div><div>${monSym} ${fmtNum(t.igv,2)}</div>
+    <div class="line-tot">TOTAL OC:</div><div class="line-tot">${monSym} ${fmtNum(t.total,2)}</div>
+    <div style="color:#388e3c">  Pagado:</div><div style="color:#388e3c">${monSym} ${fmtNum(t.pagado,2)}</div>
+    <div class="line-saldo">SALDO PENDIENTE:</div><div class="line-saldo">${monSym} ${fmtNum(t.saldo,2)}</div>
+  `;
+  const ed = document.getElementById('estado-display');
+  ed.className = 'estado-display ' + est;
+  ed.textContent = lblEstado(est);
+}
+
+// ===== SYNC =====
+function syncEstadoDesdeForm(){
+  state.codigo = document.getElementById('f-codigo').value;
+  // Para fechas: si el form está vacío, mantenemos el valor del state (no lo borramos)
+  const v = (id) => document.getElementById(id).value;
+  state.fecha  = v('f-fecha') || state.fecha || todayISO();
+  state.fechaEntrega = v('f-fechaEntrega') || state.fechaEntrega || '';
+  state.fechaVencimiento = v('f-fechaVencimiento') || state.fechaVencimiento || '';
+  state.centroCompra = document.getElementById('f-centroCompra').value;
+  state.almacen = document.getElementById('f-almacen').value;
+  state.pedido = document.getElementById('f-pedido').value;
+  state.nroCotizacion = document.getElementById('f-nroCotizacion').value;
+  state.tratadoCon = document.getElementById('f-tratadoCon').value;
+  state.proyectoTexto = document.getElementById('f-proyectoTexto').value;
+  state.fechaEntregaText = document.getElementById('f-fechaEntregaText').value;
+  state.lugarEntrega = document.getElementById('f-lugarEntrega').value;
+  state.formaPago = document.getElementById('f-formaPago').value;
+  state.moneda = document.getElementById('f-moneda').value;
+  state.notas = document.getElementById('f-notas').value;
+  state.igv = parseFloat(document.getElementById('f-igv').value)||0;
+  state.desc = parseFloat(document.getElementById('f-desc').value)||0;
+}
+function syncFormDesdeEstado(){
+  document.getElementById('f-codigo').value = state.codigo;
+  document.getElementById('f-fecha').value = state.fecha;
+  document.getElementById('f-fechaEntrega').value = state.fechaEntrega;
+  document.getElementById('f-fechaVencimiento').value = state.fechaVencimiento;
+  document.getElementById('f-centroCompra').value = state.centroCompra;
+  document.getElementById('f-almacen').value = state.almacen;
+  document.getElementById('f-pedido').value = state.pedido;
+  document.getElementById('f-nroCotizacion').value = state.nroCotizacion;
+  document.getElementById('f-tratadoCon').value = state.tratadoCon||'';
+  document.getElementById('f-proyectoTexto').value = state.proyectoTexto||'';
+  document.getElementById('f-fechaEntregaText').value = state.fechaEntregaText;
+  document.getElementById('f-lugarEntrega').value = state.lugarEntrega;
+  document.getElementById('f-proveedor').value = state.proveedorId;
+  document.getElementById('f-proyecto').value = state.proyectoId;
+  document.getElementById('f-formaPago').value = state.formaPago;
+  document.getElementById('f-moneda').value = state.moneda;
+  document.getElementById('f-notas').value = state.notas;
+  document.getElementById('f-igv').value = state.igv;
+  document.getElementById('f-desc').value = state.desc;
+  document.getElementById('f-gestor').value = state.gestorId;
+  document.getElementById('f-solicitante').value = state.solicitanteId;
+  document.getElementById('f-aprobador').value = state.aprobadorId;
+  actualizarPreviewMail();
+}
+
+// ===== RENDER A4 =====
+function render(){
+  syncEstadoDesdeForm();
+  const t = totales();
+  const cfg = DB.getConfig();
+  const monSym = state.moneda === 'USD' ? 'US$' : 'S/';
+  const monLetras = state.moneda === 'USD' ? 'dolares americanos' : 'soles';
+  const fechaFmt = state.fecha ? new Date(state.fecha+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+
+  const rowsItems = state.items.map((it,i) => `
+    <tr>
+      <td class="cen">${i+1}</td>
+      <td class="codigo">${escapeHtml(it.codigo||'')}</td>
+      <td>${escapeHtml(it.descripcion)}</td>
+      <td class="cen">${escapeHtml(it.um||'')}</td>
+      <td class="cen">${fmtNum(it.cantidad,0)}</td>
+      <td class="cen">${escapeHtml(it.tEntrega||'')}</td>
+      <td class="num">${fmtNum(it.precio,2)}</td>
+      <td class="num">${fmtNum(it.cantidad*it.precio,2)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('sheet').innerHTML = `
+    <!-- ENCABEZADO -->
+    <div class="head">
+      <div class="logo">
+        <img src="../assets/logo-consitec.png" alt="CONSITEC">
+      </div>
+      <div class="empresa-info">
+        <div class="row-info"><b>OFICINAS:</b><span>${escapeHtml(cfg.direccion||'')}</span></div>
+        <div class="row-info"><b>TELEFONOS:</b><span>${escapeHtml(cfg.telefono||'')}</span></div>
+        <div class="row-info"><b>WEB:</b><span>www.consitecing.com &nbsp;&nbsp; <b>RUC:</b> ${escapeHtml(cfg.ruc||'')}</span></div>
+        <div class="row-info"><b>Fecha:</b><span>${fechaFmt}</span></div>
+      </div>
+    </div>
+
+    <!-- TÍTULO -->
+    <div class="titulo-oc">ORDEN DE COMPRA Nº ${escapeHtml(state.codigo)}</div>
+
+    <!-- BLOQUE INFO 1 -->
+    <div class="info-block">
+      <div class="k">Centro de Compra</div><div class="v">${escapeHtml(state.centroCompra||'')}</div>
+      <div class="k">Gestor de Compra</div><div class="v">${escapeHtml(state.gestorNombre||'')} <span class="v-mail">${escapeHtml(state.gestorEmail||'')}</span></div>
+      <div class="k">Solicitante:</div><div class="v">${escapeHtml(state.solicitanteNombre||'')} <span class="v-mail">${escapeHtml(state.solicitanteEmail||'')}</span></div>
+      <div class="k">Aprobado por:</div><div class="v">${escapeHtml(state.aprobadorNombre||'')} <span class="v-mail">${escapeHtml(state.aprobadorEmail||'')}</span></div>
+      <div class="k">Proyecto:</div><div class="v">${escapeHtml(state.proyectoTexto||state.proyectoNombre||'')}</div>
+      <div class="k">Almacén:</div><div class="v">${escapeHtml(state.almacen||'')} &nbsp;&nbsp;&nbsp; <b>Pedido:</b> ${escapeHtml(state.pedido||'')}</div>
+    </div>
+
+    <hr class="sep">
+
+    <!-- BLOQUE PROVEEDOR -->
+    <div class="prov-block">
+      <div class="k">Proveedor:</div><div class="v" style="grid-column:span 3">${escapeHtml(state.proveedorRazon||'')}</div>
+
+      <div class="k">Dirección:</div><div class="v" style="grid-column:span 3">${escapeHtml(state.proveedorDir||'')}</div>
+
+      <div class="k">Tratado con:</div><div class="v" style="grid-column:span 3">${escapeHtml(state.tratadoCon||'')}</div>
+
+      <div class="k">Forma de Pago:</div><div class="v">${escapeHtml(state.formaPago||'')}</div>
+      <div class="k">RUC:</div><div class="v">${escapeHtml(state.proveedorRuc||'')}</div>
+
+      <div class="k">Nº de cotización:</div><div class="v">${escapeHtml(state.nroCotizacion||'')}</div>
+      <div class="k">Teléfono</div><div class="v">${escapeHtml(state.proveedorTel||'')}</div>
+
+      <div class="k">Fecha de entrega:</div><div class="v" style="grid-column:span 3">${escapeHtml(state.fechaEntregaText||'')}</div>
+
+      <div class="k">Lugar de entrega:</div><div class="v" style="grid-column:span 3">${escapeHtml(state.lugarEntrega||'')}</div>
+    </div>
+
+    <!-- TABLA ITEMS -->
+    <table class="items">
+      <thead>
+        <tr>
+          <th class="cen" style="width:25px">Ítem</th>
+          <th style="width:75px">Código/Modelo</th>
+          <th>Descripción</th>
+          <th class="cen" style="width:45px">Unidades</th>
+          <th class="cen" style="width:50px">Cantidad</th>
+          <th class="cen" style="width:60px">T. Entrega</th>
+          <th class="num" style="width:75px">P. Unit. (${monSym})</th>
+          <th class="num" style="width:75px">Parcial (${monSym})</th>
+        </tr>
+      </thead>
+      <tbody>${rowsItems || '<tr><td colspan="8" style="text-align:center;color:#999;padding:14px">Sin items</td></tr>'}</tbody>
+    </table>
+
+    <!-- TOTALES -->
+    <div class="totales">
+      <div class="line"><span>Sub total:</span><span>${monSym} ${fmtNum(t.subtotal,2)}</span></div>
+      ${state.desc>0 ? `<div class="line"><span>Descuento (${state.desc}%):</span><span>- ${monSym} ${fmtNum(t.descuento,2)}</span></div>`:''}
+      <div class="line"><span>IGV (%${state.igv}):</span><span>${monSym} ${fmtNum(t.igv,2)}</span></div>
+      <div class="line tot"><span>TOTAL CON IGV:</span><span>${monSym} ${fmtNum(t.total,2)}</span></div>
+    </div>
+
+    <!-- SON -->
+    <div class="son"><b>SON:</b> ${numEnLetras(t.total).replace('SOLES', monLetras.toUpperCase()).toLowerCase().replace(/^./, s=>s.toUpperCase())}.</div>
+
+    <!-- OBSERVACIÓN -->
+    <div class="observacion-block">Observación:</div>
+    ${state.notas.trim() ? `<div class="observacion-block-text">${escapeHtml(state.notas).replace(/\n/g,'<br>')}</div>`:''}
+
+    <!-- FIRMA (imagen del gerente con nombre/cargo/empresa incluidos) -->
+    <div class="firma">
+      <img class="firma-img" src="../assets/firma-gerente.png" alt="Firma Gerente">
+    </div>
+
+    <!-- FACTURAR A -->
+    <div class="facturar-block">
+      <div class="izq">
+        <b>FACTURAR A: ${escapeHtml(cfg.empresa||'')}</b><br>
+        <span class="dir">${escapeHtml((cfg.direccion||'').toUpperCase())}</span>
+      </div>
+      <div class="der">
+        RUC: ${escapeHtml(cfg.ruc||'')}
+      </div>
+    </div>
+
+    <!-- OBSERVACIONES LEGALES -->
+    <div class="obs-legales">
+      <h4>Observaciones:</h4>
+      <ol start="2">
+        <li>El Tribunal Fiscal ha emitido la RTF 09882-9-2013 de observancia obligatoria, exigiendo que todos los comprobantes de pago deben contener entre otros requisitos, como información impresa, la dirección completa del establecimiento en el cual se emiten, esto es INCLUYENDO DISTRITO Y LA PROVINCIA. De no ser así no tendrá validez.</li>
+        <li>INDICAR Nº DE ORDEN DE SERVICIO EN SU FACTURA Y ADJUNTAR COPIA EN LA MISMA.</li>
+        <li>TODOS LOS PRODUCTOS DEBEN ESTAR DEBIDAMENTE EMBALADOS</li>
+        <li>La garantía que otorga el Proveedor, por sus productos y/o servicios es que debe ser totalmente nuevos y de primera calidad con las medidas especificadas en la presente orden, dando una garantía no menor de un año.</li>
+        <li>El Proveedor, está obligado a presentar un Certificado de Calidad acompañado de la Ficha Técnica de sus productos y/o servicios.</li>
+        <li>Penalidades por no suministrar en el tiempo de entrega según cotización y expresado en esta Orden de Servicio.</li>
+        <li>El plazo para el pago se computará a partir de la presentación de su factura que debe estar acompañada de la Guía de Remisión con V° B° de conformidad por parte de los técnicos de CONSITEC más una copia de la Orden de Compra.</li>
+        <li>En caso CONSITEC entregue un adelanto, solicitar una Carta Fianza o un cheque de garantía (renovable cada 30 días) por la misma cantidad que se está adelantando. Dichos documentos estarán en custodia de CONSITEC hasta la entrega del bien.</li>
+        <li>Por incumplimiento de los plazos, se aplicará una penalidad del 1% por día de atraso hasta un máximo del 10%. Superado el plazo, CONSITEC podrá resolver unilateralmente la Orden sin responsabilidad resarcitoria o indemnizatoria.</li>
+        <li>El Proveedor acepta las condiciones y términos expuestos en la presente Orden de Servicio.</li>
+      </ol>
+    </div>
+  `;
+  calcularMini();
+}
+
+// ===== GUARDAR / LISTAR =====
+function guardarOC(){
+  syncEstadoDesdeForm();
+  if(!state.proveedorId){ toast('Selecciona un proveedor','danger'); return; }
+  if(state.items.length === 0 || state.items.every(it => !it.descripcion.trim())){
+    toast('Agrega al menos un item','danger'); return;
+  }
+  const t = totales();
+  state.estado = calcularEstado();
+  const item = {...state, id: state.id||undefined, totales: t};
+  const saved = DB.ocs.save(item);
+  state.id = saved.id;
+  toast('OC guardada: ' + state.codigo, 'success');
+}
+function nuevaOC(){
+  if(!confirm('¿Iniciar nueva OC? Se perderán cambios no guardados.')) return;
+  state = nuevoEstado();
+  init();
+}
+function cargarLista(){
+  const items = DB.ocs.list().sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0));
+  const tbody = document.getElementById('tblLista');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay OCs guardadas.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(o => {
+      const total = o.totales?.total || 0;
+      const pagado = (o.pagos||[]).reduce((s,p)=>s+(p.monto||0),0);
+      const saldo = total - pagado;
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const vence = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00') : null;
+      let est = 'pendiente';
+      if(saldo <= 0.01) est = 'pagada';
+      else if(pagado > 0) est = 'pagada_parcial';
+      if(est !== 'pagada' && vence && vence < hoy) est = 'vencida';
+      const monSym = (o.moneda||'PEN')==='USD'?'US$':'S/';
+      const venceFmt = o.fechaVencimiento ? new Date(o.fechaVencimiento+'T00:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      return `
+        <tr>
+          <td><b>${escapeHtml(o.codigo)}</b></td>
+          <td><small>${escapeHtml(o.proveedorRazon||'')}</small></td>
+          <td><small>${escapeHtml((o.proyectoTexto||o.proyectoNombre||'—').slice(0,30))}</small></td>
+          <td><small>${fmtDate(o.updatedAt)}</small></td>
+          <td><small>${venceFmt}</small></td>
+          <td class="num">${monSym} ${fmtNum(total,2)}</td>
+          <td class="num text-success">${monSym} ${fmtNum(pagado,2)}</td>
+          <td class="num"><b>${monSym} ${fmtNum(saldo,2)}</b></td>
+          <td><span class="badge ${badgeClass(est)}">${lblEstado(est)}</span></td>
+          <td class="actions">
+            <button class="sm ghost" onclick="cargarOC('${o.id}')">Abrir</button>
+            <button class="sm danger" onclick="eliminarOC('${o.id}')">×</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+  document.getElementById('modalLista').classList.add('show');
+}
+function badgeClass(est){
+  return {pendiente:'enviada', pagada_parcial:'facturada', pagada:'pagada', vencida:'rechazada'}[est] || 'borrador';
+}
+function cargarOC(id){
+  const o = DB.ocs.get(id); if(!o) return;
+  state = {...nuevoEstado(), ...o};
+  syncFormDesdeEstado();
+  renderItems();
+  renderPagos();
+  render();
+  document.getElementById('modalLista').classList.remove('show');
+  toast('OC cargada: ' + state.codigo);
+}
+function eliminarOC(id){
+  if(!confirm('¿Eliminar esta OC?')) return;
+  DB.ocs.remove(id);
+  cargarLista();
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+init();
+</script>
+</body>
+</html>

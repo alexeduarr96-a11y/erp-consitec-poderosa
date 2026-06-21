@@ -1,0 +1,1894 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gantt Pro — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+/* ===========================================================
+   GANTT PRO — Microsoft Project / Primavera P6 style
+   =========================================================== */
+:root{
+  /* Light theme */
+  --gp-bg:#f5f7fa;
+  --gp-panel:#ffffff;
+  --gp-border:#cbd5e1;
+  --gp-border-soft:#e2e8f0;
+  --gp-text:#0f172a;
+  --gp-text-muted:#64748b;
+
+  --gp-azul:#0f3a5f;
+  --gp-azul2:#1d4d7a;
+  --gp-azul3:#2563eb;
+  --gp-azul-soft:#e7f0f9;
+
+  --gp-fila-h:28px;
+  --gp-bar-h:10px;
+  --gp-bar-top:9px;
+
+  --gp-tarea:#7eb7e8;             /* azul claro elegante */
+  --gp-tarea-dark:#4a90c8;        /* progreso */
+  --gp-done:#86c789;              /* verde sólido */
+  --gp-done-dark:#5da961;
+  --gp-late:#e87878;              /* rojo suave */
+  --gp-late-dark:#c85555;
+  --gp-warn:#f0c060;
+  --gp-resumen:#1f2937;
+  --gp-critico:#dc2626;
+  --gp-baseline:#9ca3af;
+  --gp-hoy:#dc2626;
+  --gp-wknd:rgba(126, 211, 33, .14);  /* verde claro fines de semana */
+
+  --gp-row-hover:#f1f5f9;
+  --gp-row-sel:#fef3c7;
+
+  --gp-toolbar:#ffffff;
+  --gp-header:linear-gradient(180deg,#0f3a5f,#1d4d7a);
+  --gp-header2:#1d4d7a;
+  --gp-statusbar:#1e293b;
+}
+html.dark{
+  --gp-bg:#0f172a;
+  --gp-panel:#1e293b;
+  --gp-border:#475569;
+  --gp-border-soft:#334155;
+  --gp-text:#e2e8f0;
+  --gp-text-muted:#94a3b8;
+
+  --gp-azul:#1e3a5f;
+  --gp-azul2:#2d4f7a;
+  --gp-azul-soft:#1e3a5f33;
+
+  --gp-row-hover:#334155;
+  --gp-row-sel:#78350f;
+  --gp-wknd:rgba(255,255,255,.04);
+
+  --gp-toolbar:#1e293b;
+  --gp-header:linear-gradient(180deg,#0a1f33,#1a3759);
+  --gp-header2:#1a3759;
+  --gp-statusbar:#0f172a;
+}
+
+body{font-family:'Inter','Segoe UI Variable','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:var(--gp-bg);color:var(--gp-text)}
+
+/* ===== Toolbar profesional ===== */
+.gp-toolbar{
+  background:var(--gp-toolbar);border:1px solid var(--gp-border);border-radius:6px;
+  padding:6px 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05);
+}
+.gp-toolbar .gp-group{display:flex;align-items:center;gap:1px;background:var(--gp-border-soft);border-radius:5px;padding:2px}
+.gp-toolbar .gp-group button{
+  background:transparent;color:var(--gp-text);border:none;
+  padding:5px 9px;font-size:11.5px;cursor:pointer;border-radius:3px;
+  font-weight:500;box-shadow:none;display:inline-flex;align-items:center;gap:4px;
+  white-space:nowrap;
+}
+.gp-toolbar .gp-group button:hover{background:var(--gp-panel);color:var(--gp-azul3)}
+.gp-toolbar .gp-group button.active{background:var(--gp-azul);color:#fff}
+.gp-toolbar .gp-group button:disabled{opacity:.4;cursor:not-allowed}
+.gp-toolbar .gp-group button.danger:hover{background:#dc2626;color:#fff}
+.gp-toolbar .gp-group button svg{width:14px;height:14px}
+.gp-toolbar select{
+  background:var(--gp-panel);color:var(--gp-text);border:1px solid var(--gp-border);
+  border-radius:4px;padding:5px 8px;font-size:12px;font-weight:500;font-family:inherit;
+  max-width:340px;
+}
+.gp-toolbar label{font-size:11px;font-weight:600;color:var(--gp-text-muted);margin:0;text-transform:uppercase;letter-spacing:.5px}
+.gp-toolbar .gp-sep{width:1px;height:24px;background:var(--gp-border)}
+.gp-toolbar .gp-spacer{flex:1}
+.gp-toolbar .gp-info{font-size:11px;color:var(--gp-text-muted);padding:0 8px}
+
+/* ===== Wrap principal ===== */
+.gp-wrap{
+  background:var(--gp-panel);border:1px solid var(--gp-border);border-radius:6px;
+  overflow:auto;box-shadow:0 1px 3px rgba(15,23,42,.07);
+  max-height:calc(100vh - 230px);
+  position:relative;
+}
+
+/* ===== Grid (sidebar + timeline) ===== */
+.gp-grid{
+  display:grid;grid-template-columns:auto 1fr;
+  font-size:12px;min-width:1100px;
+}
+
+/* ===== Sidebar (tabla) ===== */
+.gp-side{background:var(--gp-panel);border-right:2px solid var(--gp-azul);position:sticky;left:0;z-index:6}
+.gp-side table{border-collapse:collapse;width:auto;table-layout:fixed}
+.gp-side thead .gp-h1 th{
+  background:var(--gp-header);color:#fff;padding:6px 5px;font-size:9.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.6px;border:1px solid var(--gp-azul);
+  border-bottom:1px solid #0a2540;
+  text-align:center;position:sticky;top:0;z-index:7;height:30px;vertical-align:middle;
+}
+.gp-side thead .gp-h1 th.left{text-align:left;padding-left:8px}
+.gp-side thead .gp-h2 th{
+  background:var(--gp-header2);color:#cfd8e3;padding:5px 8px;font-size:10.5px;
+  font-weight:500;text-align:left;border:1px solid var(--gp-azul);
+  position:sticky;top:30px;z-index:7;height:24px;
+}
+.gp-side tbody td{
+  border:1px solid var(--gp-border-soft);padding:0;font-size:12px;color:var(--gp-text);
+  height:var(--gp-fila-h);vertical-align:middle;
+}
+.gp-side tbody td.idx{
+  text-align:center;background:var(--gp-bg);color:var(--gp-text-muted);
+  font-weight:600;font-size:11px;width:34px;border-right:1.5px solid var(--gp-border);
+}
+.gp-side tbody td.celda{padding:0 2px}
+.gp-side tbody td input{
+  width:100%;border:none;background:transparent;padding:6px 6px;font-size:12px;
+  font-family:inherit;color:inherit;outline:none;height:calc(var(--gp-fila-h) - 4px);
+  border-radius:2px;
+}
+.gp-side tbody td input:focus{
+  background:#fffbeb;outline:1.5px solid #f59e0b;color:#000;
+  box-shadow:inset 0 0 0 1px rgba(245,158,11,.3);
+}
+html.dark .gp-side tbody td input:focus{background:#451a03;color:#fef3c7;outline-color:#fbbf24}
+.gp-side tbody td.num input{text-align:right;font-variant-numeric:tabular-nums}
+.gp-side tbody td.cen input{text-align:center}
+.gp-side tbody td.cri-flag{text-align:center;width:18px;font-weight:700}
+
+/* Tipos de fila */
+.gp-side tbody tr.proj td{background:#dbeafe}
+html.dark .gp-side tbody tr.proj td{background:#1e3a5f}
+.gp-side tbody tr.proj td input{font-weight:700;color:#1e3a8a}
+html.dark .gp-side tbody tr.proj td input{color:#93c5fd}
+.gp-side tbody tr.fase td{background:#eff6ff}
+html.dark .gp-side tbody tr.fase td{background:#1e293b}
+.gp-side tbody tr.fase td input{font-weight:600;color:#1e40af}
+html.dark .gp-side tbody tr.fase td input{color:#60a5fa}
+.gp-side tbody tr.tarea td{background:var(--gp-panel)}
+.gp-side tbody tr.seleccionada td{background:var(--gp-row-sel)!important}
+.gp-side tbody tr:hover td{background:var(--gp-row-hover)}
+.gp-side tbody tr.critica td input{color:var(--gp-critico);font-weight:600}
+.gp-side tbody tr.critica td.cri-flag{color:var(--gp-critico)}
+
+/* Nombre con indentación + triángulo */
+.gp-side .nombre-cell{display:flex;align-items:center;gap:2px;padding:0 4px;width:100%}
+.gp-side .nombre-cell .triang{
+  cursor:pointer;width:16px;text-align:center;font-size:9px;color:var(--gp-text-muted);
+  user-select:none;flex-shrink:0;
+}
+.gp-side .nombre-cell .triang:hover{color:var(--gp-azul3)}
+.gp-side .nombre-cell .triang.empty{visibility:hidden}
+.gp-side .nombre-cell input{flex:1;min-width:0}
+.gp-side .ind-0{padding-left:0}
+.gp-side .ind-1{padding-left:16px}
+.gp-side .ind-2{padding-left:32px}
+.gp-side .ind-3{padding-left:48px}
+.gp-side .ind-4{padding-left:64px}
+
+/* Resize handle de columnas */
+.gp-side th.resizable{position:relative}
+.gp-side th .resize-handle{
+  position:absolute;right:-3px;top:0;width:6px;height:100%;cursor:col-resize;z-index:8;
+  background:transparent;
+}
+.gp-side th .resize-handle:hover, .gp-side th .resize-handle.dragging{background:rgba(255,255,255,.3)}
+
+/* ===== Timeline ===== */
+.gp-time{position:relative;background:var(--gp-panel);overflow:hidden}
+.gp-time-h-wrap{position:sticky;top:0;z-index:5;background:var(--gp-panel)}
+.gp-time-h-1, .gp-time-h-2, .gp-time-h-3{display:flex;color:#fff;border-bottom:1px solid #0a2540}
+.gp-time-h-1{background:linear-gradient(180deg,var(--gp-azul) 0%, var(--gp-azul2) 100%);height:22px;font-size:11px;font-weight:600}
+.gp-time-h-2{background:var(--gp-azul2);height:20px;font-size:10.5px}
+.gp-time-h-3{background:var(--gp-header2);height:24px;font-size:10px;border-bottom:1px solid var(--gp-azul)}
+.gp-time-h-1 .h-cell, .gp-time-h-2 .h-cell{
+  flex:0 0 auto;text-align:center;padding:3px 4px;
+  border-right:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;
+  text-transform:capitalize;letter-spacing:.3px;
+}
+.gp-time-h-3 .dia-cell{
+  flex:0 0 auto;text-align:center;padding:3px 0;
+  border-right:1px solid rgba(255,255,255,.12);font-weight:600;
+  font-size:10px;color:#dbeafe;display:flex;flex-direction:column;justify-content:center;line-height:1.1;
+}
+.gp-time-h-3 .dia-cell .dnum{font-size:11px;font-weight:700;color:#fff}
+.gp-time-h-3 .dia-cell .dlet{font-size:8.5px;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+.gp-time-h-3 .dia-cell.wknd{background:#0f3a5f;color:#94a3b8}
+.gp-time-h-3 .dia-cell.wknd .dnum{color:#94a3b8}
+.gp-time-h-3 .dia-cell.hoy{background:#dc2626;color:#fff}
+.gp-time-h-3 .dia-cell.hoy .dnum{color:#fff}
+
+.gp-rows{
+  position:relative;
+  background-image:linear-gradient(to right, var(--gp-border-soft) 1px, transparent 1px);
+  background-size: var(--anchoDia, 28px) var(--gp-fila-h);
+}
+.gp-row{height:var(--gp-fila-h);border-bottom:1px solid var(--gp-border-soft);position:relative}
+.gp-row.proj{background:#eff6ff}
+html.dark .gp-row.proj{background:#1a2c45}
+.gp-row.fase{background:#f8fafc}
+html.dark .gp-row.fase{background:#1e293b}
+.gp-row.seleccionada{background:var(--gp-row-sel)!important}
+.gp-row .wknd-overlay{position:absolute;top:0;bottom:0;background:var(--gp-wknd);pointer-events:none}
+
+/* Barras — estilo minimal elegante (color sólido, sin gradiente) */
+.gp-bar{
+  position:absolute;top:var(--gp-bar-top);height:var(--gp-bar-h);
+  display:flex;align-items:center;padding:0 4px;
+  color:#fff;font-size:9.5px;font-weight:500;
+  white-space:nowrap;overflow:hidden;
+  cursor:pointer;z-index:2;
+  transition:opacity .12s;
+}
+.gp-bar:hover{opacity:.85;z-index:5}
+.gp-bar.dragging{opacity:.65;cursor:grabbing;z-index:10}
+.gp-bar .resize-h{
+  position:absolute;top:-2px;bottom:-2px;width:4px;cursor:ew-resize;z-index:3;background:transparent;
+}
+.gp-bar .resize-h.left{left:0}
+.gp-bar .resize-h.right{right:0}
+.gp-bar:hover .resize-h{background:rgba(0,0,0,.15)}
+.gp-bar.tarea{
+  background:var(--gp-tarea);
+  border:none;border-radius:2px;
+  cursor:grab;
+}
+.gp-bar.tarea .progreso{position:absolute;left:0;top:0;bottom:0;background:var(--gp-tarea-dark);border-radius:2px 0 0 2px;pointer-events:none}
+.gp-bar.tarea.done{background:var(--gp-done)}
+.gp-bar.tarea.done .progreso{background:var(--gp-done-dark)}
+.gp-bar.tarea.late{background:var(--gp-late)}
+.gp-bar.tarea.late .progreso{background:var(--gp-late-dark)}
+.gp-bar.tarea.warn{background:var(--gp-warn)}
+.gp-bar.tarea.warn .progreso{background:#c89c50}
+.gp-bar.tarea.critica{box-shadow:0 0 0 1.5px var(--gp-critico)}
+.gp-bar.tarea > span{color:rgba(0,0,0,.55);font-size:9px;font-weight:500;position:relative;z-index:2;text-shadow:none}
+
+/* Resumen (proyecto/fase) — más fino y elegante */
+.gp-bar.resumen-bar{background:var(--gp-resumen);height:5px;top:11px;border-radius:0}
+.gp-bar.resumen-bar::before{content:'';position:absolute;left:-1px;top:-1px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid var(--gp-resumen)}
+.gp-bar.resumen-bar::after{content:'';position:absolute;right:-1px;top:-1px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid var(--gp-resumen)}
+.gp-bar.resumen-bar.critica{box-shadow:0 0 0 1px var(--gp-critico)}
+.gp-bar.resumen-bar .label{position:absolute;left:calc(100% + 6px);top:-4px;color:var(--gp-text);font-size:10px;font-weight:600;white-space:nowrap}
+
+/* Baseline (línea base, debajo de la barra real) */
+.gp-baseline-bar{
+  position:absolute;top:calc(var(--gp-bar-top) + var(--gp-bar-h) + 2px);
+  height:3px;background:var(--gp-baseline);border-radius:1px;
+  z-index:1;
+}
+
+/* Línea de dependencias — más finas y sutiles */
+.gp-dep{position:absolute;pointer-events:none;z-index:1;top:0;left:0}
+.gp-dep svg{overflow:visible;display:block}
+.gp-dep path{fill:none;stroke:#4a90c8;stroke-width:1}
+.gp-dep path.critica{stroke:var(--gp-critico);stroke-width:1.3}
+.gp-dep .arrow{fill:#4a90c8}
+.gp-dep .arrow.critica{fill:var(--gp-critico)}
+
+/* Línea HOY */
+.gp-hoy{position:absolute;top:0;bottom:0;width:2px;background:var(--gp-hoy);z-index:3;pointer-events:none;box-shadow:0 0 4px rgba(220,38,38,.4)}
+
+/* Tooltip al hover de barra */
+.gp-tooltip{
+  position:fixed;background:#0f172a;color:#fff;padding:8px 12px;border-radius:5px;
+  font-size:11px;line-height:1.5;pointer-events:none;z-index:10000;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:280px;
+  border:1px solid #475569;
+}
+.gp-tooltip b{color:#fbbf24}
+.gp-tooltip .sep{height:1px;background:#334155;margin:5px 0}
+
+/* Status bar abajo */
+.gp-statusbar{
+  background:var(--gp-statusbar);color:#cbd5e1;padding:6px 12px;border-radius:6px;
+  margin-top:6px;font-size:11px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+}
+.gp-statusbar .item{display:flex;align-items:center;gap:4px}
+.gp-statusbar .item b{color:#fff;font-weight:600}
+.gp-statusbar .sep{width:1px;height:14px;background:#475569}
+
+.empty-msg{padding:50px;text-align:center;color:var(--gp-text-muted);background:var(--gp-bg);border-radius:6px}
+.empty-msg h3{margin:0 0 8px;color:var(--gp-text)}
+
+/* Modal de información de tarea */
+.modal-tarea .modal{max-width:680px}
+.modal-tarea .seccion-titulo{
+  background:var(--gp-header);color:#fff;
+  padding:6px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;
+  margin:14px 0 8px;border-radius:4px;
+}
+.modal-tarea .row-info{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-tarea label{font-size:10.5px;font-weight:600;color:var(--gp-text-muted);margin:5px 0 2px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Calendario laboral modal */
+.gp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px;margin-top:8px}
+.gp-cal-grid label{
+  display:flex;align-items:center;gap:5px;padding:6px 8px;background:var(--gp-bg);border-radius:4px;
+  cursor:pointer;margin:0;font-weight:500;text-transform:none;letter-spacing:0;
+}
+.gp-cal-grid input{width:auto}
+
+@media print{
+  .topbar,.no-print{display:none!important}
+  .gp-wrap{max-height:none;border:none;overflow:visible}
+  .gp-side, .gp-time-h-wrap{position:static}
+}
+
+/* SVG icons */
+.icn{width:14px;height:14px;display:inline-block;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Gantt Pro — Cronograma de Proyectos</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Cotizaciones</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html" class="active">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proveedores.html">Proveedores</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <!-- =========== TOOLBAR =========== -->
+  <div class="gp-toolbar no-print">
+    <label>Proyecto</label>
+    <select id="fProyecto" onchange="cargarProyecto()">
+      <option value="">— Selecciona proyecto —</option>
+    </select>
+
+    <span class="gp-sep"></span>
+
+    <!-- Insertar / eliminar -->
+    <div class="gp-group" title="Tareas">
+      <button onclick="agregarTarea()" title="Insertar tarea (Ins)">＋ Tarea</button>
+      <button onclick="agregarHito()" title="Insertar hito">◆ Hito</button>
+      <button class="danger" onclick="eliminarSeleccionada()" title="Eliminar (Del)">🗑</button>
+    </div>
+
+    <!-- Mover / sangrar -->
+    <div class="gp-group" title="Estructura">
+      <button onclick="moverTarea(-1)" title="Subir (Alt+↑)">↑</button>
+      <button onclick="moverTarea(1)" title="Bajar (Alt+↓)">↓</button>
+      <button onclick="sangrar(1)" title="Sangría (Alt+Shift+→)">→</button>
+      <button onclick="sangrar(-1)" title="Anular sangría (Alt+Shift+←)">←</button>
+    </div>
+
+    <!-- Undo/Redo -->
+    <div class="gp-group" title="Historial">
+      <button id="btn-undo" onclick="undo()" title="Deshacer (Ctrl+Z)">↶</button>
+      <button id="btn-redo" onclick="redo()" title="Rehacer (Ctrl+Y)">↷</button>
+    </div>
+
+    <!-- Vista -->
+    <div class="gp-group" title="Vista">
+      <button onclick="abrirInfoTarea()" title="Info de tarea (doble click)">ℹ</button>
+      <button onclick="toggleCritico()" id="btn-critico" title="Resaltar ruta crítica">🔴 Crítica</button>
+      <button onclick="toggleBaseline()" id="btn-baseline" title="Mostrar línea base">📊 Base</button>
+      <button onclick="guardarBaseline()" title="Guardar línea base actual">💾 Base</button>
+    </div>
+
+    <!-- Herramientas -->
+    <div class="gp-group" title="Herramientas">
+      <button onclick="autoAgendar()" title="Auto-agendar (recalcular con predecesoras)">⚡ Auto</button>
+      <button onclick="abrirCalendario()" title="Calendario laboral">📅 Cal.</button>
+      <button onclick="generarPlantilla()" title="Generar tareas base">🪄 Plantilla</button>
+    </div>
+
+    <!-- Exportar -->
+    <div class="gp-group" title="Exportar">
+      <button onclick="exportarMSProject()" title="Exportar XML para MS Project">↧ XML</button>
+      <button onclick="exportarCSV()" title="Exportar CSV">↧ CSV</button>
+    </div>
+
+    <span class="gp-sep"></span>
+
+    <label>Zoom</label>
+    <div class="gp-group">
+      <button onclick="cambiarZoom(-1)" title="Acercar (-)">−</button>
+      <button onclick="cambiarZoom(1)" title="Alejar (+)">＋</button>
+      <button onclick="cambiarZoomPreset('dia')" id="z-dia">Día</button>
+      <button onclick="cambiarZoomPreset('semana')" id="z-semana" class="active">Sem</button>
+      <button onclick="cambiarZoomPreset('mes')" id="z-mes">Mes</button>
+      <button onclick="cambiarZoomPreset('trim')" id="z-trim">Trim</button>
+      <button onclick="cambiarZoomPreset('anio')" id="z-anio">Año</button>
+    </div>
+
+    <div class="gp-group">
+      <button onclick="centrarHoy()" title="Centrar en hoy">📅 Hoy</button>
+      <button onclick="ajustarVista()" title="Ajustar todas las tareas a la vista">⊞ Fit</button>
+      <button onclick="toggleDark()" id="btn-dark" title="Tema claro/oscuro">🌙</button>
+    </div>
+
+    <div class="gp-spacer"></div>
+    <button class="ghost sm" onclick="window.print()" title="Imprimir">🖨</button>
+    <button class="success sm" onclick="guardarTareas()" title="Guardar cronograma (Ctrl+S)">💾 Guardar</button>
+  </div>
+
+  <!-- =========== WRAP DEL GANTT =========== -->
+  <div class="gp-wrap" id="gp-wrap">
+    <div id="gp-content"></div>
+  </div>
+
+  <!-- =========== STATUS BAR =========== -->
+  <div class="gp-statusbar">
+    <span class="item">📋 <b id="sb-tareas">0</b> tareas</span>
+    <span class="sep"></span>
+    <span class="item">🔴 <b id="sb-criticas">0</b> críticas</span>
+    <span class="sep"></span>
+    <span class="item">📅 <b id="sb-rango">—</b></span>
+    <span class="sep"></span>
+    <span class="item">⏱ <b id="sb-dur">0</b> días</span>
+    <span class="sep"></span>
+    <span class="item">✅ <b id="sb-avance">0%</b> avance</span>
+    <span class="sep"></span>
+    <span class="item">🔍 Zoom: <b id="sb-zoom">Semana</b></span>
+    <span class="gp-spacer" style="flex:1"></span>
+    <span class="item" id="sb-mensaje">Listo</span>
+  </div>
+
+</main>
+
+<!-- ===== Modal Info Tarea ===== -->
+<div class="modal-overlay modal-tarea" id="modalTarea">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTareaTitulo">Información de tarea</h3>
+      <button class="close" onclick="cerrarInfoTarea()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ft-id">
+      <label>Nombre de la tarea *</label>
+      <input id="ft-nombre" placeholder="Nombre de la tarea">
+
+      <div class="seccion-titulo">General</div>
+      <div class="row-info">
+        <div>
+          <label>Tipo</label>
+          <select id="ft-tipo">
+            <option value="proj">📁 Proyecto</option>
+            <option value="fase">📂 Fase</option>
+            <option value="tarea" selected>📄 Tarea</option>
+            <option value="hito">◆ Hito (duración 0)</option>
+          </select>
+        </div>
+        <div>
+          <label>Avance (%)</label>
+          <input id="ft-avance" type="number" min="0" max="100" step="5">
+        </div>
+      </div>
+
+      <div class="row-info">
+        <div><label>Fecha de inicio</label><input id="ft-fechaIni" type="date"></div>
+        <div><label>Fecha de fin</label><input id="ft-fechaFin" type="date"></div>
+      </div>
+
+      <div class="row-info">
+        <div><label>Duración (días laborales)</label><input id="ft-duracion" type="number" min="0"></div>
+        <div><label>Predecesoras (ej: 4FS, 5FS+2d)</label><input id="ft-predecesoras" placeholder="—"></div>
+      </div>
+
+      <div class="seccion-titulo">Asignación y prioridad</div>
+      <div class="row-info">
+        <div>
+          <label>Responsable</label>
+          <select id="ft-responsableId"><option value="">— Sin asignar —</option></select>
+        </div>
+        <div>
+          <label>Prioridad</label>
+          <select id="ft-prioridad">
+            <option value="baja">🟢 Baja</option>
+            <option value="media" selected>🟡 Media</option>
+            <option value="alta">🟠 Alta</option>
+            <option value="critica">🔴 Crítica</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="seccion-titulo">Notas</div>
+      <textarea id="ft-notas" rows="4" placeholder="Observaciones, riesgos, instrucciones especiales..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarInfoTarea()">Cancelar</button>
+      <button class="success" onclick="guardarInfoTarea()">💾 Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal Calendario laboral ===== -->
+<div class="modal-overlay" id="modalCalendario">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📅 Calendario laboral</h3>
+      <button class="close" onclick="document.getElementById('modalCalendario').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Días laborables de la semana</label>
+      <div class="gp-cal-grid">
+        <label><input type="checkbox" id="lab-1" checked> Lunes</label>
+        <label><input type="checkbox" id="lab-2" checked> Martes</label>
+        <label><input type="checkbox" id="lab-3" checked> Miércoles</label>
+        <label><input type="checkbox" id="lab-4" checked> Jueves</label>
+        <label><input type="checkbox" id="lab-5" checked> Viernes</label>
+        <label><input type="checkbox" id="lab-6"> Sábado</label>
+        <label><input type="checkbox" id="lab-0"> Domingo</label>
+      </div>
+      <label class="mt-2">Horas por día laboral</label>
+      <input id="cal-horas" type="number" min="1" max="24" value="8">
+      <label>Feriados (uno por línea, formato YYYY-MM-DD)</label>
+      <textarea id="cal-feriados" rows="4" placeholder="2026-07-28&#10;2026-07-29&#10;2026-12-25"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="document.getElementById('modalCalendario').classList.remove('show')">Cancelar</button>
+      <button class="success" onclick="guardarCalendario()">💾 Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip flotante -->
+<div class="gp-tooltip" id="gp-tooltip" style="display:none"></div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+'use strict';
+
+// =============================================================
+// STATE & CONSTANTES
+// =============================================================
+const ZOOM_LEVELS = [
+  {key:'anio', label:'Año', anchoDia:1, headers:['anio','trim','mes']},
+  {key:'trim', label:'Trimestre', anchoDia:3, headers:['anio','trim','mes']},
+  {key:'mes', label:'Mes', anchoDia:8, headers:['anio','mes','semana']},
+  {key:'semana', label:'Semana', anchoDia:22, headers:['mes','semana','dia']},
+  {key:'dia', label:'Día', anchoDia:42, headers:['mes','semana','dia']},
+];
+let zoomIdx = 3; // semana por defecto
+
+let proyectoActual = null;
+let tareas = [];
+let baseline = []; // snapshot de fechas
+let seleccionadaId = null;
+let calendario = {
+  laborables: [1,2,3,4,5], // L-V
+  horasDia: 8,
+  feriados: [],
+};
+let modoCritico = true;
+let modoBaseline = false;
+let anchoColumnas = {
+  idx:34, cri:18, nombre:280, dur:55, ini:105, fin:105, avance:55, pred:90, resp:140,
+};
+
+// Undo/Redo
+let undoStack = [];
+let redoStack = [];
+const MAX_UNDO = 50;
+function snapshot(){
+  return JSON.stringify({tareas, calendario, baseline});
+}
+function pushUndo(){
+  undoStack.push(snapshot());
+  if(undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack = [];
+  actualizarBtnUndoRedo();
+}
+function undo(){
+  if(undoStack.length === 0) return;
+  const ahora = snapshot();
+  redoStack.push(ahora);
+  const prev = undoStack.pop();
+  const obj = JSON.parse(prev);
+  tareas = obj.tareas; calendario = obj.calendario; baseline = obj.baseline;
+  render();
+  actualizarBtnUndoRedo();
+  mostrarMensaje('Deshecho');
+}
+function redo(){
+  if(redoStack.length === 0) return;
+  const ahora = snapshot();
+  undoStack.push(ahora);
+  const next = redoStack.pop();
+  const obj = JSON.parse(next);
+  tareas = obj.tareas; calendario = obj.calendario; baseline = obj.baseline;
+  render();
+  actualizarBtnUndoRedo();
+  mostrarMensaje('Rehecho');
+}
+function actualizarBtnUndoRedo(){
+  document.getElementById('btn-undo').disabled = undoStack.length === 0;
+  document.getElementById('btn-redo').disabled = redoStack.length === 0;
+}
+
+// =============================================================
+// INIT
+// =============================================================
+function init(){
+  // Tema
+  if(localStorage.getItem('gp-dark') === '1') document.documentElement.classList.add('dark');
+  // Ancho columnas guardadas
+  const anchosSaved = localStorage.getItem('gp-anchos');
+  if(anchosSaved){ try { Object.assign(anchoColumnas, JSON.parse(anchosSaved)); } catch(e){} }
+
+  poblarProyectos();
+  const params = new URLSearchParams(location.search);
+  const proyId = params.get('proyectoId');
+  if(proyId){
+    document.getElementById('fProyecto').value = proyId;
+    cargarProyecto();
+  } else {
+    renderVacio();
+  }
+  // Atajos
+  document.addEventListener('keydown', onKeyDown);
+  actualizarBtnUndoRedo();
+}
+
+function onKeyDown(e){
+  const enInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  // Ctrl+Z, Ctrl+Y, Ctrl+S funcionan siempre
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey){ e.preventDefault(); undo(); return; }
+  if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))){ e.preventDefault(); redo(); return; }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){ e.preventDefault(); guardarTareas(); return; }
+  if(enInput) return;
+  // Atajos sólo si no estamos en un input
+  if(e.altKey && e.shiftKey && e.key === 'ArrowRight'){ e.preventDefault(); sangrar(1); }
+  else if(e.altKey && e.shiftKey && e.key === 'ArrowLeft'){ e.preventDefault(); sangrar(-1); }
+  else if(e.altKey && e.key === 'ArrowUp'){ e.preventDefault(); moverTarea(-1); }
+  else if(e.altKey && e.key === 'ArrowDown'){ e.preventDefault(); moverTarea(1); }
+  else if(e.key === 'Insert'){ e.preventDefault(); agregarTarea(); }
+  else if(e.key === 'Delete' && seleccionadaId){ e.preventDefault(); eliminarSeleccionada(); }
+  else if(e.key === '+'){ e.preventDefault(); cambiarZoom(1); }
+  else if(e.key === '-'){ e.preventDefault(); cambiarZoom(-1); }
+  else if(e.key === 'Enter' && seleccionadaId){ e.preventDefault(); abrirInfoTarea(); }
+}
+
+function poblarProyectos(){
+  const sel = document.getElementById('fProyecto');
+  const proys = DB.proyectos.list().sort((a,b) => (a.codigo||'').localeCompare(b.codigo||''));
+  sel.innerHTML = '<option value="">— Selecciona proyecto —</option>' +
+    proys.map(p => `<option value="${p.id}">${escapeHtml(p.codigo||'')} — ${escapeHtml(p.nombre||'')}</option>`).join('');
+}
+
+function cargarProyecto(){
+  const id = document.getElementById('fProyecto').value;
+  if(!id){ proyectoActual = null; tareas = []; renderVacio(); return; }
+  proyectoActual = DB.proyectos.get(id);
+  if(!proyectoActual){ renderVacio(); return; }
+
+  let raw = proyectoActual.tareas || [];
+  tareas = raw.map(t => ({
+    id: t.id || ('t_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    nombre: t.nombre || '',
+    nivel: t.nivel != null ? t.nivel : 2,
+    fechaIni: t.fechaIni || proyectoActual.fechaInicio || todayISO(),
+    fechaFin: t.fechaFin || proyectoActual.fechaFin || todayISO(),
+    duracion: t.duracion != null ? t.duracion : calcularDuracionLab(t.fechaIni, t.fechaFin),
+    avance: t.avance || 0,
+    predecesoras: t.predecesoras || '',
+    colapsada: !!t.colapsada,
+    responsableId: t.responsableId || '',
+    prioridad: t.prioridad || 'media',
+    notas: t.notas || '',
+    esHito: !!t.esHito,
+    // Critical path (calculado)
+    es: 0, ef: 0, ls: 0, lf: 0, slack: 0, critica: false,
+  }));
+  baseline = proyectoActual.baseline || [];
+  if(proyectoActual.calendario) calendario = {...calendario, ...proyectoActual.calendario};
+
+  if(tareas.length === 0){
+    tareas.push({
+      id: 't_'+Date.now().toString(36),
+      nombre: proyectoActual.nombre || 'Proyecto',
+      nivel: 0,
+      fechaIni: proyectoActual.fechaInicio || todayISO(),
+      fechaFin: proyectoActual.fechaFin || todayISO(),
+      duracion: calcularDuracionLab(proyectoActual.fechaInicio, proyectoActual.fechaFin),
+      avance: proyectoActual.avance || 0,
+      predecesoras: '', prioridad:'media', notas:'',
+    });
+  }
+  undoStack = []; redoStack = [];
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+// =============================================================
+// HELPERS DE FECHAS (con calendario laboral)
+// =============================================================
+function parseDate(s){ if(!s) return null; const d = new Date(s+'T00:00:00'); return isNaN(d)?null:d; }
+function fmtISO(d){ return d.toISOString().slice(0,10); }
+function addDays(d, n){ const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+function esDiaLaborable(d){
+  if(!calendario.laborables.includes(d.getDay())) return false;
+  if(calendario.feriados.includes(fmtISO(d))) return false;
+  return true;
+}
+
+// Calcula la duración en días LABORALES entre 2 fechas (incluyendo ambos extremos)
+function calcularDuracionLab(ini, fin){
+  const a = parseDate(ini), b = parseDate(fin);
+  if(!a || !b || b < a) return 1;
+  let dias = 0;
+  let cursor = new Date(a);
+  while(cursor <= b){
+    if(esDiaLaborable(cursor)) dias++;
+    cursor = addDays(cursor, 1);
+  }
+  return Math.max(1, dias);
+}
+
+// Calcula la fecha de fin sumando N días LABORALES al inicio
+function calcularFinLab(ini, dur){
+  const a = parseDate(ini); if(!a) return ini;
+  if(dur <= 0) return ini; // Hito: misma fecha
+  let cursor = new Date(a);
+  // Si el inicio no es laborable, avanzar al primero laborable
+  while(!esDiaLaborable(cursor)) cursor = addDays(cursor, 1);
+  let cuenta = 1; // el día de inicio cuenta
+  while(cuenta < dur){
+    cursor = addDays(cursor, 1);
+    if(esDiaLaborable(cursor)) cuenta++;
+  }
+  return fmtISO(cursor);
+}
+// Suma N días laborales a una fecha (skip weekends/feriados)
+function addDiasLab(d, n){
+  let cursor = new Date(d);
+  let cuenta = 0;
+  while(cuenta < n){
+    cursor = addDays(cursor, 1);
+    if(esDiaLaborable(cursor)) cuenta++;
+  }
+  return cursor;
+}
+
+// =============================================================
+// JERARQUÍA
+// =============================================================
+function indiceVisible(){
+  const visible = [];
+  let saltarHastaNivel = -1;
+  for(let i=0;i<tareas.length;i++){
+    const t = tareas[i];
+    if(saltarHastaNivel >= 0 && t.nivel > saltarHastaNivel) continue;
+    saltarHastaNivel = -1;
+    visible.push(i);
+    if(t.colapsada) saltarHastaNivel = t.nivel;
+  }
+  return visible;
+}
+function hijosDe(idxPadre){
+  const padre = tareas[idxPadre];
+  const hijos = [];
+  for(let i = idxPadre+1; i < tareas.length; i++){
+    if(tareas[i].nivel <= padre.nivel) break;
+    hijos.push(i);
+  }
+  return hijos;
+}
+function esResumen(idx){
+  return tareas[idx+1] && tareas[idx+1].nivel > tareas[idx].nivel;
+}
+function recalcularResumenes(){
+  for(let i = tareas.length - 1; i >= 0; i--){
+    if(esResumen(i)){
+      const hijosIdx = hijosDe(i).filter(idx => tareas[idx].nivel === tareas[i].nivel + 1);
+      if(hijosIdx.length === 0) continue;
+      const fechasIni = hijosIdx.map(idx => parseDate(tareas[idx].fechaIni)).filter(Boolean);
+      const fechasFin = hijosIdx.map(idx => parseDate(tareas[idx].fechaFin)).filter(Boolean);
+      if(fechasIni.length === 0 || fechasFin.length === 0) continue;
+      tareas[i].fechaIni = fmtISO(new Date(Math.min(...fechasIni.map(d=>d.getTime()))));
+      tareas[i].fechaFin = fmtISO(new Date(Math.max(...fechasFin.map(d=>d.getTime()))));
+      tareas[i].duracion = calcularDuracionLab(tareas[i].fechaIni, tareas[i].fechaFin);
+      const totalDias = hijosIdx.reduce((s,idx) => s + (tareas[idx].duracion||0), 0);
+      const avancePond = totalDias > 0
+        ? hijosIdx.reduce((s,idx) => s + (tareas[idx].avance||0)*(tareas[idx].duracion||0), 0) / totalDias
+        : 0;
+      tareas[i].avance = Math.round(avancePond);
+    }
+  }
+}
+
+// =============================================================
+// CRITICAL PATH (CPM)
+// =============================================================
+function parsePredecesoras(str){
+  // Soporta formatos: "4", "4,5", "4FS", "5FS+2d", "6SS-1d"
+  if(!str) return [];
+  return str.split(/[,;\s]+/).filter(Boolean).map(s => {
+    const m = s.match(/^(\d+)([SF]{2})?([+-]\d+)?d?$/i);
+    if(!m) return null;
+    return {
+      idx: parseInt(m[1]) - 1,  // 1-indexed → 0-indexed
+      tipo: (m[2]||'FS').toUpperCase(), // FS, SS, FF, SF
+      lag: parseInt(m[3]||'0'), // días de retraso
+    };
+  }).filter(Boolean);
+}
+
+function calcularRutaCritica(){
+  // Algoritmo CPM básico: forward pass + backward pass
+  if(tareas.length === 0) return;
+  // Tareas no resumen (las que cuentan)
+  const tareasReales = tareas.filter((t,i) => !esResumen(i));
+  if(tareasReales.length === 0) return;
+
+  // Reset
+  tareas.forEach(t => { t.es=0; t.ef=0; t.ls=Infinity; t.lf=Infinity; t.slack=0; t.critica=false; });
+
+  // Forward pass: ES, EF
+  const minIni = tareasReales.map(t => parseDate(t.fechaIni)).filter(Boolean);
+  if(minIni.length === 0) return;
+  const proyectoIni = new Date(Math.min(...minIni.map(d=>d.getTime())));
+  tareas.forEach((t,i) => {
+    if(esResumen(i)) return;
+    const preds = parsePredecesoras(t.predecesoras);
+    if(preds.length === 0){
+      const ti = parseDate(t.fechaIni);
+      t.es = Math.round((ti - proyectoIni)/86400000);
+    } else {
+      let maxEF = 0;
+      preds.forEach(p => {
+        const pred = tareas[p.idx];
+        if(!pred) return;
+        let efPred = pred.ef + (p.lag||0);
+        if(p.tipo === 'SS') efPred = pred.es + (p.lag||0);
+        if(efPred > maxEF) maxEF = efPred;
+      });
+      t.es = maxEF;
+    }
+    t.ef = t.es + (t.duracion||0);
+  });
+
+  // Forward para resúmenes (igual a sus hijos)
+  for(let i = tareas.length-1; i >= 0; i--){
+    if(esResumen(i)){
+      const hijosIdx = hijosDe(i);
+      if(hijosIdx.length > 0){
+        tareas[i].es = Math.min(...hijosIdx.map(idx => tareas[idx].es));
+        tareas[i].ef = Math.max(...hijosIdx.map(idx => tareas[idx].ef));
+      }
+    }
+  }
+
+  // Encontrar EF máximo (final del proyecto)
+  const maxEF = Math.max(...tareas.filter((t,i) => !esResumen(i)).map(t => t.ef));
+
+  // Backward pass: LF, LS
+  for(let i = tareas.length-1; i >= 0; i--){
+    if(esResumen(i)) continue;
+    const t = tareas[i];
+    // Encontrar sucesores (tareas que tienen a este i+1 como predecesor)
+    const sucesores = [];
+    tareas.forEach((s,j) => {
+      if(esResumen(j)) return;
+      const preds = parsePredecesoras(s.predecesoras);
+      preds.forEach(p => {
+        if(p.idx === i) sucesores.push({suc:s, tipo:p.tipo, lag:p.lag});
+      });
+    });
+    if(sucesores.length === 0){
+      t.lf = maxEF;
+    } else {
+      t.lf = Math.min(...sucesores.map(({suc,tipo,lag}) => {
+        if(tipo === 'SS') return suc.ls - (lag||0) + (t.duracion||0);
+        return suc.ls - (lag||0);
+      }));
+    }
+    t.ls = t.lf - (t.duracion||0);
+    t.slack = t.ls - t.es;
+    t.critica = Math.abs(t.slack) < 0.01;
+  }
+
+  // Resúmenes son críticos si todos sus hijos lo son
+  for(let i=0;i<tareas.length;i++){
+    if(esResumen(i)){
+      const hijosIdx = hijosDe(i);
+      tareas[i].critica = hijosIdx.length > 0 && hijosIdx.some(idx => tareas[idx].critica);
+    }
+  }
+}
+
+// =============================================================
+// AUTO SCHEDULING
+// =============================================================
+function autoAgendar(){
+  pushUndo();
+  if(tareas.length === 0) return;
+  // Encontrar primera fecha
+  const minIni = tareas.map(t => parseDate(t.fechaIni)).filter(Boolean);
+  if(minIni.length === 0) return;
+  const proyectoIni = new Date(Math.min(...minIni.map(d=>d.getTime())));
+
+  // Procesar tareas en orden, ajustando inicio según predecesoras
+  tareas.forEach((t,i) => {
+    if(esResumen(i)) return;
+    const preds = parsePredecesoras(t.predecesoras);
+    if(preds.length === 0) return;
+    let maxFinPred = null;
+    preds.forEach(p => {
+      const pred = tareas[p.idx];
+      if(!pred) return;
+      let fechaBase = null;
+      if(p.tipo === 'SS') fechaBase = parseDate(pred.fechaIni);
+      else fechaBase = parseDate(pred.fechaFin);
+      if(!fechaBase) return;
+      // Aplicar lag
+      const conLag = p.lag ? addDiasLab(fechaBase, p.lag) : fechaBase;
+      // Para FS/FF, agregar 1 día (la sucesora empieza al día siguiente)
+      const inicioSuc = (p.tipo === 'FS' || p.tipo === 'FF') ? addDiasLab(conLag, 1) : conLag;
+      if(!maxFinPred || inicioSuc > maxFinPred) maxFinPred = inicioSuc;
+    });
+    if(maxFinPred){
+      t.fechaIni = fmtISO(maxFinPred);
+      t.fechaFin = calcularFinLab(t.fechaIni, t.duracion);
+    }
+  });
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+  mostrarMensaje('Auto-agendado completado');
+}
+
+// =============================================================
+// OPERACIONES DE TAREAS
+// =============================================================
+function agregarTarea(){
+  pushUndo();
+  const idxSel = seleccionadaId ? tareas.findIndex(t => t.id === seleccionadaId) : tareas.length - 1;
+  const insertIdx = idxSel >= 0 ? idxSel + 1 : tareas.length;
+  const nivelBase = idxSel >= 0 ? tareas[idxSel].nivel : 2;
+  const ultimaFecha = idxSel >= 0 ? tareas[idxSel].fechaFin : todayISO();
+  const inicioNuevo = addDiasLab(parseDate(ultimaFecha), 1);
+  const nueva = {
+    id: 't_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    nombre: 'Nueva tarea',
+    nivel: Math.max(0, nivelBase),
+    fechaIni: fmtISO(inicioNuevo),
+    fechaFin: calcularFinLab(fmtISO(inicioNuevo), 1),
+    duracion: 1, avance: 0, predecesoras: '',
+    prioridad:'media', notas:'', esHito: false,
+  };
+  tareas.splice(insertIdx, 0, nueva);
+  seleccionadaId = nueva.id;
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+function agregarHito(){
+  pushUndo();
+  const idxSel = seleccionadaId ? tareas.findIndex(t => t.id === seleccionadaId) : tareas.length - 1;
+  const insertIdx = idxSel >= 0 ? idxSel + 1 : tareas.length;
+  const nivelBase = idxSel >= 0 ? tareas[idxSel].nivel : 2;
+  const fecha = idxSel >= 0 ? tareas[idxSel].fechaFin : todayISO();
+  const nueva = {
+    id: 't_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    nombre: 'Hito',
+    nivel: Math.max(0, nivelBase),
+    fechaIni: fecha,
+    fechaFin: fecha,
+    duracion: 0, avance: 0, predecesoras: '',
+    prioridad:'media', notas:'', esHito: true,
+  };
+  tareas.splice(insertIdx, 0, nueva);
+  seleccionadaId = nueva.id;
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+function eliminarSeleccionada(){
+  if(!seleccionadaId) return;
+  const idx = tareas.findIndex(t => t.id === seleccionadaId);
+  if(idx < 0) return;
+  if(!confirm('¿Eliminar esta tarea y sus subtareas?')) return;
+  pushUndo();
+  const hijosIdx = hijosDe(idx);
+  [idx, ...hijosIdx].sort((a,b) => b-a).forEach(i => tareas.splice(i,1));
+  seleccionadaId = null;
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+function moverTarea(delta){
+  if(!seleccionadaId) return;
+  const idx = tareas.findIndex(t => t.id === seleccionadaId);
+  if(idx < 0) return;
+  pushUndo();
+  const hijosIdx = hijosDe(idx);
+  const bloque = tareas.splice(idx, 1 + hijosIdx.length);
+  let nuevoIdx;
+  if(delta > 0){
+    const siguienteIdx = idx;
+    const sigHijos = tareas[siguienteIdx] ? hijosDe(siguienteIdx) : [];
+    nuevoIdx = siguienteIdx + 1 + sigHijos.length;
+  } else {
+    nuevoIdx = Math.max(0, idx - 1);
+    // Si la tarea anterior es resumen, ponemos antes de ella
+    while(nuevoIdx > 0 && tareas[nuevoIdx-1] && tareas[nuevoIdx-1].nivel >= bloque[0].nivel) nuevoIdx--;
+  }
+  tareas.splice(nuevoIdx, 0, ...bloque);
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+function sangrar(delta){
+  if(!seleccionadaId) return;
+  const idx = tareas.findIndex(t => t.id === seleccionadaId);
+  if(idx < 0) return;
+  pushUndo();
+  const nuevoNivel = Math.max(0, Math.min(4, tareas[idx].nivel + delta));
+  if(nuevoNivel === tareas[idx].nivel) return;
+  tareas[idx].nivel = nuevoNivel;
+  const hijosIdx = hijosDe(idx);
+  hijosIdx.forEach(i => {
+    tareas[i].nivel = Math.max(0, Math.min(4, tareas[i].nivel + delta));
+  });
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+}
+
+function toggleColapsada(id){
+  const t = tareas.find(x => x.id === id);
+  if(t) t.colapsada = !t.colapsada;
+  render();
+}
+
+function generarPlantilla(){
+  if(!proyectoActual){ mostrarMensaje('Selecciona un proyecto primero','danger'); return; }
+  if(tareas.length > 1 && !confirm('Se reemplazará el cronograma actual. ¿Continuar?')) return;
+  pushUndo();
+  const ini = proyectoActual.fechaInicio || todayISO();
+  const fin = proyectoActual.fechaFin || calcularFinLab(ini, 30);
+  const totalDias = calcularDuracionLab(ini, fin);
+  const plantilla = [
+    {nombre: proyectoActual.nombre || 'Proyecto', nivel:0, peso:1.0},
+    {nombre:'Fase 1 — Planificación', nivel:1, peso:0.15},
+      {nombre:'Visita técnica', nivel:2, peso:0.04, hito:false},
+      {nombre:'Diseño y planos', nivel:2, peso:0.06},
+      {nombre:'Aprobación cliente', nivel:2, peso:0.05},
+    {nombre:'Fase 2 — Movilización', nivel:1, peso:0.20},
+      {nombre:'Movilización personal y equipos', nivel:2, peso:0.05},
+      {nombre:'Habilitación de materiales', nivel:2, peso:0.10},
+      {nombre:'Instalación de andamios', nivel:2, peso:0.05},
+    {nombre:'Fase 3 — Ejecución', nivel:1, peso:0.45},
+      {nombre:'Fabricación en taller', nivel:2, peso:0.20},
+      {nombre:'Pintado y acabados', nivel:2, peso:0.10},
+      {nombre:'Montaje en campo', nivel:2, peso:0.15},
+    {nombre:'Fase 4 — Entrega', nivel:1, peso:0.20},
+      {nombre:'Pruebas y verificación', nivel:2, peso:0.07},
+      {nombre:'Capacitación al personal', nivel:2, peso:0.05},
+      {nombre:'Desmovilización', nivel:2, peso:0.04},
+      {nombre:'Entrega final y dossier', nivel:2, peso:0.04},
+  ];
+  tareas = [];
+  let cursor = parseDate(ini);
+  plantilla.forEach((p, i) => {
+    if(p.nivel === 0){
+      tareas.push({id:'t_'+Date.now().toString(36)+i, nombre:p.nombre, nivel:0, fechaIni:ini, fechaFin:fin, duracion:totalDias, avance:0, predecesoras:'', prioridad:'media', notas:''});
+    } else if(p.nivel === 1){
+      const dur = Math.max(1, Math.round(totalDias * p.peso));
+      const ti = new Date(cursor);
+      const tf = parseDate(calcularFinLab(fmtISO(ti), dur));
+      tareas.push({id:'t_'+Date.now().toString(36)+i, nombre:p.nombre, nivel:1, fechaIni:fmtISO(ti), fechaFin:fmtISO(tf), duracion:dur, avance:0, predecesoras:'', prioridad:'media', notas:''});
+      cursor = addDiasLab(tf, 1);
+    } else {
+      const ultimaFase = [...tareas].reverse().find(t => t.nivel === 1);
+      const tareasHijas = plantilla.slice(0, i+1).filter((x, idx) => {
+        if(x.nivel !== 2) return false;
+        const ultimaFaseIdx = plantilla.slice(0, idx+1).map(z=>z.nivel).lastIndexOf(1);
+        return ultimaFaseIdx === plantilla.slice(0, i+1).map(z=>z.nivel).lastIndexOf(1);
+      });
+      const idxEnFase = tareasHijas.length - 1;
+      const duracionFase = ultimaFase ? ultimaFase.duracion : 1;
+      const totalPesoHijas = tareasHijas.reduce((s,x) => s + x.peso, 0);
+      const dur = Math.max(1, Math.round(duracionFase * (p.peso/totalPesoHijas)));
+      const inicioFase = parseDate(ultimaFase.fechaIni);
+      const offsetDias = tareasHijas.slice(0, idxEnFase).reduce((s,x) => s + Math.max(1, Math.round(duracionFase * (x.peso/totalPesoHijas))), 0);
+      const ti = offsetDias > 0 ? addDiasLab(inicioFase, offsetDias) : inicioFase;
+      const tf = parseDate(calcularFinLab(fmtISO(ti), dur));
+      tareas.push({id:'t_'+Date.now().toString(36)+i, nombre:p.nombre, nivel:2, fechaIni:fmtISO(ti), fechaFin:fmtISO(tf), duracion:dur, avance:0, predecesoras:'', prioridad:'media', notas:''});
+    }
+  });
+  recalcularResumenes();
+  calcularRutaCritica();
+  render();
+  mostrarMensaje('Plantilla generada','success');
+}
+
+// =============================================================
+// EDIT CELDAS
+// =============================================================
+let editTimeout;
+function actualizarCelda(id, campo, valor){
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
+  // Debounce undo: agrupar cambios consecutivos en el mismo input
+  clearTimeout(editTimeout);
+  editTimeout = setTimeout(() => pushUndo(), 600);
+
+  if(campo === 'nombre') t.nombre = valor;
+  else if(campo === 'duracion'){
+    t.duracion = Math.max(0, parseInt(valor)||0);
+    t.esHito = (t.duracion === 0);
+    t.fechaFin = calcularFinLab(t.fechaIni, t.duracion);
+  }
+  else if(campo === 'fechaIni'){
+    t.fechaIni = valor;
+    t.fechaFin = calcularFinLab(valor, t.duracion);
+  }
+  else if(campo === 'fechaFin'){
+    t.fechaFin = valor;
+    t.duracion = calcularDuracionLab(t.fechaIni, valor);
+  }
+  else if(campo === 'avance'){
+    t.avance = Math.max(0, Math.min(100, parseInt(valor)||0));
+  }
+  else if(campo === 'predecesoras') t.predecesoras = valor;
+  recalcularResumenes();
+  calcularRutaCritica();
+  renderConFoco();
+}
+
+function seleccionar(id, ev){
+  if(ev) ev.stopPropagation();
+  seleccionadaId = id;
+  document.querySelectorAll('.gp-side tr, .gp-row').forEach(r => r.classList.remove('seleccionada'));
+  document.querySelectorAll(`[data-id="${id}"]`).forEach(r => r.classList.add('seleccionada'));
+}
+
+// =============================================================
+// MODAL INFO TAREA
+// =============================================================
+function abrirInfoTarea(id){
+  if(!id || typeof id === 'object') id = seleccionadaId;
+  if(!id){ mostrarMensaje('Selecciona una tarea primero','danger'); return; }
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
+  document.getElementById('modalTareaTitulo').textContent = 'Información: ' + (t.nombre||'');
+  document.getElementById('ft-id').value = t.id;
+  document.getElementById('ft-nombre').value = t.nombre||'';
+  document.getElementById('ft-tipo').value = t.esHito ? 'hito' : (t.nivel === 0 ? 'proj' : t.nivel === 1 ? 'fase' : 'tarea');
+  document.getElementById('ft-avance').value = t.avance||0;
+  document.getElementById('ft-fechaIni').value = t.fechaIni||'';
+  document.getElementById('ft-fechaFin').value = t.fechaFin||'';
+  document.getElementById('ft-duracion').value = t.duracion||1;
+  document.getElementById('ft-predecesoras').value = t.predecesoras||'';
+  document.getElementById('ft-prioridad').value = t.prioridad||'media';
+  document.getElementById('ft-notas').value = t.notas||'';
+  const selR = document.getElementById('ft-responsableId');
+  const personal = DB.personal.list().filter(p => p.activo !== false);
+  selR.innerHTML = '<option value="">— Sin asignar —</option>' +
+    personal.map(p => {
+      const nombre = [p.nombre, p.apellidos].filter(Boolean).join(' ') || p.cargo || '(sin nombre)';
+      return `<option value="${p.id}" ${p.id===t.responsableId?'selected':''}>${escapeHtml(nombre)}</option>`;
+    }).join('');
+  document.getElementById('modalTarea').classList.add('show');
+}
+function cerrarInfoTarea(){ document.getElementById('modalTarea').classList.remove('show'); }
+function guardarInfoTarea(){
+  pushUndo();
+  const id = document.getElementById('ft-id').value;
+  const t = tareas.find(x => x.id === id); if(!t) return;
+  const tipo = document.getElementById('ft-tipo').value;
+  t.nombre = document.getElementById('ft-nombre').value;
+  t.esHito = (tipo === 'hito');
+  t.nivel = tipo === 'proj' ? 0 : tipo === 'fase' ? 1 : 2;
+  t.avance = parseInt(document.getElementById('ft-avance').value)||0;
+  t.fechaIni = document.getElementById('ft-fechaIni').value;
+  t.fechaFin = document.getElementById('ft-fechaFin').value;
+  t.duracion = parseInt(document.getElementById('ft-duracion').value)||0;
+  if(t.esHito) t.duracion = 0;
+  if(t.fechaIni && t.duracion > 0) t.fechaFin = calcularFinLab(t.fechaIni, t.duracion);
+  if(t.fechaIni && t.duracion === 0) t.fechaFin = t.fechaIni;
+  t.predecesoras = document.getElementById('ft-predecesoras').value;
+  t.responsableId = document.getElementById('ft-responsableId').value;
+  t.prioridad = document.getElementById('ft-prioridad').value;
+  t.notas = document.getElementById('ft-notas').value;
+  recalcularResumenes();
+  calcularRutaCritica();
+  cerrarInfoTarea();
+  render();
+  mostrarMensaje('Tarea actualizada','success');
+}
+
+// =============================================================
+// CALENDARIO LABORAL
+// =============================================================
+function abrirCalendario(){
+  document.getElementById('lab-0').checked = calendario.laborables.includes(0);
+  for(let i=1;i<=6;i++) document.getElementById('lab-'+i).checked = calendario.laborables.includes(i);
+  document.getElementById('cal-horas').value = calendario.horasDia || 8;
+  document.getElementById('cal-feriados').value = (calendario.feriados||[]).join('\n');
+  document.getElementById('modalCalendario').classList.add('show');
+}
+function guardarCalendario(){
+  pushUndo();
+  const labs = [];
+  for(let i=0;i<=6;i++) if(document.getElementById('lab-'+i).checked) labs.push(i);
+  calendario.laborables = labs;
+  calendario.horasDia = parseInt(document.getElementById('cal-horas').value) || 8;
+  calendario.feriados = document.getElementById('cal-feriados').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  // Recalcular duraciones
+  tareas.forEach(t => {
+    if(t.fechaIni && t.fechaFin) t.duracion = calcularDuracionLab(t.fechaIni, t.fechaFin);
+  });
+  recalcularResumenes();
+  calcularRutaCritica();
+  document.getElementById('modalCalendario').classList.remove('show');
+  render();
+  mostrarMensaje('Calendario laboral actualizado');
+}
+
+// =============================================================
+// BASELINE
+// =============================================================
+function guardarBaseline(){
+  if(!confirm('¿Guardar la línea base con las fechas actuales? Se reemplazará la anterior.')) return;
+  pushUndo();
+  baseline = tareas.map(t => ({id:t.id, fechaIni:t.fechaIni, fechaFin:t.fechaFin, duracion:t.duracion}));
+  mostrarMensaje('Línea base guardada','success');
+  if(modoBaseline) render();
+}
+function toggleBaseline(){
+  modoBaseline = !modoBaseline;
+  document.getElementById('btn-baseline').classList.toggle('active', modoBaseline);
+  render();
+}
+
+// =============================================================
+// VISTA (zoom, dark, etc.)
+// =============================================================
+function cambiarZoom(delta){
+  zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length-1, zoomIdx + delta));
+  actualizarBtnsZoom();
+  render();
+}
+function cambiarZoomPreset(key){
+  const idx = ZOOM_LEVELS.findIndex(z => z.key === key);
+  if(idx >= 0) zoomIdx = idx;
+  actualizarBtnsZoom();
+  render();
+}
+function actualizarBtnsZoom(){
+  const key = ZOOM_LEVELS[zoomIdx].key;
+  ['anio','trim','mes','semana','dia'].forEach(k => {
+    const b = document.getElementById('z-'+k);
+    if(b) b.classList.toggle('active', k === key);
+  });
+}
+
+function centrarHoy(){
+  const wrap = document.getElementById('gp-wrap');
+  const hoyEl = document.querySelector('.gp-hoy');
+  if(hoyEl){
+    const offset = hoyEl.offsetLeft - wrap.clientWidth/2;
+    wrap.scrollTo({left: Math.max(0, offset), behavior:'smooth'});
+  }
+}
+function ajustarVista(){
+  // Encontrar zoom que muestre todo
+  const fechas = tareas.flatMap(t => [parseDate(t.fechaIni), parseDate(t.fechaFin)]).filter(Boolean);
+  if(fechas.length === 0) return;
+  const minF = new Date(Math.min(...fechas.map(d=>d.getTime())));
+  const maxF = new Date(Math.max(...fechas.map(d=>d.getTime())));
+  const dias = Math.round((maxF - minF)/86400000) + 7;
+  const wrap = document.getElementById('gp-wrap');
+  const anchoDisp = wrap.clientWidth - 700; // restar sidebar
+  // Encontrar zoom donde el ancho total <= anchoDisp
+  let mejor = 0;
+  for(let i=0; i<ZOOM_LEVELS.length; i++){
+    if(dias * ZOOM_LEVELS[i].anchoDia <= anchoDisp) mejor = i;
+  }
+  zoomIdx = mejor;
+  actualizarBtnsZoom();
+  render();
+}
+function toggleDark(){
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('gp-dark', isDark ? '1' : '0');
+  document.getElementById('btn-dark').textContent = isDark ? '☀' : '🌙';
+}
+function toggleCritico(){
+  modoCritico = !modoCritico;
+  document.getElementById('btn-critico').classList.toggle('active', modoCritico);
+  render();
+}
+
+// =============================================================
+// RENDER PRINCIPAL
+// =============================================================
+function renderVacio(){
+  document.getElementById('gp-content').innerHTML = `
+    <div class="empty-msg">
+      <h3>No hay proyecto seleccionado</h3>
+      <p>Selecciona un proyecto del menú superior para ver su cronograma.</p>
+      <p>Los proyectos se generan automáticamente cuando una cotización pasa a estado <b>Aprobada</b>.</p>
+    </div>`;
+  actualizarStatusbar();
+}
+
+function renderConFoco(){
+  const info = guardarFoco();
+  render();
+  restaurarFoco(info);
+}
+function guardarFoco(){
+  const el = document.activeElement;
+  if(!el || !el.dataset || !el.dataset.field) return null;
+  const wrap = document.getElementById('gp-wrap');
+  return {
+    field: el.dataset.field, tid: el.dataset.tid,
+    selStart: el.selectionStart, selEnd: el.selectionEnd,
+    scrollLeft: wrap?.scrollLeft || 0, scrollTop: wrap?.scrollTop || 0,
+  };
+}
+function restaurarFoco(info){
+  if(!info) return;
+  const wrap = document.getElementById('gp-wrap');
+  if(wrap){ wrap.scrollLeft = info.scrollLeft; wrap.scrollTop = info.scrollTop; }
+  setTimeout(() => {
+    const el = document.querySelector(`[data-field="${info.field}"][data-tid="${info.tid}"]`);
+    if(el){
+      el.focus();
+      if(info.selStart != null && el.setSelectionRange){
+        try { el.setSelectionRange(info.selStart, info.selEnd); } catch(e){}
+      }
+    }
+  }, 0);
+}
+
+function render(){
+  if(!proyectoActual){ renderVacio(); return; }
+  const fechas = tareas.flatMap(t => [parseDate(t.fechaIni), parseDate(t.fechaFin)]).filter(Boolean);
+  if(fechas.length === 0){ renderVacio(); return; }
+  let minF = new Date(Math.min(...fechas.map(d=>d.getTime())));
+  let maxF = new Date(Math.max(...fechas.map(d=>d.getTime())));
+  minF = addDays(minF, -5); maxF = addDays(maxF, 10);
+  const totalDias = Math.max(1, Math.round((maxF - minF)/86400000) + 1);
+  const zoomLvl = ZOOM_LEVELS[zoomIdx];
+  const anchoDia = zoomLvl.anchoDia;
+  const totalAncho = totalDias * anchoDia;
+
+  const headersHTML = generarHeaders(minF, maxF, anchoDia, zoomLvl.headers);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const hoyLeft = hoy >= minF && hoy <= maxF ? Math.round(((hoy - minF)/86400000) * anchoDia) : -1;
+  const visibles = indiceVisible();
+  const filaH = 30;
+
+  // Sidebar
+  const sideRows = visibles.map(idx => {
+    const t = tareas[idx];
+    const num = idx + 1;
+    const claseTipo = t.esHito ? 'tarea' : (t.nivel === 0 ? 'proj' : t.nivel === 1 ? 'fase' : 'tarea');
+    const tieneHijos = esResumen(idx);
+    const tri = tieneHijos
+      ? `<span class="triang" onclick="event.stopPropagation();toggleColapsada('${t.id}')" title="${t.colapsada?'Expandir':'Colapsar'}">${t.colapsada?'▶':'▼'}</span>`
+      : `<span class="triang empty">·</span>`;
+    const claseCritica = (modoCritico && t.critica && !esResumen(idx)) ? 'critica' : '';
+    return `
+      <tr class="${claseTipo} ${seleccionadaId===t.id?'seleccionada':''} ${claseCritica}" data-id="${t.id}"
+          onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')">
+        <td class="idx">${num}</td>
+        <td class="cri-flag">${t.critica && !esResumen(idx) ? '●' : ''}</td>
+        <td class="celda">
+          <div class="nombre-cell ind-${Math.min(t.nivel,4)}">
+            ${tri}
+            <input data-tid="${t.id}" data-field="nombre" value="${escapeAttr(t.nombre||'')}" oninput="actualizarCelda('${t.id}','nombre',this.value)" placeholder="Nombre de tarea">
+          </div>
+        </td>
+        <td class="celda num"><input data-tid="${t.id}" data-field="duracion" type="number" min="0" value="${t.duracion||0}" onchange="actualizarCelda('${t.id}','duracion',this.value)"></td>
+        <td class="celda cen"><input data-tid="${t.id}" data-field="fechaIni" type="date" value="${t.fechaIni||''}" onchange="actualizarCelda('${t.id}','fechaIni',this.value)"></td>
+        <td class="celda cen"><input data-tid="${t.id}" data-field="fechaFin" type="date" value="${t.fechaFin||''}" onchange="actualizarCelda('${t.id}','fechaFin',this.value)"></td>
+        <td class="celda num"><input data-tid="${t.id}" data-field="avance" type="number" min="0" max="100" value="${t.avance||0}" onchange="actualizarCelda('${t.id}','avance',this.value)"></td>
+        <td class="celda cen"><input data-tid="${t.id}" data-field="predecesoras" value="${escapeAttr(t.predecesoras||'')}" oninput="actualizarCelda('${t.id}','predecesoras',this.value)" placeholder="—"></td>
+      </tr>`;
+  }).join('');
+
+  const wkndOverlays = generarWkndOverlays(minF, maxF, anchoDia);
+  const rowMap = {};
+  const timeRows = visibles.map((idx, i) => {
+    const t = tareas[idx];
+    rowMap[t.id] = i * filaH;
+    const claseTipo = t.nivel === 0 ? 'proj' : t.nivel === 1 ? 'fase' : 'tarea';
+    const ti = parseDate(t.fechaIni), tf = parseDate(t.fechaFin);
+    if(!ti || !tf) return `<div class="gp-row ${claseTipo} ${seleccionadaId===t.id?'seleccionada':''}" data-id="${t.id}"></div>`;
+    const left = Math.round(((ti - minF)/86400000) * anchoDia);
+    const width = Math.max(2, Math.round(((tf - ti)/86400000 + 1) * anchoDia));
+    let barHTML = '';
+    const esCri = modoCritico && t.critica;
+
+    // Baseline (debajo)
+    let baselineHTML = '';
+    if(modoBaseline){
+      const bl = baseline.find(b => b.id === t.id);
+      if(bl && bl.fechaIni && bl.fechaFin){
+        const bti = parseDate(bl.fechaIni), btf = parseDate(bl.fechaFin);
+        if(bti && btf){
+          const bLeft = Math.round(((bti - minF)/86400000) * anchoDia);
+          const bWidth = Math.max(2, Math.round(((btf - bti)/86400000 + 1) * anchoDia));
+          baselineHTML = `<div class="gp-baseline-bar" style="left:${bLeft}px;width:${bWidth}px" title="Baseline: ${bl.fechaIni} → ${bl.fechaFin}"></div>`;
+        }
+      }
+    }
+
+    if(t.esHito){
+      // Hito = rombo
+      barHTML = `<div class="gp-bar tarea ${esCri?'critica':''}" style="left:${left-7}px;width:14px;height:14px;top:8px;background:#000;transform:rotate(45deg);border-radius:0" data-id="${t.id}" data-action="bar" onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')" title="Hito: ${escapeHtml(t.nombre)} · ${t.fechaIni}"></div>`;
+    } else if(t.nivel === 0){
+      barHTML = `<div class="gp-bar resumen-bar ${esCri?'critica':''}" style="left:${left}px;width:${width}px" data-id="${t.id}" data-action="bar" onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')"></div>`;
+    } else if(esResumen(idx)){
+      barHTML = `<div class="gp-bar resumen-bar ${esCri?'critica':''}" style="left:${left}px;width:${width}px" data-id="${t.id}" data-action="bar" onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')"></div>`;
+    } else {
+      const av = t.avance || 0;
+      const cls = av === 100 ? 'done' : (tf < hoy && av < 100) ? 'late' : (av < 25 && ti < hoy) ? 'warn' : '';
+      barHTML = `
+        <div class="gp-bar tarea ${cls} ${esCri?'critica':''}" style="left:${left}px;width:${width}px" data-id="${t.id}" data-action="bar"
+             onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')"
+             onmousedown="iniciarDragBarra(event,'${t.id}','move')"
+             onmouseover="mostrarTooltip(event,'${t.id}')" onmouseout="ocultarTooltip()">
+          <div class="resize-h left" onmousedown="event.stopPropagation();iniciarDragBarra(event,'${t.id}','resize-left')"></div>
+          <div class="progreso" style="width:${av}%"></div>
+          <span style="position:relative;z-index:2;text-overflow:ellipsis;overflow:hidden">${escapeHtml(t.nombre).slice(0,50)}</span>
+          <div class="resize-h right" onmousedown="event.stopPropagation();iniciarDragBarra(event,'${t.id}','resize-right')"></div>
+        </div>`;
+    }
+    return `<div class="gp-row ${claseTipo} ${seleccionadaId===t.id?'seleccionada':''}" data-id="${t.id}" style="width:${totalAncho}px" onclick="seleccionar('${t.id}',event)" ondblclick="abrirInfoTarea('${t.id}')">${baselineHTML}${barHTML}</div>`;
+  }).join('');
+
+  const depsSVG = generarDependencias(visibles, rowMap, minF, anchoDia, totalAncho, filaH);
+  const hoyHTML = hoyLeft >= 0 ? `<div class="gp-hoy" style="left:${hoyLeft}px"></div>` : '';
+
+  // Columnas sidebar (con anchos guardados)
+  const c = anchoColumnas;
+  document.getElementById('gp-content').innerHTML = `
+    <div class="gp-grid" style="--anchoDia:${anchoDia}px;--gp-fila-h:${filaH}px">
+      <div class="gp-side">
+        <table>
+          <colgroup>
+            <col style="width:${c.idx}px">
+            <col style="width:${c.cri}px">
+            <col style="width:${c.nombre}px">
+            <col style="width:${c.dur}px">
+            <col style="width:${c.ini}px">
+            <col style="width:${c.fin}px">
+            <col style="width:${c.avance}px">
+            <col style="width:${c.pred}px">
+          </colgroup>
+          <thead>
+            <tr class="gp-h1">
+              <th>#</th>
+              <th title="Ruta crítica">⚠</th>
+              <th class="left resizable">Nombre de tarea <span class="resize-handle" onmousedown="iniciarResizeColumna(event,'nombre')"></span></th>
+              <th class="resizable">Dur. <span class="resize-handle" onmousedown="iniciarResizeColumna(event,'dur')"></span></th>
+              <th class="resizable">Comienzo <span class="resize-handle" onmousedown="iniciarResizeColumna(event,'ini')"></span></th>
+              <th class="resizable">Fin <span class="resize-handle" onmousedown="iniciarResizeColumna(event,'fin')"></span></th>
+              <th class="resizable">% <span class="resize-handle" onmousedown="iniciarResizeColumna(event,'avance')"></span></th>
+              <th>Predec.</th>
+            </tr>
+            <tr class="gp-h2"><th colspan="8">${escapeHtml(proyectoActual.codigo||'')} · ${escapeHtml(proyectoActual.nombre||'')}</th></tr>
+          </thead>
+          <tbody>${sideRows}</tbody>
+        </table>
+      </div>
+
+      <div class="gp-time" style="width:${totalAncho}px">
+        <div class="gp-time-h-wrap" style="width:${totalAncho}px">${headersHTML}</div>
+        <div class="gp-rows" style="width:${totalAncho}px;position:relative">
+          ${wkndOverlays}
+          ${timeRows}
+          ${depsSVG}
+          ${hoyHTML}
+        </div>
+      </div>
+    </div>`;
+
+  actualizarStatusbar();
+}
+
+// =============================================================
+// HEADERS DEL TIMELINE
+// =============================================================
+function generarHeaders(minF, maxF, anchoDia, niveles){
+  const blocks = {anio:[], trim:[], mes:[], semana:[], dia:[]};
+  // Año
+  let d = new Date(minF.getFullYear(),0,1);
+  while(d <= maxF){
+    const inicio = d < minF ? minF : d;
+    const finAnio = new Date(d.getFullYear()+1,0,0);
+    const fin = finAnio > maxF ? maxF : finAnio;
+    const dias = Math.round((fin-inicio)/86400000)+1;
+    blocks.anio.push({lbl: d.getFullYear(), ancho: dias*anchoDia});
+    d = new Date(d.getFullYear()+1,0,1);
+  }
+  // Trimestre
+  d = new Date(minF.getFullYear(), Math.floor(minF.getMonth()/3)*3, 1);
+  while(d <= maxF){
+    const inicio = d < minF ? minF : d;
+    const finTrim = new Date(d.getFullYear(), d.getMonth()+3, 0);
+    const fin = finTrim > maxF ? maxF : finTrim;
+    const dias = Math.round((fin-inicio)/86400000)+1;
+    const qNum = Math.floor(d.getMonth()/3)+1;
+    blocks.trim.push({lbl: 'T'+qNum+' '+d.getFullYear(), ancho: dias*anchoDia});
+    d = new Date(d.getFullYear(), d.getMonth()+3, 1);
+  }
+  // Mes
+  d = new Date(minF.getFullYear(), minF.getMonth(), 1);
+  while(d <= maxF){
+    const inicio = d < minF ? minF : d;
+    const finMes = new Date(d.getFullYear(), d.getMonth()+1, 0);
+    const fin = finMes > maxF ? maxF : finMes;
+    const dias = Math.round((fin-inicio)/86400000)+1;
+    const lbl = d.toLocaleDateString('es-PE',{month:'short',year:'2-digit'});
+    blocks.mes.push({lbl, ancho: dias*anchoDia});
+    d = new Date(d.getFullYear(), d.getMonth()+1, 1);
+  }
+  // Semana
+  d = new Date(minF);
+  while(d.getDay() !== 1) d = addDays(d, -1); // lunes anterior
+  while(d <= maxF){
+    const inicio = d < minF ? minF : d;
+    const finSem = addDays(d, 6);
+    const fin = finSem > maxF ? maxF : finSem;
+    const dias = Math.round((fin-inicio)/86400000)+1;
+    const num = getISOWeek(d);
+    blocks.semana.push({lbl: 'S'+num, ancho: dias*anchoDia});
+    d = addDays(d, 7);
+  }
+  // Días (lo construimos aparte por ser especial)
+  let diaHTML = '';
+  const dlet = ['D','L','M','M','J','V','S'];
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  let dd = new Date(minF);
+  while(dd <= maxF){
+    const wknd = !esDiaLaborable(dd);
+    const esHoy = dd.getTime() === hoy.getTime();
+    let inner = '';
+    if(anchoDia >= 22) inner = `<span class="dnum">${dd.getDate()}</span><span class="dlet">${dlet[dd.getDay()]}</span>`;
+    else if(anchoDia >= 8) inner = `<span class="dnum" style="font-size:9px">${dd.getDate()}</span>`;
+    diaHTML += `<div class="dia-cell ${wknd?'wknd':''} ${esHoy?'hoy':''}" style="width:${anchoDia}px;min-width:${anchoDia}px">${inner}</div>`;
+    dd = addDays(dd, 1);
+  }
+
+  // Render según niveles
+  let html = '';
+  niveles.forEach((nivel, i) => {
+    const className = i === 0 ? 'gp-time-h-1' : (i === 1 ? 'gp-time-h-2' : 'gp-time-h-3');
+    if(nivel === 'dia'){
+      html += `<div class="${className}">${diaHTML}</div>`;
+    } else {
+      const arr = blocks[nivel] || [];
+      html += `<div class="${className}">${arr.map(b => `<div class="h-cell" style="width:${b.ancho}px;min-width:${b.ancho}px">${b.lbl}</div>`).join('')}</div>`;
+    }
+  });
+  return html;
+}
+
+function getISOWeek(d){
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return Math.ceil((((dt - yearStart) / 86400000) + 1)/7);
+}
+
+function generarWkndOverlays(minF, maxF, anchoDia){
+  let html = '';
+  let d = new Date(minF);
+  let i = 0;
+  while(d <= maxF){
+    if(!esDiaLaborable(d)){
+      const left = i * anchoDia;
+      html += `<div class="wknd-overlay" style="left:${left}px;width:${anchoDia}px"></div>`;
+    }
+    d = addDays(d, 1); i++;
+  }
+  return html;
+}
+
+function generarDependencias(visibles, rowMap, minF, anchoDia, totalAncho, filaH){
+  const paths = [];
+  visibles.forEach((idx) => {
+    const t = tareas[idx];
+    if(!t.predecesoras) return;
+    const preds = parsePredecesoras(t.predecesoras);
+    preds.forEach(p => {
+      const pred = tareas[p.idx];
+      if(!pred || rowMap[pred.id] === undefined || rowMap[t.id] === undefined) return;
+      const tFinPred = parseDate(pred.fechaFin);
+      const tIniSuc = parseDate(t.fechaIni);
+      if(!tFinPred || !tIniSuc) return;
+      const x1 = Math.round(((tFinPred - minF)/86400000 + 1) * anchoDia);
+      const x2 = Math.round(((tIniSuc - minF)/86400000) * anchoDia);
+      const y1 = rowMap[pred.id] + filaH/2;
+      const y2 = rowMap[t.id] + filaH/2;
+      const cls = (modoCritico && t.critica && pred.critica) ? 'critica' : '';
+      const path = `M ${x1} ${y1} L ${x1+6} ${y1} L ${x1+6} ${y2} L ${x2-4} ${y2}`;
+      paths.push(`<path d="${path}" class="${cls}"/>`);
+      paths.push(`<polygon class="arrow ${cls}" points="${x2-5},${y2-3} ${x2},${y2} ${x2-5},${y2+3}"/>`);
+    });
+  });
+  if(paths.length === 0) return '';
+  return `<div class="gp-dep" style="width:${totalAncho}px;height:${visibles.length*filaH}px">
+    <svg width="${totalAncho}" height="${visibles.length*filaH}">${paths.join('')}</svg>
+  </div>`;
+}
+
+// =============================================================
+// DRAG & DROP DE BARRAS
+// =============================================================
+let dragState = null;
+function iniciarDragBarra(ev, id, modo){
+  ev.preventDefault();
+  ev.stopPropagation();
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
+  pushUndo();
+  const anchoDia = ZOOM_LEVELS[zoomIdx].anchoDia;
+  dragState = {
+    id, modo, // 'move' | 'resize-left' | 'resize-right'
+    startX: ev.clientX,
+    initFechaIni: t.fechaIni,
+    initFechaFin: t.fechaFin,
+    initDuracion: t.duracion,
+    anchoDia,
+  };
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragEnd);
+  document.body.style.cursor = modo === 'move' ? 'grabbing' : 'ew-resize';
+}
+function onDragMove(ev){
+  if(!dragState) return;
+  const t = tareas.find(x => x.id === dragState.id);
+  if(!t) return;
+  const dx = ev.clientX - dragState.startX;
+  const deltaDias = Math.round(dx / dragState.anchoDia);
+  if(deltaDias === 0) return;
+
+  if(dragState.modo === 'move'){
+    const newIni = addDays(parseDate(dragState.initFechaIni), deltaDias);
+    const newFin = addDays(parseDate(dragState.initFechaFin), deltaDias);
+    t.fechaIni = fmtISO(newIni);
+    t.fechaFin = fmtISO(newFin);
+  } else if(dragState.modo === 'resize-right'){
+    const newFin = addDays(parseDate(dragState.initFechaFin), deltaDias);
+    if(newFin >= parseDate(t.fechaIni)){
+      t.fechaFin = fmtISO(newFin);
+      t.duracion = calcularDuracionLab(t.fechaIni, t.fechaFin);
+    }
+  } else if(dragState.modo === 'resize-left'){
+    const newIni = addDays(parseDate(dragState.initFechaIni), deltaDias);
+    if(newIni <= parseDate(t.fechaFin)){
+      t.fechaIni = fmtISO(newIni);
+      t.duracion = calcularDuracionLab(t.fechaIni, t.fechaFin);
+    }
+  }
+  recalcularResumenes();
+  calcularRutaCritica();
+  renderConFoco();
+}
+function onDragEnd(){
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragEnd);
+  document.body.style.cursor = '';
+  dragState = null;
+}
+
+// =============================================================
+// RESIZE COLUMNAS
+// =============================================================
+let resizeColState = null;
+function iniciarResizeColumna(ev, col){
+  ev.preventDefault();
+  ev.stopPropagation();
+  resizeColState = {col, startX: ev.clientX, initWidth: anchoColumnas[col]};
+  document.addEventListener('mousemove', onResizeColMove);
+  document.addEventListener('mouseup', onResizeColEnd);
+  ev.target.classList.add('dragging');
+}
+function onResizeColMove(ev){
+  if(!resizeColState) return;
+  const dx = ev.clientX - resizeColState.startX;
+  anchoColumnas[resizeColState.col] = Math.max(40, resizeColState.initWidth + dx);
+  render();
+}
+function onResizeColEnd(){
+  document.removeEventListener('mousemove', onResizeColMove);
+  document.removeEventListener('mouseup', onResizeColEnd);
+  document.querySelectorAll('.resize-handle.dragging').forEach(el => el.classList.remove('dragging'));
+  localStorage.setItem('gp-anchos', JSON.stringify(anchoColumnas));
+  resizeColState = null;
+}
+
+// =============================================================
+// TOOLTIP
+// =============================================================
+function mostrarTooltip(ev, id){
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
+  const tt = document.getElementById('gp-tooltip');
+  const ti = parseDate(t.fechaIni), tf = parseDate(t.fechaFin);
+  const respId = t.responsableId;
+  const resp = respId ? DB.personal.get(respId) : null;
+  const respNom = resp ? ([resp.nombre, resp.apellidos].filter(Boolean).join(' ') || resp.cargo) : '—';
+  tt.innerHTML = `
+    <b>${escapeHtml(t.nombre)}</b><br>
+    ${t.esHito ? '◆ Hito' : 'Tarea'}${t.critica ? ' · 🔴 CRÍTICA' : ''}
+    <div class="sep"></div>
+    📅 ${ti.toLocaleDateString('es-PE')} → ${tf.toLocaleDateString('es-PE')}<br>
+    ⏱ ${t.duracion} días · ${t.avance}% avance<br>
+    👤 ${escapeHtml(respNom)}<br>
+    ${t.predecesoras ? '🔗 Pred.: '+escapeHtml(t.predecesoras) : ''}
+    ${t.notas ? '<div class="sep"></div>📝 '+escapeHtml(t.notas.slice(0,100)) : ''}
+  `;
+  tt.style.display = 'block';
+  tt.style.left = Math.min(ev.clientX + 12, window.innerWidth - 300) + 'px';
+  tt.style.top = (ev.clientY + 16) + 'px';
+}
+function ocultarTooltip(){
+  document.getElementById('gp-tooltip').style.display = 'none';
+}
+
+// =============================================================
+// STATUS BAR
+// =============================================================
+function actualizarStatusbar(){
+  document.getElementById('sb-tareas').textContent = tareas.length;
+  document.getElementById('sb-criticas').textContent = tareas.filter(t => t.critica && !esResumen(tareas.indexOf(t))).length;
+  document.getElementById('sb-zoom').textContent = ZOOM_LEVELS[zoomIdx].label;
+  if(tareas.length === 0){
+    document.getElementById('sb-rango').textContent = '—';
+    document.getElementById('sb-dur').textContent = '0';
+    document.getElementById('sb-avance').textContent = '0%';
+    return;
+  }
+  const fechas = tareas.flatMap(t => [parseDate(t.fechaIni), parseDate(t.fechaFin)]).filter(Boolean);
+  if(fechas.length === 0) return;
+  const minF = new Date(Math.min(...fechas.map(d=>d.getTime())));
+  const maxF = new Date(Math.max(...fechas.map(d=>d.getTime())));
+  document.getElementById('sb-rango').textContent = minF.toLocaleDateString('es-PE') + ' → ' + maxF.toLocaleDateString('es-PE');
+  document.getElementById('sb-dur').textContent = calcularDuracionLab(fmtISO(minF), fmtISO(maxF));
+  const proj = tareas.find(t => t.nivel === 0);
+  document.getElementById('sb-avance').textContent = (proj ? proj.avance : 0) + '%';
+}
+function mostrarMensaje(msg, tipo){
+  const el = document.getElementById('sb-mensaje');
+  el.textContent = msg;
+  el.style.color = tipo === 'danger' ? '#fca5a5' : tipo === 'success' ? '#86efac' : '#cbd5e1';
+  setTimeout(() => { el.textContent = 'Listo'; el.style.color = '#cbd5e1'; }, 3000);
+}
+
+// =============================================================
+// EXPORT
+// =============================================================
+function exportarMSProject(){
+  // Genera XML formato MSPDI (Microsoft Project XML)
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>${escapeXML(proyectoActual?.nombre || 'Proyecto')}</Name>
+  <Title>${escapeXML(proyectoActual?.codigo || '')}</Title>
+  <Author>ERP CONSITEC / Poderosa</Author>
+  <CreationDate>${new Date().toISOString()}</CreationDate>
+  <Tasks>
+${tareas.map((t,i) => `    <Task>
+      <UID>${i+1}</UID>
+      <ID>${i+1}</ID>
+      <Name>${escapeXML(t.nombre)}</Name>
+      <Type>${t.esHito?1:0}</Type>
+      <OutlineLevel>${t.nivel+1}</OutlineLevel>
+      <Start>${t.fechaIni}T08:00:00</Start>
+      <Finish>${t.fechaFin}T17:00:00</Finish>
+      <Duration>PT${(t.duracion||0)*8}H0M0S</Duration>
+      <PercentComplete>${t.avance||0}</PercentComplete>
+      <Notes>${escapeXML(t.notas||'')}</Notes>
+      ${parsePredecesoras(t.predecesoras).map(p => `<PredecessorLink><PredecessorUID>${p.idx+1}</PredecessorUID><Type>1</Type></PredecessorLink>`).join('')}
+    </Task>`).join('\n')}
+  </Tasks>
+</Project>`;
+  const blob = new Blob([xml], {type:'application/xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${proyectoActual?.codigo||'proyecto'}-gantt.xml`;
+  a.click();
+  mostrarMensaje('XML exportado','success');
+}
+function exportarCSV(){
+  const headers = ['#','Nombre','Nivel','Duración','Inicio','Fin','%','Predecesoras','Crítica','Responsable'];
+  const rows = tareas.map((t,i) => {
+    const resp = t.responsableId ? DB.personal.get(t.responsableId) : null;
+    const respNom = resp ? ([resp.nombre, resp.apellidos].filter(Boolean).join(' ') || resp.cargo) : '';
+    return [i+1, t.nombre, t.nivel, t.duracion, t.fechaIni, t.fechaFin, t.avance+'%', t.predecesoras, t.critica?'Sí':'No', respNom];
+  });
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${proyectoActual?.codigo||'proyecto'}-gantt.csv`;
+  a.click();
+  mostrarMensaje('CSV exportado','success');
+}
+function escapeXML(s){ if(s==null) return ''; return String(s).replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c])); }
+
+// =============================================================
+// GUARDAR
+// =============================================================
+function guardarTareas(){
+  if(!proyectoActual){ mostrarMensaje('Selecciona un proyecto primero','danger'); return; }
+  proyectoActual.tareas = tareas.map(t => ({
+    id:t.id, nombre:t.nombre, nivel:t.nivel,
+    fechaIni:t.fechaIni, fechaFin:t.fechaFin, duracion:t.duracion,
+    avance:t.avance, predecesoras:t.predecesoras, colapsada:t.colapsada,
+    responsableId:t.responsableId, prioridad:t.prioridad, notas:t.notas, esHito:t.esHito,
+  }));
+  proyectoActual.baseline = baseline;
+  proyectoActual.calendario = calendario;
+  if(tareas.length > 0){
+    const fechas = tareas.flatMap(t => [parseDate(t.fechaIni), parseDate(t.fechaFin)]).filter(Boolean);
+    if(fechas.length > 0){
+      proyectoActual.fechaInicio = fmtISO(new Date(Math.min(...fechas.map(d=>d.getTime()))));
+      proyectoActual.fechaFin    = fmtISO(new Date(Math.max(...fechas.map(d=>d.getTime()))));
+    }
+    const proj = tareas.find(t => t.nivel === 0);
+    if(proj) proyectoActual.avance = proj.avance || 0;
+  }
+  DB.proyectos.save(proyectoActual);
+  mostrarMensaje('Cronograma guardado · '+proyectoActual.codigo, 'success');
+}
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Proveedores — ERP CONSITEC / Poderosa</title>
+<link rel="stylesheet" href="../css/app.css">
+<link rel="icon" type="image/png" href="../assets/logo-consitec.png">
+<style>
+.contact-card{background:#f7f8f9;border:1px solid var(--gray-line);border-radius:4px;padding:8px 10px;margin-top:6px;position:relative}
+.contact-card .del{position:absolute;top:6px;right:6px;background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0;cursor:pointer}
+.contact-card .grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:2px}
+.contact-card label{margin:2px 0 0;font-size:10px}
+.contact-card input{font-size:11.5px;padding:3px 6px}
+.rubro-tag{display:inline-block;background:var(--gray-soft);border:1px solid var(--gray-line);padding:3px 9px;border-radius:12px;font-size:11px;margin:3px 4px 0 0;color:#444}
+.rubro-tag .x{margin-left:6px;cursor:pointer;color:#dc3545;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-block">
+    <img src="../assets/logo-consitec.png" alt="CONSITEC" class="logo">
+    <div>
+      <h1>ERP CONSITEC / Poderosa</h1>
+      <div class="subtitle">Proveedores</div>
+    </div>
+    <img src="../assets/logo-poderosa.png" alt="Poderosa" class="logo-cliente" title="Cía. Minera Poderosa S.A.">
+  </div>
+  <nav>
+    <a href="../index.html">Inicio</a>
+    <a href="cotizador.html">Servicios</a>
+    <a href="cotizador-suministro.html">Suministros</a>
+    <a href="cotizaciones.html">Historial</a>
+    <a href="ordenes-compra.html">OCs</a>
+    <a href="operaciones.html">Operaciones</a>
+    <a href="gantt.html">Gantt</a>
+    <a href="reportes.html">Reportes</a>
+    <a href="proveedores.html" class="active">Proveedores</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="proyectos.html">Proyectos</a>
+    <a href="gestion.html">Gestión</a>
+    <a href="cargos.html">Cargos</a>
+    <a href="personal.html">Personal</a>
+    <a href="materiales.html">Materiales</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="page-title">
+    <h2>🚚 Cartera de Proveedores</h2>
+    <div class="actions">
+      <button class="accent" onclick="abrirNuevo()">+ Nuevo Proveedor</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="search"><input id="q" placeholder="Buscar por razón social, RUC, rubro..." oninput="render()"></div>
+      <select id="fRubro" onchange="render()" style="max-width:200px"><option value="">Todos los rubros</option></select>
+      <span class="tag" id="counter"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data" id="tabla">
+        <thead>
+          <tr>
+            <th>Razón social</th>
+            <th>RUC</th>
+            <th>Rubro</th>
+            <th>Contactos</th>
+            <th>Días Crédito</th>
+            <th class="num">OCs</th>
+            <th class="num">Total emitido</th>
+            <th class="num">Saldo</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal Proveedor -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <h3 id="modalTitle">Nuevo Proveedor</h3>
+      <button class="close" onclick="cerrar()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+
+      <h3 style="font-size:13px;color:var(--brand);margin:0 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">Datos generales</h3>
+      <div class="row">
+        <div>
+          <label>Razón social *</label>
+          <input id="f-razon" placeholder="DL SUPPLY & LOGISTIC SAC">
+        </div>
+        <div>
+          <label>RUC</label>
+          <input id="f-ruc" maxlength="11">
+        </div>
+      </div>
+      <div class="row3">
+        <div>
+          <label>Rubro / Categoría</label>
+          <select id="f-rubro">
+            <option value="">— Seleccionar —</option>
+            <option value="Materiales metálicos">Materiales metálicos</option>
+            <option value="Soldadura y consumibles">Soldadura y consumibles</option>
+            <option value="Pintura y revestimientos">Pintura y revestimientos</option>
+            <option value="Eléctrico / Instrumentación">Eléctrico / Instrumentación</option>
+            <option value="Tornillería y ferretería">Tornillería y ferretería</option>
+            <option value="EPP / Seguridad">EPP / Seguridad</option>
+            <option value="Herramientas">Herramientas</option>
+            <option value="Maquinaria">Maquinaria</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Logística / Transporte">Logística / Transporte</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div>
+          <label>Días de Crédito (default)</label>
+          <input id="f-diasCredito" type="number" min="0" placeholder="0 = contado" oninput="autoFormaPago()">
+        </div>
+        <div>
+          <label>Calificación</label>
+          <select id="f-calificacion">
+            <option value="">— Sin calificar —</option>
+            <option value="A">A — Excelente</option>
+            <option value="B">B — Bueno</option>
+            <option value="C">C — Regular</option>
+            <option value="D">D — Problemático</option>
+          </select>
+        </div>
+      </div>
+      <label>Dirección</label>
+      <input id="f-direccion">
+      <div class="row">
+        <div>
+          <label>Forma de pago default</label>
+          <select id="f-formaPagoDefault">
+            <option value="Al contado">Al contado</option>
+            <option value="Crédito 15 días">Crédito 15 días</option>
+            <option value="Crédito 30 días">Crédito 30 días</option>
+            <option value="Crédito 45 días">Crédito 45 días</option>
+            <option value="Crédito 60 días">Crédito 60 días</option>
+            <option value="50% adelanto, 50% contra entrega">50% adelanto, 50% contra entrega</option>
+            <option value="Contra entrega">Contra entrega</option>
+          </select>
+        </div>
+        <div><label>Web</label><input id="f-web" placeholder="https://..."></div>
+      </div>
+      <label>Banco / Cuenta</label>
+      <input id="f-cuenta" placeholder="BCP Soles: 123-456789-0-12">
+
+      <h3 style="font-size:13px;color:var(--brand);margin:14px 0 8px;border-bottom:1px solid var(--gray-mid);padding-bottom:4px">
+        Contactos <small class="text-muted" style="font-weight:normal">(múltiples vendedores/áreas)</small>
+      </h3>
+      <div id="lst-contactos"></div>
+      <button class="add-btn" onclick="addContacto()" style="background:transparent;color:var(--brand);border:1px dashed var(--brand);width:100%;padding:6px;margin-top:6px;border-radius:3px;font-size:12px;font-weight:500;cursor:pointer">
+        + Agregar contacto
+      </button>
+
+      <label class="mt-3">Notas internas</label>
+      <textarea id="f-notas" rows="2" placeholder="Tiempos de entrega, marcas que maneja, observaciones..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" id="btnEliminar" onclick="eliminar()" style="margin-right:auto;display:none">🗑 Eliminar</button>
+      <button class="ghost" onclick="cerrar()">Cancelar</button>
+      <button class="success" onclick="guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Scripts SharePoint (carga solo si modo=sharepoint) ====== -->
+<script src="../js/sharepoint-config.js"></script>
+<script src="../js/lib/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sharepoint-adapter.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/auth-ui.js"></script>
+<script>
+let formContactos = [];
+
+function pintarKPIs(){
+  const provs = DB.proveedores.list();
+  const ocs = DB.ocs.list();
+  const totalEmitido = ocs.reduce((s,o)=>s+(o.totales?.total||0),0);
+  const totalPagado  = ocs.reduce((s,o)=>s+(o.pagos||[]).reduce((a,p)=>a+(p.monto||0),0),0);
+  const saldoTotal = totalEmitido - totalPagado;
+  const rubros = new Set(provs.map(p => p.rubro).filter(Boolean));
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="label">Proveedores</div><div class="value">${provs.length}</div><div class="sub">${rubros.size} rubros</div></div>
+    <div class="kpi"><div class="label">Total emitido OCs</div><div class="value" style="font-size:18px">${fmtPEN(totalEmitido)}</div><div class="sub">${ocs.length} OCs</div></div>
+    <div class="kpi success"><div class="label">Pagado</div><div class="value" style="font-size:18px">${fmtPEN(totalPagado)}</div></div>
+    <div class="kpi accent"><div class="label">Saldo pendiente</div><div class="value" style="font-size:18px">${fmtPEN(saldoTotal)}</div></div>
+  `;
+}
+
+function poblarFiltros(){
+  const provs = DB.proveedores.list();
+  const rubros = [...new Set(provs.map(p => p.rubro).filter(Boolean))].sort();
+  const sel = document.getElementById('fRubro');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los rubros</option>' +
+    rubros.map(r => `<option value="${escapeAttr(r)}">${escapeHtml(r)}</option>`).join('');
+  sel.value = cur;
+}
+
+function render(){
+  pintarKPIs();
+  poblarFiltros();
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const fRubro = document.getElementById('fRubro').value;
+  const ocs = DB.ocs.list();
+  const items = DB.proveedores.list().filter(p =>
+    (!q || (p.razonSocial||'').toLowerCase().includes(q)
+        || (p.ruc||'').includes(q)
+        || (p.rubro||'').toLowerCase().includes(q)
+        || (p.contactos||[]).some(c => (c.nombre||'').toLowerCase().includes(q)))
+    && (!fRubro || p.rubro === fRubro)
+  );
+
+  const tbody = document.getElementById('tbody');
+  if(items.length === 0){
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">No hay proveedores.</td></tr>`;
+  } else {
+    tbody.innerHTML = items.map(p => {
+      const provOCs = ocs.filter(o => o.proveedorId === p.id);
+      const totEmit = provOCs.reduce((s,o)=>s+(o.totales?.total||0),0);
+      const totPag  = provOCs.reduce((s,o)=>s+(o.pagos||[]).reduce((a,pg)=>a+(pg.monto||0),0),0);
+      const saldo = totEmit - totPag;
+      const cons = (p.contactos||[]).map(c => `<small>• ${escapeHtml(c.nombre||'-')}${c.cargo?' <span class="tag">'+escapeHtml(c.cargo.slice(0,25))+'</span>':''}</small>`).join('<br>');
+      const calif = p.calificacion ? `<span class="tag" style="background:${califColor(p.calificacion)};color:#fff">${p.calificacion}</span>` : '';
+      return `
+        <tr>
+          <td><b>${escapeHtml(p.razonSocial||'')}</b> ${calif}<br><small class="text-muted">${escapeHtml(p.direccion||'')}</small></td>
+          <td>${escapeHtml(p.ruc||'-')}</td>
+          <td>${p.rubro?`<span class="tag">${escapeHtml(p.rubro)}</span>`:'<small class="text-muted">—</small>'}</td>
+          <td>${cons || '<small class="text-muted">Sin contactos</small>'}</td>
+          <td>${p.diasCredito!=null && p.diasCredito>0 ? p.diasCredito+' días' : 'Contado'}</td>
+          <td class="num"><b>${provOCs.length}</b></td>
+          <td class="num"><small>${fmtPEN(totEmit)}</small></td>
+          <td class="num"><b style="color:${saldo>0?'#b45309':'#065f46'}">${fmtPEN(saldo)}</b></td>
+          <td class="actions">
+            <button class="sm ghost" onclick="editar('${p.id}')">Editar</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+  document.getElementById('counter').textContent = `${items.length} proveedor${items.length!==1?'es':''}`;
+}
+
+function califColor(c){ return {A:'#198754',B:'#0466c8',C:'#f59e0b',D:'#dc3545'}[c] || '#64748b'; }
+
+// ========== CONTACTOS ==========
+function renderContactos(){
+  const div = document.getElementById('lst-contactos');
+  if(formContactos.length === 0){
+    div.innerHTML = '<small class="text-muted">Sin contactos. Agrega uno abajo.</small>';
+    return;
+  }
+  div.innerHTML = formContactos.map((co,i) => `
+    <div class="contact-card">
+      <button class="del" onclick="delContacto(${i})">×</button>
+      <div class="grid">
+        <div>
+          <label>Nombre *</label>
+          <input value="${escapeAttr(co.nombre||'')}" oninput="updContacto(${i},'nombre',this.value)" placeholder="Juan Pérez">
+        </div>
+        <div>
+          <label>Cargo / Área</label>
+          <input value="${escapeAttr(co.cargo||'')}" oninput="updContacto(${i},'cargo',this.value)" placeholder="Ventas, Despacho...">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input value="${escapeAttr(co.telefono||'')}" oninput="updContacto(${i},'telefono',this.value)" placeholder="+51 ...">
+        </div>
+        <div>
+          <label>Email</label>
+          <input value="${escapeAttr(co.email||'')}" oninput="updContacto(${i},'email',this.value)" placeholder="correo@...">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function addContacto(){
+  formContactos.push({id: DB.uid('co'), nombre:'', cargo:'', telefono:'', email:''});
+  renderContactos();
+}
+function delContacto(i){ formContactos.splice(i,1); renderContactos(); }
+function updContacto(i, campo, val){ formContactos[i][campo] = val; }
+
+// ========== ABRIR / EDITAR / GUARDAR ==========
+// Sincroniza la forma de pago default con los días de crédito ingresados
+function autoFormaPago(){
+  const dias = parseInt(document.getElementById('f-diasCredito').value);
+  const sel = document.getElementById('f-formaPagoDefault');
+  if(isNaN(dias) || dias === 0){ sel.value = 'Al contado'; return; }
+  if(dias === 15) sel.value = 'Crédito 15 días';
+  else if(dias === 30) sel.value = 'Crédito 30 días';
+  else if(dias === 45) sel.value = 'Crédito 45 días';
+  else if(dias === 60) sel.value = 'Crédito 60 días';
+}
+
+function abrirNuevo(){
+  document.getElementById('modalTitle').textContent = 'Nuevo Proveedor';
+  ['f-id','f-razon','f-ruc','f-direccion','f-web','f-cuenta','f-notas','f-diasCredito'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-rubro').value = '';
+  document.getElementById('f-calificacion').value = '';
+  document.getElementById('f-formaPagoDefault').value = 'Al contado';
+  formContactos = [];
+  renderContactos();
+  document.getElementById('btnEliminar').style.display = 'none';
+  document.getElementById('modal').classList.add('show');
+}
+function editar(id){
+  const p = DB.proveedores.get(id); if(!p) return;
+  document.getElementById('modalTitle').textContent = 'Editar — ' + (p.razonSocial||'');
+  document.getElementById('f-id').value = p.id;
+  document.getElementById('f-razon').value = p.razonSocial||'';
+  document.getElementById('f-ruc').value = p.ruc||'';
+  document.getElementById('f-rubro').value = p.rubro||'';
+  document.getElementById('f-diasCredito').value = p.diasCredito||'';
+  document.getElementById('f-calificacion').value = p.calificacion||'';
+  document.getElementById('f-direccion').value = p.direccion||'';
+  document.getElementById('f-web').value = p.web||'';
+  document.getElementById('f-cuenta').value = p.cuenta||'';
+  document.getElementById('f-formaPagoDefault').value = p.formaPagoDefault || (p.diasCredito>0?`Crédito ${p.diasCredito} días`:'Al contado');
+  document.getElementById('f-notas').value = p.notas||'';
+  formContactos = (p.contactos||[]).map(c => ({...c}));
+  // Migración: si tenía contacto flat antiguo
+  if(formContactos.length === 0 && (p.contacto || p.telefono || p.email)){
+    formContactos.push({id: DB.uid('co'), nombre:p.contacto||'', cargo:'', telefono:p.telefono||'', email:p.email||''});
+  }
+  renderContactos();
+  document.getElementById('btnEliminar').style.display = 'inline-block';
+  document.getElementById('modal').classList.add('show');
+}
+function guardar(){
+  const razon = document.getElementById('f-razon').value.trim();
+  if(!razon){ toast('La razón social es obligatoria','danger'); return; }
+  const id = document.getElementById('f-id').value;
+  const existing = id ? DB.proveedores.get(id) : {};
+  const contactosLimpios = formContactos.filter(c => (c.nombre||'').trim());
+  // Tomar el primer contacto como "principal" para compatibilidad con OC
+  const principal = contactosLimpios[0] || {};
+  const item = {
+    ...existing,
+    id: id || undefined,
+    razonSocial: razon,
+    ruc: document.getElementById('f-ruc').value.trim(),
+    rubro: document.getElementById('f-rubro').value,
+    diasCredito: parseInt(document.getElementById('f-diasCredito').value)||0,
+    calificacion: document.getElementById('f-calificacion').value,
+    direccion: document.getElementById('f-direccion').value.trim(),
+    web: document.getElementById('f-web').value.trim(),
+    cuenta: document.getElementById('f-cuenta').value.trim(),
+    formaPagoDefault: document.getElementById('f-formaPagoDefault').value,
+    notas: document.getElementById('f-notas').value.trim(),
+    contactos: contactosLimpios,
+    // mantener campos planos para retrocompatibilidad con OCs viejas
+    contacto: principal.nombre||'',
+    telefono: principal.telefono||'',
+    email: principal.email||'',
+  };
+  DB.proveedores.save(item);
+  toast('Proveedor guardado','success');
+  cerrar();
+  render();
+}
+function eliminar(){
+  const id = document.getElementById('f-id').value; if(!id) return;
+  // Verificar si tiene OCs asociadas
+  const ocsRel = DB.ocs.list().filter(o => o.proveedorId === id);
+  if(ocsRel.length > 0){
+    if(!confirm(`Este proveedor tiene ${ocsRel.length} OC(s) asociada(s). ¿Eliminar igualmente? Las OCs quedarán con datos planos.`)) return;
+  } else {
+    if(!confirm('¿Eliminar este proveedor?')) return;
+  }
+  DB.proveedores.remove(id);
+  toast('Proveedor eliminado');
+  cerrar();
+  render();
+}
+function cerrar(){ document.getElementById('modal').classList.remove('show'); }
+
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+render();
+</script>
+</body>
+</html>
