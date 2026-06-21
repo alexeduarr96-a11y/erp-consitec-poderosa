@@ -104,29 +104,34 @@
 .item-row input,.item-row textarea,.item-row select{font-size:11px;padding:3px 5px}
 
 /* ============================================================
-   ===== IMPRESIÓN — Hoja A4 limpia, solo la OC visible =====
+   ===== IMPRESIÓN — Hoja A4 limpia, basado en patrón PROAUTOTEC =====
    ============================================================ */
 @media print {
-  /* Forzar colores reales (algunos navegadores no imprimen colores de fondo por defecto) */
+  /* Forzar colores reales en todos los elementos */
   *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  /* Página A4 con pequeño margen superior */
   @page {
     size: A4;
-    margin: 0;
+    margin: 10mm 0 0 0;
   }
+
   html, body {
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
   }
-  /* Ocultar TODA la UI del editor y navegación */
+
+  /* Ocultar TODA la UI: navegación, editor lateral, botones, modales, status bar */
   header.topbar,
   #sp-statusbar,
   .page-title,
   .oc-layout > .editor,
+  .editor,
   .actions,
   .toolbar,
   .modal-overlay,
@@ -134,7 +139,8 @@
   button {
     display: none !important;
   }
-  /* La columna preview ocupa toda la página */
+
+  /* Layout fluido para que la hoja ocupe el ancho */
   main.container,
   .container {
     max-width: none !important;
@@ -156,39 +162,58 @@
     overflow: visible !important;
     box-shadow: none !important;
   }
-  /* La hoja ya está dimensionada en mm para A4 - quitar sombras y centrarla */
+
+  /* La HOJA: altura auto para que fluya en multi-página */
   .sheet {
     box-shadow: none !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     width: 210mm !important;
-    min-height: auto !important;
-    padding: 10mm 12mm !important;
-    page-break-after: always;
+    height: auto !important;
+    min-height: calc(297mm - 10mm) !important;
+    padding: 6mm 14mm 22mm !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
-  .sheet:last-child {
-    page-break-after: auto;
+
+  /* Tabla items: la mejor experiencia multi-página */
+  .sheet table.items {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
-  /* Tabla de items: repetir thead en cada página y evitar cortar filas */
+  /* Thead se repite en cada página automáticamente */
   .sheet table.items thead {
-    display: table-header-group;
+    display: table-header-group !important;
   }
-  .sheet table.items tfoot {
-    display: table-footer-group;
+  /* Filas no se cortan a la mitad */
+  .sheet table.items tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
-  .sheet table.items tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
-  }
-  /* Bloques que no deben partirse en mitad de página */
+
+  /* Bloques que deben ir juntos */
   .sheet .totales,
   .sheet .son,
   .sheet .observacion-block,
-  .sheet .firma,
-  .sheet .facturar-block {
-    page-break-inside: avoid;
+  .sheet .observacion-block-text,
+  .sheet .facturar-block,
+  .sheet .obs-legales {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
+  /* Firma no se separa del bloque anterior */
   .sheet .firma {
-    page-break-before: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    margin-top: 22px !important;
+  }
+
+  /* Respiro arriba en bloques que rompen a hoja nueva */
+  .sheet .totales,
+  .sheet .obs-legales {
+    margin-top: 14px;
   }
 }
 .item-row .calc{background:#e8f5e9;border:1px solid #a5d6a7;font-weight:600;color:#1b5e20;text-align:right;padding:3px 5px;border-radius:3px;font-size:11px}
