@@ -127,14 +127,45 @@ const SPAdapter = (function(){
     // Cotizaciones: campos derivados o sin columna en SP (se mantienen en localStorage mirror)
     'Cotizaciones': new Set([
       'totales',           // totalFinal y ganancia van como columnas separadas
-      'lugarEntrega',      // campo de cotizador suministro sin columna SP
-      'plazoEntrega',      // idem
-      'codigoCliente',     // cliente snapshot
-      'rucCliente',        // cliente snapshot
+      'lugarEntrega',      // cotizador-suministro
+      'plazoEntrega',
+      'codigoCliente',
+      'rucCliente',
+      'desc',              // descuento del cotizador-suministro
+      'igvIncluido',       // flag de cotizador-suministro
+      'garantia',          // cotizador-suministro
+      'alcance1Sel',       // selectores temporales UI
+      'alcance2Sel',
     ]),
     'Personal': new Set(['cargo','precioHH','costoRealHH','ganancia','categoria']),
     'OrdenesCompra': new Set(['firmaId','firmaNombre','firmaCargo','proyectoCliente']),
   };
+
+  // Salvavidas: si SP devuelve "Field 'X' is not recognized", el adapter reintenta UNA vez
+  // omitiendo ese campo y registrando en consola. Evita que cualquier campo nuevo rompa el save.
+  async function smartSave(graphFetch, sid, lid, listaNombre, item, isUpdate){
+    let fields = serialize(item, listaNombre);
+    const path = isUpdate
+      ? `/sites/${sid}/lists/${lid}/items/${item.spId}/fields`
+      : `/sites/${sid}/lists/${lid}/items`;
+    const body = isUpdate ? fields : { fields };
+    const method = isUpdate ? 'PATCH' : 'POST';
+    try {
+      return await graphFetch(path, { method, body: JSON.stringify(body) });
+    } catch(e){
+      const m = (e.message||'').match(/Field '([^']+)' is not recognized/);
+      if (m){
+        const badField = m[1];
+        const badFieldKey = badField.charAt(0).toLowerCase() + badField.slice(1);
+        console.warn(`[SP-Adapter] Campo no reconocido en ${listaNombre}: '${badField}'. Reintentando sin él. Considera agregarlo a SKIP_FIELDS_BY_LIST['${listaNombre}'] o crear la columna en SP.`);
+        // Reintentar sin ese campo
+        delete fields[badField];
+        const body2 = isUpdate ? fields : { fields };
+        return await graphFetch(path, { method, body: JSON.stringify(body2) });
+      }
+      throw e;
+    }
+  }
 
   // Expansión de objetos anidados → columnas top-level SP
   // Ej: en Cotizaciones, item.totales = {totalFinal, ganancia} se expande a TotalFinal, Ganancia
@@ -386,20 +417,13 @@ const SPAdapter = (function(){
     await init();
     const sid = await getSiteId();
     const lid = await getListId(listaNombre);
-    const fields = serialize(item, listaNombre);
     if(item.spId){
       // UPDATE
-      await graphFetch(`/sites/${sid}/lists/${lid}/items/${item.spId}/fields`, {
-        method: 'PATCH',
-        body: JSON.stringify(fields),
-      });
+      await smartSave(graphFetch, sid, lid, listaNombre, item, true);
       return { ...item };
     } else {
       // INSERT
-      const r = await graphFetch(`/sites/${sid}/lists/${lid}/items`, {
-        method: 'POST',
-        body: JSON.stringify({ fields }),
-      });
+      const r = await smartSave(graphFetch, sid, lid, listaNombre, item, false);
       return { ...item, spId: r.id, id: r.id };
     }
   }
