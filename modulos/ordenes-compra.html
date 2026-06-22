@@ -117,10 +117,10 @@
     color-adjust: exact !important;
   }
 
-  /* Página A4: reservar 28mm arriba para el header fijo (logo + datos empresa) */
+  /* Página A4 con márgenes mínimos — el thead maneja su propio espacio en cada página */
   @page {
     size: A4;
-    margin: 28mm 0 8mm 0;
+    margin: 10mm 0 8mm 0;
   }
 
   html, body {
@@ -220,47 +220,42 @@
     margin-top: 14px;
   }
 
-  /* === ENCABEZADO FIJO EN CADA PÁGINA (vía clone en body) ===
-     imprimirOC() clona el .head a un #print-header-clone hijo de <body>.
-     position: fixed sobre un elemento top-level lo replica en cada página de print. */
-  .sheet .head {
-    display: none !important;     /* ocultar el original dentro de .sheet */
+  /* === ENCABEZADO REPETIDO EN CADA PÁGINA — técnica THEAD ===
+     imprimirOC() envuelve el contenido del .sheet en <table><thead>HEAD</thead><tbody>...</tbody></table>.
+     thead con display: table-header-group SE REPITE automáticamente en cada página print. */
+  .print-table-wrapper {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: none !important;
   }
-  #print-header-clone {
-    display: block !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    margin: 0 !important;
-    padding: 5mm 14mm 3mm !important;
-    background: #fff !important;
+  .print-table-wrapper thead {
+    display: table-header-group !important;
+  }
+  .print-table-wrapper tbody {
+    display: table-row-group !important;
+  }
+  .print-table-wrapper tr, .print-table-wrapper td {
+    border: none !important;
+    padding: 0 !important;
+  }
+  .print-head-cell {
+    padding: 0 0 4mm 0 !important;
     border-bottom: 0.75pt solid #333 !important;
-    z-index: 9999;
-    height: 24mm;
-    box-sizing: border-box;
+    margin-bottom: 4mm !important;
+    background: #fff !important;
+  }
+  .print-head-cell .head {
     display: grid !important;
-    grid-template-columns: 130px 1fr;
-    gap: 14px;
-    align-items: flex-start;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 9pt;
-    color: #000;
+    grid-template-columns: 130px 1fr !important;
+    gap: 14px !important;
+    align-items: flex-start !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
   }
-  #print-header-clone .logo img {
-    max-width: 120px;
-    max-height: 60px;
+  .print-head-cell .head .logo img {
+    max-width: 120px !important;
+    max-height: 60px !important;
   }
-  #print-header-clone .empresa-info {
-    font-size: 9pt;
-    line-height: 1.5;
-  }
-  #print-header-clone .empresa-info .row-info {
-    display: grid;
-    grid-template-columns: 90px 1fr;
-    gap: 4px;
-  }
-  #print-header-clone .empresa-info b { font-weight: 700; }
 
   /* === COMPACTAR OBSERVACIONES LEGALES === */
   .sheet .obs-legales {
@@ -1101,28 +1096,45 @@ function eliminarOC(id){
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-// Imprimir/PDF — fija el nombre del archivo + clona el header fuera del .sheet
-// para que se repita en cada página sin solapar contenido.
+// Imprimir/PDF — fija el nombre del archivo + envuelve el contenido en
+// <table><thead>HEADER</thead><tbody>CONTENIDO</tbody></table> antes de imprimir.
+// thead con display: table-header-group SE REPITE automáticamente en cada página print.
 function imprimirOC(){
   const codigo = (state.codigo || 'SIN-CODIGO').replace(/[^\w.-]/g, '_');
   const tituloOriginal = document.title;
   document.title = 'OC_' + codigo;
 
-  // Clonar el .head del .sheet y ponerlo como elemento independiente en body
-  // (Chrome/Edge replican elementos position:fixed top-level en CADA página de print)
-  const headOriginal = document.querySelector('.sheet .head');
-  let clone = null;
-  if (headOriginal){
-    clone = headOriginal.cloneNode(true);
-    clone.id = 'print-header-clone';
-    document.body.appendChild(clone);
+  const sheet = document.querySelector('#sheet') || document.querySelector('.sheet');
+  const head = sheet?.querySelector('.head');
+  let originalHTML = null;
+
+  if (sheet && head){
+    // Guardar HTML original para restaurar después
+    originalHTML = sheet.innerHTML;
+    // Construir nueva estructura: tabla con thead repetible
+    const cuerpoHTML = Array.from(sheet.children)
+      .filter(el => el !== head)
+      .map(el => el.outerHTML).join('');
+    const headHTML = head.outerHTML;
+    sheet.innerHTML = `
+      <table class="print-table-wrapper" style="width:100%;border-collapse:collapse;border:none;">
+        <thead><tr><td style="border:none;padding:0;">
+          <div class="print-head-cell">${headHTML}</div>
+        </td></tr></thead>
+        <tbody><tr><td style="border:none;padding:0;">
+          ${cuerpoHTML}
+        </td></tr></tbody>
+      </table>`;
   }
 
   setTimeout(() => {
     window.print();
     setTimeout(() => {
       document.title = tituloOriginal;
-      document.getElementById('print-header-clone')?.remove();
+      // Restaurar HTML original del .sheet
+      if (sheet && originalHTML !== null){
+        sheet.innerHTML = originalHTML;
+      }
     }, 1500);
   }, 80);
 }
