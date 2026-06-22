@@ -41,6 +41,8 @@ const SP_CONFIG = {
     reportesSemanales: 'Reportes',
     // Inventario de unidades mineras (Vijus, Chaparrosa, etc.) — 1 lista, filtro por UnidadMinera
     inventario:        'Inventario',
+    // Movimientos del inventario: entradas, salidas, ajustes (kardex con historial)
+    movimientosInventario: 'MovimientosInventario',
   },
 
   // ============== SCOPES PARA AUTENTICACIÓN ==============

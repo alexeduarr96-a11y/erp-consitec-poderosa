@@ -38,6 +38,23 @@
   button.xs { padding:2px 6px !important; font-size:10px !important; line-height:1.4; }
   button.danger-btn { color:#dc3545; border-color:#dc3545; }
   button.danger-btn:hover { background:#dc3545; color:white; }
+  button.success-btn { color:#0353a4; border-color:#0353a4; }
+  button.success-btn:hover { background:#0353a4; color:white; }
+  button.accent-btn { color:#198754; border-color:#198754; }
+  button.accent-btn:hover { background:#198754; color:white; }
+  /* Timeline historial */
+  .timeline-mov { max-height:55vh; overflow-y:auto; padding:4px; }
+  .timeline-mov .mov { display:grid; grid-template-columns:60px 1fr; gap:10px; padding:10px 12px; border-bottom:1px solid #e5e7eb; align-items:flex-start; }
+  .timeline-mov .mov:last-child { border-bottom:none; }
+  .timeline-mov .mov .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+  .timeline-mov .mov.salida .badge   { background:#fee2e2; color:#991b1b; }
+  .timeline-mov .mov.entrada .badge  { background:#dcfce7; color:#065f46; }
+  .timeline-mov .mov.ajuste .badge   { background:#fef3c7; color:#92400e; }
+  .timeline-mov .mov .meta  { font-size:11.5px; color:#6b7280; margin-top:3px; line-height:1.5; }
+  .timeline-mov .mov .meta b { color:#374151; }
+  .timeline-mov .mov .cant { font-size:18px; font-weight:700; color:#1d3557; text-align:center; }
+  .stock-info { display:flex; gap:14px; padding:10px 14px; background:#f3f4f6; border-radius:6px; margin-bottom:10px; font-size:13px; }
+  .stock-info b { color:#0353a4; font-size:16px; }
   @media print {
     .topbar, .filters-row, .acciones-cell, #sp-statusbar, .actions, .modal-overlay { display:none !important; }
     body { background:white; }
@@ -278,6 +295,78 @@
   </div>
 </div>
 
+<!-- ====== MODAL: Movimiento (entrada / salida / ajuste) ====== -->
+<div class="modal-overlay" id="modal-mov">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 id="mov-title">Registrar salida</h3>
+      <button class="close" onclick="cerrarMov()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mov-itemId">
+
+      <div class="stock-info" id="mov-stock-info"></div>
+
+      <div class="row">
+        <div>
+          <label>Tipo de movimiento *</label>
+          <select id="mov-tipo" onchange="onTipoMovCambio()">
+            <option value="salida">📤 Salida (descuenta stock)</option>
+            <option value="entrada">📥 Entrada (suma stock)</option>
+            <option value="ajuste">⚖ Ajuste (corrección)</option>
+            <option value="devolucion">↩ Devolución (suma stock)</option>
+          </select>
+        </div>
+        <div>
+          <label>Cantidad *</label>
+          <input id="mov-cantidad" type="number" min="0" step="1" value="1" oninput="onMovCantidadChange()">
+        </div>
+        <div>
+          <label>Fecha *</label>
+          <input id="mov-fecha" type="date">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Responsable (quien lo lleva)</label>
+          <select id="mov-responsable"></select>
+        </div>
+        <div>
+          <label>Proyecto destino</label>
+          <select id="mov-proyecto"></select>
+        </div>
+      </div>
+
+      <label>Motivo / Observaciones</label>
+      <textarea id="mov-motivo" rows="2" placeholder="ej. Para trabajos en agitador #5 U.P. Santa María"></textarea>
+
+      <div id="mov-preview" style="margin-top:14px; padding:10px 14px; background:#eff6ff; border-left:3px solid #0353a4; border-radius:4px; font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarMov()">Cancelar</button>
+      <button class="success" onclick="guardarMov()" id="btn-mov-guardar">Registrar movimiento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL: Historial de movimientos del item ====== -->
+<div class="modal-overlay" id="modal-hist">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <h3 id="hist-title">Historial de movimientos</h3>
+      <button class="close" onclick="cerrarHist()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="stock-info" id="hist-stock-info"></div>
+      <div class="timeline-mov" id="hist-timeline"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarHist()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== Librerías para barcode / QR ====== -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
@@ -405,7 +494,10 @@ function render(){
         <button class="ghost xs" onclick="imprimirEtiquetaItem('${esc(i.codigo||'')}', '${esc(i.descripcion||'').replace(/'/g,'&apos;')}')" title="Imprimir etiqueta">🏷</button>
       </td>
       <td class="acciones-cell">
-        <button class="ghost xs" onclick="editar('${i.id}')">✏</button>
+        <button class="ghost xs success-btn" onclick="abrirMovimiento('${i.id}','salida')" title="Registrar salida (descuenta stock)">📤</button>
+        <button class="ghost xs accent-btn" onclick="abrirMovimiento('${i.id}','entrada')" title="Registrar entrada (suma stock)">📥</button>
+        <button class="ghost xs" onclick="verHistorial('${i.id}')" title="Ver historial de movimientos">📋</button>
+        <button class="ghost xs" onclick="editar('${i.id}')" title="Editar item">✏</button>
         <button class="ghost xs danger-btn" onclick="eliminarItem('${i.id}')" title="Eliminar">🗑</button>
       </td>
     </tr>`;
@@ -738,6 +830,180 @@ function exportarCSV(){
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// =========== Kardex: movimientos de inventario (entrada/salida/ajuste) ===========
+let movContext = null;  // { itemId, tipo }
+
+function abrirMovimiento(itemId, tipo){
+  const item = DB.inventario.get(itemId);
+  if (!item){ toast('Ítem no encontrado','err'); return; }
+  movContext = { itemId, tipo };
+  document.getElementById('mov-itemId').value = itemId;
+  document.getElementById('mov-tipo').value = tipo;
+  document.getElementById('mov-cantidad').value = 1;
+  document.getElementById('mov-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('mov-motivo').value = '';
+
+  // Stock info
+  document.getElementById('mov-stock-info').innerHTML = `
+    <div><span style="color:#6b7280">Item:</span> <b>${esc(item.codigo)}</b> — ${esc((item.descripcion||'').slice(0,60))}</div>
+    <div style="margin-left:auto"><span style="color:#6b7280">Stock actual:</span> <b>${item.cantidad||0}</b> ${esc(item.unidad||'Und')}</div>
+  `;
+
+  // Poblar dropdowns
+  const responsable = document.getElementById('mov-responsable');
+  const personal = (DB.personal.list() || []).filter(p => p.nombre || p.nombres);
+  responsable.innerHTML = '<option value="">— Sin responsable —</option>' +
+    personal.map(p => `<option value="${p.id}">${esc((p.nombre||p.nombres||'') + ' ' + (p.apellidos||''))}</option>`).join('');
+
+  const proyectos = (DB.proyectos.list() || []);
+  const proy = document.getElementById('mov-proyecto');
+  proy.innerHTML = '<option value="">— Sin proyecto —</option>' +
+    proyectos.map(p => `<option value="${p.id}">${esc(p.codigo||'')} — ${esc((p.nombre||'').slice(0,50))}</option>`).join('');
+
+  onTipoMovCambio();
+  onMovCantidadChange();
+  document.getElementById('modal-mov').classList.add('show');
+}
+
+function cerrarMov(){
+  document.getElementById('modal-mov').classList.remove('show');
+  movContext = null;
+}
+
+function onTipoMovCambio(){
+  const tipo = document.getElementById('mov-tipo').value;
+  const titulos = {
+    salida: '📤 Registrar salida',
+    entrada: '📥 Registrar entrada',
+    ajuste: '⚖ Ajuste de inventario',
+    devolucion: '↩ Registrar devolución',
+  };
+  document.getElementById('mov-title').textContent = titulos[tipo];
+  onMovCantidadChange();
+}
+
+function onMovCantidadChange(){
+  if (!movContext) return;
+  const item = DB.inventario.get(movContext.itemId);
+  if (!item) return;
+  const tipo = document.getElementById('mov-tipo').value;
+  const cant = parseFloat(document.getElementById('mov-cantidad').value) || 0;
+  const stockActual = item.cantidad || 0;
+  let stockDespues;
+  if (tipo === 'salida') stockDespues = stockActual - cant;
+  else if (tipo === 'entrada' || tipo === 'devolucion') stockDespues = stockActual + cant;
+  else stockDespues = cant; // ajuste: la cantidad ES el nuevo stock
+
+  const preview = document.getElementById('mov-preview');
+  const btn = document.getElementById('btn-mov-guardar');
+  if (tipo === 'salida' && stockDespues < 0){
+    preview.style.background = '#fee2e2'; preview.style.borderColor = '#dc3545';
+    preview.innerHTML = `⚠ <b>Stock insuficiente</b>: solo hay ${stockActual} ${item.unidad||'Und'} disponibles.`;
+    btn.disabled = true;
+  } else {
+    preview.style.background = '#eff6ff'; preview.style.borderColor = '#0353a4';
+    const op = tipo === 'salida' ? '−' : tipo === 'ajuste' ? '→' : '+';
+    preview.innerHTML = `Stock: <b>${stockActual}</b> ${op} <b>${cant}</b> = <b style="color:#198754;font-size:15px">${stockDespues}</b> ${esc(item.unidad||'Und')}`;
+    btn.disabled = false;
+  }
+}
+
+function guardarMov(){
+  if (!movContext) return;
+  const item = DB.inventario.get(movContext.itemId);
+  if (!item){ toast('Ítem no encontrado','err'); return; }
+
+  const tipo = document.getElementById('mov-tipo').value;
+  const cant = parseFloat(document.getElementById('mov-cantidad').value) || 0;
+  if (cant <= 0){ toast('Cantidad inválida','err'); return; }
+  const stockActual = item.cantidad || 0;
+  let stockDespues;
+  if (tipo === 'salida'){
+    if (cant > stockActual){ toast('Stock insuficiente','err'); return; }
+    stockDespues = stockActual - cant;
+  } else if (tipo === 'entrada' || tipo === 'devolucion'){
+    stockDespues = stockActual + cant;
+  } else { // ajuste
+    stockDespues = cant;
+  }
+
+  // Resolver nombres snapshot
+  const respId = document.getElementById('mov-responsable').value;
+  const resp = respId ? DB.personal.get(respId) : null;
+  const respNombre = resp ? ((resp.nombre||resp.nombres||'') + ' ' + (resp.apellidos||'')).trim() : '';
+  const proyId = document.getElementById('mov-proyecto').value;
+  const proy = proyId ? DB.proyectos.get(proyId) : null;
+
+  // 1) Guardar movimiento (historial)
+  DB.movimientosInventario.save({
+    tipo,
+    itemInventarioId: item.id,
+    itemCodigo: item.codigo,
+    itemDescripcion: (item.descripcion||'').slice(0,200),
+    unidadMinera: item.unidadMinera || '',
+    cantidad: cant,
+    cantidadAntes: stockActual,
+    cantidadDespues: stockDespues,
+    fecha: document.getElementById('mov-fecha').value + 'T00:00:00Z',
+    responsableId: respId,
+    responsableNombre: respNombre,
+    proyectoId: proyId,
+    proyectoNombre: proy ? (proy.codigo + ' — ' + (proy.nombre||'')) : '',
+    motivo: document.getElementById('mov-motivo').value.trim(),
+  });
+
+  // 2) Actualizar cantidad del item
+  item.cantidad = stockDespues;
+  DB.inventario.save(item);
+
+  toast(`${tipo === 'salida' ? '📤 Salida' : tipo === 'entrada' ? '📥 Entrada' : tipo === 'ajuste' ? '⚖ Ajuste' : '↩ Devolución'} registrada · Stock ahora: ${stockDespues}`, 'success');
+  cerrarMov();
+  render();
+}
+
+// =========== Historial de movimientos ===========
+function verHistorial(itemId){
+  const item = DB.inventario.get(itemId);
+  if (!item){ toast('Ítem no encontrado','err'); return; }
+  const movs = (DB.movimientosInventario.list() || [])
+    .filter(m => m.itemInventarioId === itemId)
+    .sort((a,b) => new Date(b.fecha||0) - new Date(a.fecha||0));
+
+  document.getElementById('hist-title').textContent = `Historial · ${item.codigo}`;
+  document.getElementById('hist-stock-info').innerHTML = `
+    <div><span style="color:#6b7280">${esc(item.descripcion||'')}</span></div>
+    <div style="margin-left:auto"><span style="color:#6b7280">Stock actual:</span> <b>${item.cantidad||0}</b> ${esc(item.unidad||'Und')}</div>
+  `;
+
+  const tl = document.getElementById('hist-timeline');
+  if (!movs.length){
+    tl.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">Sin movimientos registrados aún.<br><small>Use los botones 📤 / 📥 / ⚖ para registrar entradas y salidas.</small></div>';
+  } else {
+    tl.innerHTML = movs.map(m => {
+      const tipo = (m.tipo||'salida').toLowerCase();
+      const cls = tipo;
+      const op = tipo === 'salida' ? '−' : tipo === 'ajuste' ? '→' : '+';
+      const fecha = m.fecha ? new Date(m.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+      return `
+        <div class="mov ${cls}">
+          <div class="cant">${op}${m.cantidad}</div>
+          <div>
+            <span class="badge">${tipo.toUpperCase()}</span>
+            <span style="margin-left:8px; font-size:12px; color:#6b7280">${fecha}</span>
+            <div class="meta">
+              ${m.responsableNombre ? `👷 <b>${esc(m.responsableNombre)}</b>` : ''}
+              ${m.proyectoNombre ? ` · 🏗 ${esc(m.proyectoNombre)}` : ''}
+              ${m.motivo ? `<br>📝 ${esc(m.motivo)}` : ''}
+              <br><span style="font-size:11px">Stock: ${m.cantidadAntes} → ${m.cantidadDespues}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('modal-hist').classList.add('show');
+}
+function cerrarHist(){ document.getElementById('modal-hist').classList.remove('show'); }
 
 // =========== Init ===========
 window.refrescarUI = render;

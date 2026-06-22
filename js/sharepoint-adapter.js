@@ -61,7 +61,8 @@ const SPAdapter = (function(){
     'OrdenesCompra': 'codigo',
     'Proyectos':     'codigo',
     'Reportes':      'codigo',
-    'Inventario':    'codigo',     // código del item (MNIVE1, MMACH1, etc) va al Title
+    'Inventario':    'codigo',
+    'MovimientosInventario': 'itemCodigo',  // Title = código del item movido
   };
 
   // Renombres de columnas: JS key → SharePoint internal name (cuando NO sigue la regla camel→Pascal)
