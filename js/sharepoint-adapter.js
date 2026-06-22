@@ -123,12 +123,16 @@ const SPAdapter = (function(){
   // Campos que el adapter NUNCA envía a SP (porque no tienen columna o son derivados)
   // Pueden tener subcampos que sí van como columnas separadas (ver expansión más abajo).
   const SKIP_FIELDS_BY_LIST = {
-    'Cotizaciones': new Set(['totales']),   // totalFinal y ganancia van como columnas separadas
-    // Snapshots tomados desde Cargos al crear Personal — derivables vía cargoId
+    // Cotizaciones: campos derivados o sin columna en SP (se mantienen en localStorage mirror)
+    'Cotizaciones': new Set([
+      'totales',           // totalFinal y ganancia van como columnas separadas
+      'lugarEntrega',      // campo de cotizador suministro sin columna SP
+      'plazoEntrega',      // idem
+      'codigoCliente',     // cliente snapshot
+      'rucCliente',        // cliente snapshot
+    ]),
     'Personal': new Set(['cargo','precioHH','costoRealHH','ganancia','categoria']),
-    // Snapshots de Proyecto al crear OC, y campos de firma sin columnas en SP (se derivan de Gestion al pintar)
     'OrdenesCompra': new Set(['firmaId','firmaNombre','firmaCargo','proyectoCliente']),
-    // Snapshots de Cargo/Cliente al crear OC items: están dentro de ItemsJson
   };
 
   // Expansión de objetos anidados → columnas top-level SP
