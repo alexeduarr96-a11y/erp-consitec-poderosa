@@ -163,6 +163,45 @@
 .simple-item{background:#fafafa;border-left:3px solid var(--brand);padding:5px 8px;margin-top:4px;display:flex;gap:6px;align-items:center;border-radius:0 3px 3px 0;font-size:11.5px}
 .simple-item input,.simple-item select{flex:1;font-size:11.5px}
 .simple-item .del{background:#dc3545;color:#fff;border:none;border-radius:3px;width:22px;height:22px;font-size:12px;padding:0}
+
+/* ============================================================
+   ===== IMPRESIÓN — Hoja A4 limpia con header repetido =====
+   ============================================================ */
+@media print {
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  @page { size: A4; margin: 10mm 0 8mm 0; }
+  html, body { background:#fff !important; margin:0 !important; padding:0 !important; }
+
+  /* Ocultar TODA la UI */
+  header.topbar, #sp-statusbar, .page-title, .cot-layout > .editor, .editor,
+  .actions, .toolbar, .modal-overlay, nav, button { display:none !important; }
+
+  main.container, .container { max-width:none !important; width:100% !important; margin:0 !important; padding:0 !important; }
+  .cot-layout { display:block !important; grid-template-columns:none !important; gap:0 !important; }
+  #preview-wrap { background:#fff !important; padding:0 !important; margin:0 !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; }
+
+  .sheet {
+    box-shadow:none !important; margin:0 !important; width:210mm !important;
+    height:auto !important; min-height:auto !important;
+    padding:0 14mm !important; overflow:visible !important;
+    page-break-inside:auto !important;
+  }
+
+  /* Técnica THEAD para repetir header en cada página */
+  .print-table-wrapper { width:100% !important; border-collapse:collapse !important; border:none !important; }
+  .print-table-wrapper thead { display:table-header-group !important; }
+  .print-table-wrapper tbody { display:table-row-group !important; }
+  .print-table-wrapper tr, .print-table-wrapper td { border:none !important; padding:0 !important; }
+  .print-head-cell { padding:0 0 4mm 0 !important; border-bottom:0.75pt solid #333 !important; margin-bottom:4mm !important; background:#fff !important; }
+
+  /* Tabla de recursos no se corta entre filas */
+  .sheet table.rec tbody tr, .sheet table.mat tbody tr { page-break-inside:avoid !important; break-inside:avoid !important; }
+  .sheet table.rec thead, .sheet table.mat thead { display:table-header-group !important; }
+}
 </style>
 </head>
 <body>
@@ -203,7 +242,7 @@
     <div class="actions">
       <button class="ghost sm" onclick="cargarLista()">📂 Abrir guardadas</button>
       <button class="ghost sm" onclick="nuevaCotizacion()">+ Nueva</button>
-      <button class="sm" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="sm" onclick="imprimirCotizacion()">🖨 Imprimir / PDF</button>
       <button class="success sm" onclick="guardarCotizacion()">💾 Guardar</button>
       <button class="accent sm" onclick="aprobarYCrearProyecto()" title="Marcar como aprobada y crear proyecto en Operaciones">✅ Aprobar y crear proyecto</button>
     </div>
@@ -1730,6 +1769,36 @@ document.addEventListener('input', e => {
   const inEd = e.target.closest('.editor');
   if(inEd && !e.target.closest('.item-row') && !e.target.closest('.simple-item')) render();
 });
+
+// Imprimir cotización — nombre archivo = código + header repetido vía thead
+function imprimirCotizacion(){
+  const codigo = (state.codigo || 'COTIZACION').replace(/[^\w.-]/g, '_');
+  const tituloOriginal = document.title;
+  document.title = codigo;
+
+  const sheet = document.querySelector('#sheet') || document.querySelector('.sheet');
+  const head = sheet?.querySelector('.head');
+  let originalHTML = null;
+
+  if (sheet && head){
+    originalHTML = sheet.innerHTML;
+    const cuerpoHTML = Array.from(sheet.children).filter(el => el !== head).map(el => el.outerHTML).join('');
+    const headHTML = head.outerHTML;
+    sheet.innerHTML = `
+      <table class="print-table-wrapper" style="width:100%;border-collapse:collapse;border:none;">
+        <thead><tr><td style="border:none;padding:0;"><div class="print-head-cell">${headHTML}</div></td></tr></thead>
+        <tbody><tr><td style="border:none;padding:0;">${cuerpoHTML}</td></tr></tbody>
+      </table>`;
+  }
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      document.title = tituloOriginal;
+      if (sheet && originalHTML !== null) sheet.innerHTML = originalHTML;
+    }, 1500);
+  }, 80);
+}
 
 init();
 </script>
