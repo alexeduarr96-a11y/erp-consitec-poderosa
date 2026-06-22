@@ -93,6 +93,7 @@ const SPAdapter = (function(){
       'excl':          'ExclJson',
       'resp':          'RespJson',
       'fichas':        'FichasJson',
+      'items':         'ItemsJson',     // cotizador-suministro guarda lista plana de productos
     },
     'OrdenesCompra': {
       'gestorId':      'GestorIdSP',
