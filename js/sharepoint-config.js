@@ -43,6 +43,8 @@ const SP_CONFIG = {
     inventario:        'Inventario',
     // Movimientos del inventario: entradas, salidas, ajustes (kardex con historial)
     movimientosInventario: 'MovimientosInventario',
+    // Cargos de entrega de equipos (acta firmada por supervisor que recibe)
+    cargosEntrega:     'CargosEntrega',
   },
 
   // ============== SCOPES PARA AUTENTICACIÓN ==============

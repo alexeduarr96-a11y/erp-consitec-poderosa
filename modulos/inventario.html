@@ -55,6 +55,35 @@
   .timeline-mov .mov .cant { font-size:18px; font-weight:700; color:#1d3557; text-align:center; }
   .stock-info { display:flex; gap:14px; padding:10px 14px; background:#f3f4f6; border-radius:6px; margin-bottom:10px; font-size:13px; }
   .stock-info b { color:#0353a4; font-size:16px; }
+
+  /* Selección múltiple para cargo */
+  .inv-checkbox { width:16px; height:16px; cursor:pointer; }
+  .cargo-bar {
+    position:sticky; top:50px; z-index:50;
+    background:#0353a4; color:white; padding:10px 16px;
+    border-radius:6px; margin-bottom:10px;
+    display:none; align-items:center; gap:14px;
+    box-shadow:0 4px 12px rgba(3,83,164,.3);
+    animation: cargo-bar-in .25s ease;
+  }
+  @keyframes cargo-bar-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  .cargo-bar.visible { display:flex; }
+  .cargo-bar .count { background:white; color:#0353a4; padding:4px 12px; border-radius:14px; font-weight:700; }
+  .cargo-bar button {
+    background:white; color:#0353a4; border:none;
+    padding:8px 16px; border-radius:5px; font-weight:600; cursor:pointer;
+  }
+  .cargo-bar button.outline {
+    background:transparent; color:white; border:1px solid white;
+  }
+  .cargo-bar button:hover { opacity:.9; }
+
+  /* Tabla items en modal de cargo */
+  .cargo-items-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  .cargo-items-table th { background:#1d3557; color:white; padding:6px; font-size:11px; }
+  .cargo-items-table td { padding:6px; border-bottom:1px solid #e5e7eb; }
+  .cargo-items-table input { font-size:11.5px; padding:3px 5px; }
+  .cargo-items-table .quitar { color:#dc3545; cursor:pointer; }
   @media print {
     .topbar, .filters-row, .acciones-cell, #sp-statusbar, .actions, .modal-overlay { display:none !important; }
     body { background:white; }
@@ -104,6 +133,7 @@
     <div class="actions">
       <button class="ghost sm" onclick="imprimirInventario()">🖨 Imprimir</button>
       <button class="ghost sm" onclick="exportarCSV()">⬇ CSV</button>
+      <button class="ghost sm" onclick="abrirCargos()">📚 Cargos emitidos</button>
       <button class="primary" onclick="abrirNuevo()">+ Nuevo ítem</button>
     </div>
   </div>
@@ -146,10 +176,19 @@
     </div>
   </div>
 
+  <!-- Barra flotante cuando hay items seleccionados -->
+  <div class="cargo-bar" id="cargo-bar">
+    <span class="count" id="cargo-count">0</span>
+    <span>equipos seleccionados para entregar</span>
+    <button onclick="abrirModalCargo()">📋 Generar Cargo de Entrega</button>
+    <button class="outline" onclick="limpiarSeleccion()">Limpiar selección</button>
+  </div>
+
   <div class="card">
     <table class="inv-table">
       <thead>
         <tr>
+          <th style="width:32px"><input type="checkbox" id="check-all" class="inv-checkbox" onchange="toggleAllCheck(this.checked)" title="Seleccionar todos"></th>
           <th>Código Patrimonial</th>
           <th>Foto</th>
           <th>Categoría</th>
@@ -367,6 +406,110 @@
   </div>
 </div>
 
+<!-- ====== MODAL: Generar Cargo de Entrega ====== -->
+<div class="modal-overlay" id="modal-cargo">
+  <div class="modal" style="max-width:840px;">
+    <div class="modal-header">
+      <h3>📋 Generar Cargo de Entrega de Equipos</h3>
+      <button class="close" onclick="cerrarModalCargo()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div>
+          <label>N° de Cargo</label>
+          <input id="cg-numero" readonly style="background:#f3f4f6;font-weight:700;color:#0353a4">
+        </div>
+        <div>
+          <label>Fecha de entrega *</label>
+          <input id="cg-fecha" type="date">
+        </div>
+        <div>
+          <label>Fecha estimada de devolución</label>
+          <input id="cg-fechaDev" type="date">
+        </div>
+      </div>
+
+      <h4 style="margin:14px 0 4px;font-size:13px;color:#374151">RECIBE (Supervisor de campo)</h4>
+      <div class="row">
+        <div>
+          <label>Supervisor *</label>
+          <select id="cg-supervisor" onchange="onSupervisorChange()"></select>
+        </div>
+        <div>
+          <label>DNI</label>
+          <input id="cg-dni" placeholder="DNI">
+        </div>
+        <div>
+          <label>Cargo</label>
+          <input id="cg-cargo" placeholder="Cargo">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Proyecto destino *</label>
+          <select id="cg-proyecto"></select>
+        </div>
+        <div>
+          <label>Unidad minera destino *</label>
+          <select id="cg-unidad">
+            <option value="Vijus">Vijus</option>
+            <option value="Chaparrosa">Chaparrosa</option>
+            <option value="Hualanga">Hualanga</option>
+            <option value="U.P. Santa María">U.P. Santa María</option>
+            <option value="U.P. Marañón">U.P. Marañón</option>
+            <option value="U.P. Paraíso">U.P. Paraíso</option>
+            <option value="OTRA">Otra (especificar)</option>
+          </select>
+        </div>
+      </div>
+
+      <h4 style="margin:14px 0 4px;font-size:13px;color:#374151">EQUIPOS A ENTREGAR</h4>
+      <div style="max-height:240px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px">
+        <table class="cargo-items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Marca/Modelo</th>
+              <th style="width:60px">Cant.</th>
+              <th style="width:90px">UM</th>
+              <th style="width:110px">Estado</th>
+              <th>Observaciones</th>
+              <th style="width:30px"></th>
+            </tr>
+          </thead>
+          <tbody id="cg-items-tbody"></tbody>
+        </table>
+      </div>
+
+      <label style="margin-top:12px">Observaciones generales</label>
+      <textarea id="cg-obs" rows="2" placeholder="ej. Equipos entregados para mantenimiento del agitador #5"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="cerrarModalCargo()">Cancelar</button>
+      <button class="success" onclick="confirmarCargo()" id="btn-cargo-confirmar">📋 Generar Cargo + PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL: Lista de cargos emitidos ====== -->
+<div class="modal-overlay" id="modal-cargos">
+  <div class="modal" style="max-width:920px;">
+    <div class="modal-header">
+      <h3>📚 Cargos emitidos</h3>
+      <button class="close" onclick="document.getElementById('modal-cargos').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cargos-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost" onclick="document.getElementById('modal-cargos').classList.remove('show')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== Librerías para barcode / QR ====== -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
@@ -476,7 +619,9 @@ function render(){
       : '<span class="foto-placeholder">📷</span>';
     const cat = i.categoria || i.herramienta || '';
     const catCls = (cat||'').toLowerCase().replace(/[áéíóúñ]/g, c => ({'á':'a','é':'e','í':'i','ó':'o','ú':'u','ñ':'n'})[c]);
-    return `<tr>
+    const isChecked = seleccionados.has(i.id) ? 'checked' : '';
+    return `<tr data-id="${esc(i.id)}">
+      <td><input type="checkbox" class="inv-checkbox row-check" ${isChecked} onchange="toggleCheckItem('${esc(i.id)}', this.checked)"></td>
       <td><span class="codigo-cell">${esc(i.codigo||'-')}</span></td>
       <td>${fotoCell}</td>
       <td>${cat ? `<span class="badge-cat ${catCls}">${esc(cat)}</span>` : ''}</td>
@@ -1004,6 +1149,405 @@ function verHistorial(itemId){
   document.getElementById('modal-hist').classList.add('show');
 }
 function cerrarHist(){ document.getElementById('modal-hist').classList.remove('show'); }
+
+// =========== CARGOS DE ENTREGA (selección múltiple → PDF firmable) ===========
+const seleccionados = new Set();  // ids de items seleccionados
+
+function toggleCheckItem(id, checked){
+  if (checked) seleccionados.add(id);
+  else seleccionados.delete(id);
+  actualizarBarraCargo();
+}
+function toggleAllCheck(checked){
+  document.querySelectorAll('.row-check').forEach(cb => {
+    const tr = cb.closest('tr');
+    const id = tr?.dataset?.id;
+    if (!id) return;
+    cb.checked = checked;
+    if (checked) seleccionados.add(id);
+    else seleccionados.delete(id);
+  });
+  actualizarBarraCargo();
+}
+function limpiarSeleccion(){
+  seleccionados.clear();
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  const ca = document.getElementById('check-all'); if (ca) ca.checked = false;
+  actualizarBarraCargo();
+}
+function actualizarBarraCargo(){
+  const bar = document.getElementById('cargo-bar');
+  if (!bar) return;
+  const n = seleccionados.size;
+  if (n > 0){
+    bar.classList.add('visible');
+    document.getElementById('cargo-count').textContent = n;
+  } else bar.classList.remove('visible');
+}
+
+function siguienteNumeroCargo(){
+  const cargos = DB.cargosEntrega.list() || [];
+  const year = new Date().getFullYear();
+  const delAño = cargos.filter(c => (c.numero||'').includes('-'+year+'-'));
+  const max = delAño.reduce((m, c) => {
+    const n = parseInt((c.numero||'').split('-').pop()) || 0;
+    return Math.max(m, n);
+  }, 0);
+  return `CARGO-${year}-${String(max+1).padStart(3,'0')}`;
+}
+
+function abrirModalCargo(){
+  if (seleccionados.size === 0){ toast('Selecciona al menos 1 ítem','err'); return; }
+  // Numero
+  document.getElementById('cg-numero').value = siguienteNumeroCargo();
+  document.getElementById('cg-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cg-fechaDev').value = '';
+  document.getElementById('cg-obs').value = '';
+
+  // Supervisor (Personal con nombre)
+  const personal = (DB.personal.list() || []).filter(p => p.nombre || p.nombres);
+  const supSel = document.getElementById('cg-supervisor');
+  supSel.innerHTML = '<option value="">— Selecciona supervisor —</option>' +
+    personal.map(p => `<option value="${p.id}">${esc((p.nombre||p.nombres||'') + ' ' + (p.apellidos||''))}</option>`).join('');
+  document.getElementById('cg-dni').value = '';
+  document.getElementById('cg-cargo').value = '';
+
+  // Proyectos
+  const proy = document.getElementById('cg-proyecto');
+  const proyectos = DB.proyectos.list() || [];
+  proy.innerHTML = '<option value="">— Selecciona proyecto —</option>' +
+    proyectos.map(p => `<option value="${p.id}">${esc(p.codigo||'')} — ${esc((p.nombre||'').slice(0,50))}</option>`).join('');
+
+  // Unidad minera: pre-llenar con la más común del cliente Poderosa
+  const cli = DB.clientes.list()[0];
+  if (cli?.areas?.length){
+    const sel = document.getElementById('cg-unidad');
+    const opciones = ['Vijus','Chaparrosa','Hualanga','U.P. Santa María','U.P. Marañón','U.P. Paraíso'];
+    sel.innerHTML = opciones.map(a => `<option>${a}</option>`).join('') +
+                    '<option value="OTRA">Otra (especificar)</option>';
+  }
+
+  // Tabla de items seleccionados
+  const tbody = document.getElementById('cg-items-tbody');
+  const itemsSel = Array.from(seleccionados).map(id => DB.inventario.get(id)).filter(Boolean);
+  tbody.innerHTML = itemsSel.map((i, idx) => `
+    <tr data-id="${esc(i.id)}">
+      <td style="text-align:center">${idx+1}</td>
+      <td><span class="codigo-cell">${esc(i.codigo||'')}</span></td>
+      <td>${esc((i.descripcion||'').slice(0,60))}</td>
+      <td>${esc(i.marca||'')} ${i.modelo ? esc(i.modelo) : ''}</td>
+      <td><input type="number" min="1" max="${i.cantidad||1}" value="1" data-orig="${i.cantidad||1}" style="width:50px;text-align:right"></td>
+      <td>${esc(i.unidad||'Und')}</td>
+      <td>
+        <select style="width:100%">
+          <option ${i.estado==='Nuevo'?'selected':''}>Nuevo</option>
+          <option ${i.estado==='Bueno'||!i.estado?'selected':''}>Bueno</option>
+          <option ${i.estado==='Regular'?'selected':''}>Regular</option>
+          <option ${i.estado==='Inoperativo'?'selected':''}>Inoperativo</option>
+          <option ${i.estado==='Dañado'?'selected':''}>Dañado</option>
+        </select>
+      </td>
+      <td><input type="text" placeholder="ej. con guardas" style="width:100%"></td>
+      <td><span class="quitar" onclick="quitarItemCargo('${esc(i.id)}')" title="Quitar">×</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('modal-cargo').classList.add('show');
+}
+function cerrarModalCargo(){ document.getElementById('modal-cargo').classList.remove('show'); }
+
+function quitarItemCargo(id){
+  seleccionados.delete(id);
+  // Quitar la fila del modal
+  const tr = document.querySelector(`#cg-items-tbody tr[data-id="${id}"]`);
+  if (tr) tr.remove();
+  // Renumerar
+  document.querySelectorAll('#cg-items-tbody tr').forEach((tr, idx) => {
+    tr.querySelector('td:first-child').textContent = idx+1;
+  });
+  if (!document.getElementById('cg-items-tbody').children.length){
+    cerrarModalCargo();
+  }
+  // Actualizar la fila de la tabla principal
+  const cb = document.querySelector(`#tbody tr[data-id="${id}"] .row-check`);
+  if (cb) cb.checked = false;
+  actualizarBarraCargo();
+}
+
+function onSupervisorChange(){
+  const id = document.getElementById('cg-supervisor').value;
+  if (!id) return;
+  const p = DB.personal.get(id);
+  if (!p) return;
+  document.getElementById('cg-dni').value = p.dni || '';
+  document.getElementById('cg-cargo').value = p.cargo || '';
+}
+
+function confirmarCargo(){
+  const supId = document.getElementById('cg-supervisor').value;
+  if (!supId){ toast('Selecciona un supervisor','err'); return; }
+  const proyId = document.getElementById('cg-proyecto').value;
+  if (!proyId){ toast('Selecciona un proyecto','err'); return; }
+  const fecha = document.getElementById('cg-fecha').value;
+  if (!fecha){ toast('Fecha de entrega requerida','err'); return; }
+  const fechaDev = document.getElementById('cg-fechaDev').value;
+
+  const sup = DB.personal.get(supId);
+  const proy = DB.proyectos.get(proyId);
+  const supNombre = ((sup.nombre||sup.nombres||'') + ' ' + (sup.apellidos||'')).trim();
+  const numero = document.getElementById('cg-numero').value;
+  const unidad = document.getElementById('cg-unidad').value;
+  const observaciones = document.getElementById('cg-obs').value;
+
+  // Recoger items con cantidad/estado/observaciones del modal
+  const filas = document.querySelectorAll('#cg-items-tbody tr');
+  const items = [];
+  for (const tr of filas){
+    const id = tr.dataset.id;
+    const item = DB.inventario.get(id);
+    if (!item) continue;
+    const cant = parseFloat(tr.querySelector('input[type=number]').value) || 1;
+    const estado = tr.querySelector('select').value;
+    const obs = tr.querySelector('input[type=text]').value;
+    if (cant > (item.cantidad||0)){
+      toast(`Stock insuficiente de ${item.codigo} (disponible: ${item.cantidad})`, 'err');
+      return;
+    }
+    items.push({
+      itemId: item.id, codigo: item.codigo, descripcion: item.descripcion,
+      marca: item.marca, modelo: item.modelo, um: item.unidad,
+      cantidad: cant, estadoEntrega: estado, observaciones: obs,
+      cantidadAntes: item.cantidad, cantidadDespues: (item.cantidad||0) - cant,
+    });
+  }
+  if (!items.length){ toast('Sin ítems para cargo','err'); return; }
+
+  // 1) Guardar el cargo
+  const cargo = {
+    numero, fecha: fecha + 'T00:00:00Z',
+    fechaDevolucion: fechaDev ? fechaDev + 'T00:00:00Z' : null,
+    supervisorId: supId, supervisorNombre: supNombre,
+    supervisorDni: document.getElementById('cg-dni').value,
+    supervisorCargo: document.getElementById('cg-cargo').value,
+    proyectoId: proyId, proyectoCodigo: proy.codigo, proyectoNombre: proy.nombre,
+    unidadMineraDestino: unidad,
+    items, observaciones, estado: 'emitido',
+  };
+  DB.cargosEntrega.save(cargo);
+
+  // 2) Crear movimientos de salida por cada item
+  for (const it of items){
+    const item = DB.inventario.get(it.itemId);
+    DB.movimientosInventario.save({
+      tipo: 'salida',
+      itemInventarioId: item.id, itemCodigo: item.codigo,
+      itemDescripcion: (item.descripcion||'').slice(0,200),
+      unidadMinera: unidad,
+      cantidad: it.cantidad, cantidadAntes: it.cantidadAntes, cantidadDespues: it.cantidadDespues,
+      fecha: fecha + 'T00:00:00Z',
+      responsableId: supId, responsableNombre: supNombre,
+      proyectoId: proyId, proyectoNombre: (proy.codigo + ' — ' + (proy.nombre||'')),
+      motivo: `Cargo ${numero} · ${it.observaciones || ''}`.trim(),
+    });
+    // 3) Descontar stock
+    item.cantidad = it.cantidadDespues;
+    DB.inventario.save(item);
+  }
+
+  toast(`✅ Cargo ${numero} generado · ${items.length} equipo(s) entregados`, 'success');
+  cerrarModalCargo();
+  limpiarSeleccion();
+  render();
+
+  // 4) Abrir PDF imprimible
+  setTimeout(() => imprimirCargo(cargo), 300);
+}
+
+// =========== Imprimir Cargo PDF ===========
+function imprimirCargo(cargo){
+  const cfg = DB.getConfig();
+  const fechaFmt = new Date(cargo.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const fechaDevFmt = cargo.fechaDevolucion ? new Date(cargo.fechaDevolucion).toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+
+  const filasItems = (cargo.items||[]).map((it, idx) => `
+    <tr>
+      <td style="text-align:center">${idx+1}</td>
+      <td class="codigo">${esc(it.codigo||'')}</td>
+      <td>${esc(it.descripcion||'')}</td>
+      <td>${esc((it.marca||'') + ' ' + (it.modelo||'')).trim()}</td>
+      <td style="text-align:center">${it.cantidad}</td>
+      <td style="text-align:center">${esc(it.um||'Und')}</td>
+      <td style="text-align:center">${esc(it.estadoEntrega||'Bueno')}</td>
+      <td>${esc(it.observaciones||'')}</td>
+    </tr>
+  `).join('');
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!doctype html><html><head>
+    <title>${cargo.numero}</title>
+    <style>
+      @page { size: A4; margin: 15mm 12mm; }
+      body { font-family: Arial, sans-serif; font-size: 10pt; color:#000; margin:0; padding:0; }
+      .head { display: grid; grid-template-columns: 130px 1fr 200px; gap: 14px; align-items: center;
+              padding-bottom: 8px; border-bottom: 1.5pt solid #333; margin-bottom: 14px; }
+      .head img { max-height: 70px; max-width: 130px; }
+      .head .empresa { font-size: 8.5pt; line-height: 1.5; }
+      .head .empresa b { font-weight:700; }
+      .head .num-box { text-align: right; }
+      .head .num-box .titulo { font-size: 9pt; color:#666; }
+      .head .num-box .num { font-size: 16pt; font-weight: 700; color: #0353a4; }
+      .head .num-box .fecha { font-size: 10pt; }
+      h1.tit { text-align: center; font-size: 14pt; margin: 8px 0 14px;
+               text-transform: uppercase; letter-spacing: .5px; }
+      .info { display: grid; grid-template-columns: 130px 1fr 130px 1fr; gap: 4px 10px;
+              font-size: 9.5pt; margin: 10px 0 14px; }
+      .info .k { font-weight: 700; }
+      .info .full { grid-column: 1 / span 4; }
+      table.items { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 6px; }
+      table.items th { background: #1d3557; color: white; padding: 6px 5px; text-align:left; font-size:8.5pt; }
+      table.items th.cen { text-align: center; }
+      table.items td { padding: 5px; border-bottom: 0.5pt solid #ccc; vertical-align: top; }
+      table.items td.codigo { font-family: 'Consolas','Courier New',monospace; font-size: 8.5pt; }
+      .obs-bloque { margin-top: 14px; font-size: 9.5pt; }
+      .obs-bloque .k { font-weight: 700; }
+      .terms { margin-top: 14px; padding: 10px 12px; background: #f9fafb; border-left: 3px solid #0353a4; font-size: 8.5pt; line-height: 1.5; }
+      .terms h4 { margin: 0 0 6px; font-size: 9.5pt; }
+      .terms ol { margin: 0; padding-left: 22px; }
+      .terms li { margin-bottom: 4px; }
+      .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 50px; text-align: center; }
+      .firmas .firma { border-top: 1pt solid #000; padding-top: 6px; font-size: 9.5pt; }
+      .firmas .firma .rol { font-weight: 700; }
+      .firmas .firma .nombre { margin-top: 2px; }
+      .firmas .firma .meta { font-size: 8.5pt; color: #555; margin-top: 2px; }
+      .no-print { text-align: center; padding: 14px; background: #f3f4f6; }
+      @media print { .no-print { display: none; } }
+    </style></head><body>
+    <div class="no-print">
+      <button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:#0353a4;color:white;border:none;border-radius:5px;cursor:pointer">🖨 Imprimir / Guardar PDF</button>
+      <button onclick="window.close()" style="padding:8px 16px;font-size:13px;background:#6b7280;color:white;border:none;border-radius:5px;cursor:pointer;margin-left:8px">Cerrar</button>
+    </div>
+    <div class="head">
+      <img src="${location.origin}/assets/logo-consitec.png" alt="CONSITEC">
+      <div class="empresa">
+        <b>${esc(cfg.empresa||'CONSITEC INGENIEROS S.A.C.')}</b><br>
+        ${esc(cfg.direccion||'')}<br>
+        Tel: ${esc(cfg.telefono||'')} · RUC: ${esc(cfg.ruc||'')}<br>
+        ${esc(cfg.email||'')}
+      </div>
+      <div class="num-box">
+        <div class="titulo">CARGO N°</div>
+        <div class="num">${esc(cargo.numero||'')}</div>
+        <div class="fecha">Fecha: ${fechaFmt}</div>
+      </div>
+    </div>
+
+    <h1 class="tit">Cargo de Entrega de Equipos y Herramientas</h1>
+
+    <div class="info">
+      <div class="k">Entrega:</div>
+      <div>${esc(cfg.empresa||'CONSITEC INGENIEROS S.A.C.')}</div>
+      <div class="k">Fecha entrega:</div>
+      <div>${fechaFmt}</div>
+
+      <div class="k">Recibe:</div>
+      <div><b>${esc(cargo.supervisorNombre||'')}</b></div>
+      <div class="k">DNI:</div>
+      <div>${esc(cargo.supervisorDni||'—')}</div>
+
+      <div class="k">Cargo:</div>
+      <div>${esc(cargo.supervisorCargo||'—')}</div>
+      <div class="k">Vence devolución:</div>
+      <div>${fechaDevFmt}</div>
+
+      <div class="k">Proyecto:</div>
+      <div class="full">${esc(cargo.proyectoCodigo||'')} — ${esc(cargo.proyectoNombre||'')}</div>
+
+      <div class="k">Unidad minera:</div>
+      <div class="full"><b>${esc(cargo.unidadMineraDestino||'')}</b></div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th class="cen" style="width:25px">#</th>
+          <th style="width:90px">Código</th>
+          <th>Descripción</th>
+          <th style="width:110px">Marca/Modelo</th>
+          <th class="cen" style="width:40px">Cant.</th>
+          <th class="cen" style="width:50px">UM</th>
+          <th class="cen" style="width:75px">Estado</th>
+          <th style="width:140px">Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>${filasItems}</tbody>
+    </table>
+
+    ${cargo.observaciones ? `
+    <div class="obs-bloque">
+      <div class="k">Observaciones generales:</div>
+      <div>${esc(cargo.observaciones)}</div>
+    </div>` : ''}
+
+    <div class="terms">
+      <h4>Condiciones de la entrega</h4>
+      <ol>
+        <li>El receptor se hace responsable de los equipos y herramientas entregados hasta su devolución a CONSITEC.</li>
+        <li>Cualquier daño, pérdida o deterioro indebido durante el uso será cargado al responsable de la recepción.</li>
+        <li>Los equipos deben devolverse en las mismas condiciones de entrega salvo el desgaste normal por uso, indicando cualquier observación al regreso.</li>
+      </ol>
+    </div>
+
+    <div class="firmas">
+      <div class="firma">
+        <div class="rol">ENTREGA</div>
+        <div class="nombre">CONSITEC INGENIEROS S.A.C.</div>
+        <div class="meta">RUC ${esc(cfg.ruc||'')}</div>
+      </div>
+      <div class="firma">
+        <div class="rol">RECIBE CONFORME</div>
+        <div class="nombre">${esc(cargo.supervisorNombre||'')}</div>
+        <div class="meta">DNI ${esc(cargo.supervisorDni||'—')}</div>
+      </div>
+    </div>
+  </body></html>`);
+  w.document.close();
+  // Setear título para nombre del PDF
+  setTimeout(() => { try { w.document.title = cargo.numero; } catch(e){} }, 100);
+}
+
+// =========== Lista de cargos emitidos ===========
+function abrirCargos(){
+  const cargos = (DB.cargosEntrega.list() || []).sort((a,b) =>
+    new Date(b.fecha||0) - new Date(a.fecha||0)
+  );
+  const list = document.getElementById('cargos-list');
+  if (!cargos.length){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280">No hay cargos emitidos aún.<br><small>Selecciona ítems y dale "Generar Cargo".</small></div>';
+  } else {
+    list.innerHTML = `
+      <table class="cargo-items-table" style="width:100%">
+        <thead><tr>
+          <th>N°</th><th>Fecha</th><th>Supervisor</th><th>Proyecto</th><th>Unidad</th><th style="text-align:center">Ítems</th><th>Acciones</th>
+        </tr></thead>
+        <tbody>
+          ${cargos.map(c => `
+            <tr>
+              <td><b>${esc(c.numero||'')}</b></td>
+              <td>${c.fecha ? new Date(c.fecha).toLocaleDateString('es-PE') : '—'}</td>
+              <td>${esc(c.supervisorNombre||'')}</td>
+              <td>${esc(c.proyectoCodigo||'')} — ${esc((c.proyectoNombre||'').slice(0,30))}</td>
+              <td>${esc(c.unidadMineraDestino||'')}</td>
+              <td style="text-align:center">${(c.items||[]).length}</td>
+              <td>
+                <button class="ghost xs" onclick='imprimirCargo(${JSON.stringify(c).replace(/'/g,"&apos;")})' title="Reimprimir">🖨</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+  document.getElementById('modal-cargos').classList.add('show');
+}
 
 // =========== Init ===========
 window.refrescarUI = render;

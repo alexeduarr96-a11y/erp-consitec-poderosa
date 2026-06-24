@@ -26,6 +26,7 @@ const DB = (() => {
     catResponsabilidades: PREFIX + 'cat_responsabilidades',
     inventario:        PREFIX + 'inventario',     // inventario de unidades mineras
     movimientosInventario: PREFIX + 'mov_inventario', // entradas/salidas/ajustes con historial
+    cargosEntrega:     PREFIX + 'cargos_entrega',     // actas de entrega de equipos a supervisores
     config:      PREFIX + 'config',
     counters:    PREFIX + 'counters',
   };
@@ -45,6 +46,7 @@ const DB = (() => {
     reportesDiarios:   'Reportes',
     inventario:        'Inventario',
     movimientosInventario: 'MovimientosInventario',
+    cargosEntrega:     'CargosEntrega',
   };
 
   // ¿Está el modo SharePoint activo y disponible?
@@ -249,6 +251,7 @@ const DB = (() => {
   const catResponsabilidades = makeCRUD('catResponsabilidades');
   const inventario           = makeCRUD('inventario');
   const movimientosInventario = makeCRUD('movimientosInventario');
+  const cargosEntrega        = makeCRUD('cargosEntrega');
 
   // ===== Helpers para sub-listas de cliente (contactos + areas) =====
   function clienteAddContacto(clienteId, contacto){
@@ -506,7 +509,7 @@ const DB = (() => {
     contactosConsitec, proveedores, asignaciones, reportesDiarios,
     catMovilizacion, catEquipos,
     catNotas, catExclusiones, catResponsabilidades,
-    inventario, movimientosInventario,
+    inventario, movimientosInventario, cargosEntrega,
     clienteAddContacto, clienteAddArea, ensureCatItem, crearProyectoDesdeCotizacion,
     seedIfEmpty, exportAll, importAll, clearAll,
   };
